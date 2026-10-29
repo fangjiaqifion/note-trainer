@@ -96,6 +96,7 @@ games/note-trainer/
 ├── manifest.webmanifest  PWA 清单（加到主屏幕用）
 ├── sw.js                 离线缓存
 ├── icon.svg / icon-*.png 图标
+├── og-cover.png          链接预览封面（1200×630），由 og:image 引用
 ├── serve.sh              本机静态服务器
 └── README.md
 ```
