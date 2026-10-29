@@ -300,6 +300,10 @@
       <div><div class="name">节日装饰</div><div class="desc">万圣节前后自动打开：飘动的蝙蝠、南瓜、答对时的彩纸</div></div>
       <button class="toggle" data-toggle="decor"><i></i></button>
     </div>
+    <div class="row">
+      <div><div class="name">试听</div><div class="desc">一声琴音加一句中文；听不到先看侧边静音开关</div></div>
+      <button class="secondary-btn" id="btnTrySound" style="padding:10px 18px;font-size:15px;border-radius:14px;flex:none">试听</button>
+    </div>
     <div class="sheet-foot">
       <button class="secondary-btn" id="btnReset">清空星星</button>
       <button class="primary-btn" id="btnCloseSettings">好了</button>
@@ -467,8 +471,9 @@ function audioCtx(){
 /* 弹一个短音。基频按十二平均律从 A4=440 反推：f = 440 * 2^((midi-69)/12)。
    音色用 4 个正弦泛音叠加（1、2、3、4 倍频，音量递减），
    比单个正弦更接近钢琴，又不用采样文件。 */
-function playMidi(midi, dur, vol){
-  if(!S.sound) return;
+/* force 只在「试听」按钮里用：即使孩子把琴声关掉了，也要能试出声。 */
+function playMidi(midi, dur, vol, force){
+  if(!S.sound && !force) return;
   const c = audioCtx(); if(!c) return;
   dur = dur || 0.9; vol = (vol == null) ? 0.2 : vol;
   const t = c.currentTime + 0.005;
@@ -596,8 +601,9 @@ if('speechSynthesis' in window){
   loadVoices();
   if(speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', loadVoices);
 }
-function say(text){
-  if(!S.speech || !text || !('speechSynthesis' in window)) return;
+/* force 同上：试听时不管「语音念题」开关，直接念一句。 */
+function say(text, force){
+  if((!S.speech && !force) || !text || !('speechSynthesis' in window)) return;
   if(!enVoice || !zhVoice) loadVoices();
   try{
     speechSynthesis.cancel();
@@ -1472,6 +1478,17 @@ $('#btnCloseSettings').addEventListener('click', function(){
 $('#settingsModal').addEventListener('click', function(e){
   if(e.target === this) this.classList.remove('open');
 });
+/* 试听：本机上唯一一处「强制出声」，用来排查 iPad 到底是没有声音、
+   还是静音开关被拨了、还是语音包缺失。
+   iOS 允许在点击回调里创建 AudioContext 和朗读，所以这里不需要等手势。 */
+$('#btnTrySound').addEventListener('click', function(){
+  const c = audioCtx();
+  if(c && c.state === 'suspended') c.resume();
+  playMidi(60, 1.1, 0.2, true);
+  say('这是中央 C，听到声音就说明正常', true);
+  toast('听到「咚」和一句话，声音就正常', 'ok');
+});
+
 $('#btnReset').addEventListener('click', function(){
   S.stars = {};
   saveStore();
