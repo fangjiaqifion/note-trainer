@@ -1,7 +1,7 @@
 {
-  "name": "三个音 · B C D",
-  "short_name": "三个音",
-  "description": "B、中央 C、D 三个音的键盘位置、五线谱、时值与指法练习",
+  "name": "识谱小练习",
+  "short_name": "识谱",
+  "description": "识谱小练习：音名与键盘位置、五线谱、时值、指法",
   "lang": "zh-CN",
   "start_url": "./index.html",
   "scope": "./",

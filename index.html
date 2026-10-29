@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="三个音">
+<meta name="apple-mobile-web-app-title" content="识谱">
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
-<title>三个音 · B C D</title>
+<title>识谱小练习 · 第一单元 B C D</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -225,8 +225,8 @@
 
   <section id="home" class="screen active">
     <div class="home-head">
-      <h1 id="homeTitle">三个音的小游戏</h1>
-      <p class="sub">B · 中央 C · D</p>
+      <h1 id="homeTitle">识谱小练习</h1>
+      <p class="sub" id="homeSub">第一单元 · B · 中央 C · D</p>
     </div>
     <div class="levels" id="levelGrid"></div>
     <div class="home-foot">
@@ -310,14 +310,16 @@ const LETTERS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const letterOf = m => LETTERS[((m % 12) + 12) % 12];
 const WHITE_OFF = [0,2,4,5,7,9,11];
 
-/* 三个音。B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。
+/* 当前单元。换单元只改这三行：往 NOTES 里加音，再把 id 放进 notes。
+   目前是 B3、C4、D4。B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。
    符杆朝向表示手：右手向上，左手向下。指法写在音符的上端或下端。 */
 const NOTES = {
   B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2 },
   C4: { id:'C4', letter:'C', label:'中央 C', midi:60, clef:'treble', y:5.0,  hand:'R', finger:1 },
   D4: { id:'D4', letter:'D', label:'D',      midi:62, clef:'treble', y:4.5,  hand:'R', finger:2 }
 };
-const NOTE_IDS = ['B3','C4','D4'];
+const UNIT = { name:'第一单元', label:'B · 中央 C · D', notes:['B3','C4','D4'] };
+const NOTE_IDS = UNIT.notes;
 const LEDGER = { treble: { C4: 5 }, bass: {} };
 
 const VALUES = {
@@ -330,8 +332,8 @@ const VALUE_IDS = ['quarter','half','dotted','whole'];
 const VALUE_BY_BEATS = { 1:'quarter', 2:'half', 3:'dotted', 4:'whole' };
 
 const LEVELS = [
-  { id:1, name:'找键盘', title:'键盘上的位置', desc:'B、C、D 分别在哪里', color:'#3C7DD9' },
-  { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号的 B，高音谱号的 C、D', color:'#E08A2E' },
+  { id:1, name:'找键盘', title:'键盘上的位置', desc:'音名对应哪个键', color:'#3C7DD9' },
+  { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号与高音谱号', color:'#E08A2E' },
   { id:3, name:'时值',   title:'几拍',       desc:'四分、二分、附点二分、全音符', color:'#3FA96F' },
   { id:4, name:'读谱',   title:'手、指与拍数', desc:'看符杆和数字，找到这个音', color:'#8E5AA8' }
 ];
@@ -360,11 +362,16 @@ function isHalloweenSeason(){
 function decorOn(){
   return (S.decor === null) ? isHalloweenSeason() : !!S.decor;
 }
+function applyUnit(){
+  const sub = document.getElementById('homeSub');
+  if(sub) sub.textContent = UNIT.name + ' · ' + UNIT.label;
+}
+
 function applyDecor(){
   const on = decorOn();
   document.body.classList.toggle('halloween', on);
   const t = $('#homeTitle');
-  if(t) t.textContent = on ? '🎃 三个音的小游戏 🎃' : '三个音的小游戏';
+  if(t) t.textContent = on ? '🎃 识谱小练习 🎃' : '识谱小练习';
 }
 
 /* ==================== 声音 ==================== */
@@ -1292,7 +1299,8 @@ document.addEventListener('pointerdown', function once(){
   document.removeEventListener('pointerdown', once);
 }, { once:true });
 
-window.__dbg = { G: G, NOTES: NOTES, VALUES: VALUES, voice: function(){ return [zhVoice && zhVoice.name, enVoice && enVoice.name]; } };
+window.__dbg = { G: G, NOTES: NOTES, VALUES: VALUES, UNIT: UNIT, voice: function(){ return [zhVoice && zhVoice.name, enVoice && enVoice.name]; } };
+applyUnit();
 applyDecor();
 syncSettings();
 showHome();
