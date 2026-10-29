@@ -28,6 +28,9 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>
+  /* 版式与配色的唯一来源。改颜色改这里，不要在下面各处写死色值。
+     页面按「首页 / 游戏页 / 结算页」三块排，都是整屏切换，
+     所以 .screen 只切 active 类，不做路由也不做动画。 */
   :root{
     --bg:#FFF7EC; --ink:#2B2A33; --muted:#8B8175;
     --card:#FFFFFF; --line:#EADDCB;
@@ -308,6 +311,35 @@
 (function(){
 'use strict';
 
+/* =====================================================================
+   识谱小练习 · note-trainer
+   ---------------------------------------------------------------------
+   单文件网页：样式、脚本、谱号路径、题库全在这一个 index.html 里。
+   没有构建、没有依赖、没有网络请求，放到任何静态托管都能跑。
+
+   代码分五层，从上往下读即可：
+     1. 配置层  NOTES / VALUES / UNIT / LEVELS / DIFFS
+                换单元、加音、改难度只动这里，不要动下面的渲染逻辑。
+     2. 渲染层  staffSVG（五线谱）、buildKeyboard（键盘）
+                只负责把数据画成 SVG / DOM，不判断对错。
+     3. 题型层  qFindKey / qStaffToKey / qKeyToStaff / qBeats /
+                qWhichShape / qHand / qPosition / qHold
+                每个工厂返回 { kind, render(), reveal() }，
+                render 才绑定交互，reveal 是错够次数后的提示。
+     4. 流程层  judge / renderQuestion / buildQuestions / startLevel /
+                finishLevel
+                管对错、连击、换题、结算；渲染层和题型层都不碰这里。
+     5. 外围    localStorage 存档、Web Audio 发声、语音念题、
+                节日装饰、离线缓存
+
+   三条贯穿全文件的约定：
+     · 时间统一用 beat 的倍数（60000 / bpm 是一拍多少毫秒），
+       不写死毫秒，难度切换后速度自然跟着变。
+     · 异步回调里一律先比较 G.session，会话过期就丢弃结果，
+       否则退出关卡后旧定时器还会改状态，出现「幽灵判题」。
+     · 判对判错都走 judge()，不要在题型里直接改 G。
+   ===================================================================== */
+
 /* ==================== 基础 ==================== */
 const $  = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
@@ -320,22 +352,45 @@ function shuffle(a){
   return a;
 }
 
+/* 十二平均律的音级表，一个八度内 C 到 B。
+   midi 音高除以 12 取余就得到音级，负数的余数要先 +12 转正。 */
 const LETTERS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const letterOf = m => LETTERS[((m % 12) + 12) % 12];
+/* 一个八度里 7 个白键相对 C 的半音数：C D E F G A B。
+   有它才能从一个白键序号反推 midi，键盘就不用逐个手写。 */
 const WHITE_OFF = [0,2,4,5,7,9,11];
 
-/* 当前单元。换单元只改这三行：往 NOTES 里加音，再把 id 放进 notes。
-   目前是 B3、C4、D4。B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。
-   符杆朝向表示手：右手向上，左手向下。指法写在音符的上端或下端。 */
+/* ---------------------------------------------------------------------
+   当前单元。换单元只改这三处：往 NOTES 里加音、把 id 放进 UNIT.notes、
+   必要时登记 LEDGER 加线。关卡会按 NOTE_IDS 自动扩到新音。
+
+   每个音七个字段：
+     id      内部键名，和文件名、题库里用的字符串一致
+     letter  音名，第 1 关按它出题，只比音级不比音组
+     label   中文说明，判对时的提示语用
+     midi    MIDI 音高，59=B3、60=中央 C、62=D4；发声和键盘定位都靠它
+     clef    用哪个谱号画，'treble' 或 'bass'
+     y       在谱表上的纵向位置，单位是「线距」，见 staffSVG 的坐标说明
+     hand    'L' 左手 / 'R' 右手；渲染时直接决定符杆朝上还是朝下
+     finger  指法数字，第 4 关写在音符外侧
+
+   目前是 B3、C4、D4：B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。 */
 const NOTES = {
   B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2 },
   C4: { id:'C4', letter:'C', label:'中央 C', midi:60, clef:'treble', y:5.0,  hand:'R', finger:1 },
   D4: { id:'D4', letter:'D', label:'D',      midi:62, clef:'treble', y:4.5,  hand:'R', finger:2 }
 };
+/* 单元标题只影响首页副标题，真正出题用的是 notes 数组。 */
 const UNIT = { name:'第一单元', label:'B · 中央 C · D', notes:['B3','C4','D4'] };
 const NOTE_IDS = UNIT.notes;
+/* 需要加线的音登记在这里：{ 谱号: { 音 id: 加线的 y 位置 } }。
+   中央 C 在高音谱号下加一线，所以是 5；低音谱号当前没有加线音。
+   漏登记的表现是：音符漂浮在谱表外，没有那条短横线。 */
 const LEDGER = { treble: { C4: 5 }, bass: {} };
 
+/* 四种时值。beats 是拍数，也是判题依据；
+   filled / stem / dot 描述符头要不要实心、有没有符杆、有没有附点，
+   staffSVG 按这三个开关画形状，所以加新时值不用改绘图代码。 */
 const VALUES = {
   quarter: { id:'quarter', beats:1, name:'四分音符',   filled:true,  stem:true,  dot:false },
   half:    { id:'half',    beats:2, name:'二分音符',   filled:false, stem:true,  dot:false },
@@ -345,6 +400,8 @@ const VALUES = {
 const VALUE_IDS = ['quarter','half','dotted','whole'];
 const VALUE_BY_BEATS = { 1:'quarter', 2:'half', 3:'dotted', 4:'whole' };
 
+/* 四关的顺序就是教学顺序：认键 → 谱键互认 → 时值 → 手、指、按住。
+   首页卡片、关卡标题、结算文案都从这里取，不要另写一份。 */
 const LEVELS = [
   { id:1, name:'找键盘', title:'键盘上的位置', desc:'音名对应哪个键', color:'#3C7DD9' },
   { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号与高音谱号', color:'#E08A2E' },
@@ -352,6 +409,8 @@ const LEVELS = [
   { id:4, name:'读谱',   title:'手、指与拍数', desc:'看符杆和数字，找到这个音', color:'#8E5AA8' }
 ];
 
+/* 三档难度。options 是选项个数，hintAfter 是错几次给提示，
+   bpm 决定预备拍和按住判定的速度，count 是一关几题。 */
 const DIFFS = {
   easy:   { key:'easy',   name:'轻松', options:2, hintAfter:1, bpm:52, count:8  },
   normal: { key:'normal', name:'标准', options:3, hintAfter:2, bpm:60, count:8  },
@@ -359,6 +418,8 @@ const DIFFS = {
 };
 
 /* ==================== 设置与存档 ==================== */
+/* 存档键名故意保留旧名 bcd-piano-game-v2，没有跟着游戏一起改名：
+   改了就等于清空孩子已经拿到的星星。要迁移得先读旧键再写新键。 */
 const STORE_KEY = 'bcd-piano-game-v2';
 function loadStore(){
   try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return {}; }
@@ -388,7 +449,11 @@ function applyDecor(){
   if(t) t.textContent = on ? '🎃 识谱小练习 🎃' : '识谱小练习';
 }
 
-/* ==================== 声音 ==================== */
+/* ==================== 声音 ====================
+   全部用 Web Audio 实时合成，页面里没有音频文件。
+   iOS 要求第一次发声必须发生在用户手势里，所以 init 时挂了一个
+   一次性 pointerdown 把 AudioContext 唤醒（见文件末尾）。
+   iPad 侧边静音开关会同时静音 Web Audio，听不到先看那个开关。 */
 let AC = null;
 function audioCtx(){
   if(!AC){
@@ -399,6 +464,9 @@ function audioCtx(){
   if(AC.state === 'suspended') AC.resume();
   return AC;
 }
+/* 弹一个短音。基频按十二平均律从 A4=440 反推：f = 440 * 2^((midi-69)/12)。
+   音色用 4 个正弦泛音叠加（1、2、3、4 倍频，音量递减），
+   比单个正弦更接近钢琴，又不用采样文件。 */
 function playMidi(midi, dur, vol){
   if(!S.sound) return;
   const c = audioCtx(); if(!c) return;
@@ -418,6 +486,9 @@ function playMidi(midi, dur, vol){
     o.start(t); o.stop(t + dur + 0.1);
   });
 }
+/* 起一个持续音，返回 { stop(fade) }。
+   「按住」关和「听拍数」都用它：音要一直响到松手或拍数数完，
+   所以音量先起后落，再交给调用方决定什么时候淡出。 */
 function startTone(midi){
   if(!S.sound) return null;
   const c = audioCtx(); if(!c) return null;
@@ -448,6 +519,9 @@ function startTone(midi){
   };
 }
 
+/* 答对时值题后的「回声」：先打 4 个预备拍，再把这个音符按真实拍长弹出来，
+   每一拍点亮一颗圆点。返回总时长（毫秒），判题层用它决定停留多久再换题。
+   session 检查放在每个定时器里，退出关卡立刻静音，不会在首页继续响。 */
 function echoBeats(noteId, beats, host){
   const ms = 60000 / diff().bpm;
   const session = G.session;
@@ -498,9 +572,15 @@ function clickSound(){
   o.start(t); o.stop(t + 0.06);
 }
 
-/* ==================== 语音 ==================== */
+/* ==================== 语音 ====================
+   题目用系统语音念出来，孩子不识字也能独立玩。
+   难点在混读：中文句子要用中文声音，「B / C / D」要按字母本音读，
+   所以 say() 把字符串按单个拉丁字母切开，逐段设置 lang 和 voice。
+   没有对应语音包时静默失败，只显示文字，不影响答题。 */
 let zhVoice = null;
 let enVoice = null;
+/* 英文声音的偏好顺序：这些名字在各平台上读字母最干净，
+   找不到就退回任意 en-US，再退到任意 en。 */
 const EN_PREFER = ['Samantha','Ava','Allison','Kathy','Karen','Moira','Tessa','Serena','Fiona','Zira','Aria','Google US English'];
 function loadVoices(){
   if(!('speechSynthesis' in window)) return;
@@ -521,6 +601,8 @@ function say(text){
   if(!enVoice || !zhVoice) loadVoices();
   try{
     speechSynthesis.cancel();
+    /* 捕获组切开：'找到 C' → ['找到 ', 'C']。
+       单个字母走英文声音，其余整段走中文声音。 */
     const parts = String(text).split(/([A-Za-z])/).filter(function(s){ return s.length; });
     parts.forEach(function(part){
       const isLetter = /^[A-Za-z]$/.test(part);
@@ -539,7 +621,18 @@ function stopSay(){
   try { if('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e){}
 }
 
-/* ==================== 五线谱 ==================== */
+/* ==================== 五线谱 ====================
+   谱面全部用内联 SVG 画，两个谱号是烘焙进来的 path 数据，
+   运行时不读图片、不联网。
+
+   坐标系（记住这一条，后面所有数字都读得懂）：
+     1 个 y 单位 = 五线谱上相邻两线的距离，也就是「一线一间」。
+     y = 0,1,2,3,4   是五条线，0 在最上面；
+     y = 4.5         是底线下方的那一间（D4 在这里）；
+     y = 5           是下加一线（中央 C 在这里）；
+     y = -0.5        是顶线上方那一间（低音谱号的 B3 在这里）。
+     x 方向同比例，noteX 默认 8.9 是普通谱面的落点，compact 模式往左收。
+   所以一个音在谱表上的位置 = NOTES 里的 y，不需要额外算。 */
 const CLEF_TREBLE = 'M 201.2 551.6 C 186.1 555.8 172.6 565.2 160.0 579.4 C 147.4 593.9 141.3 609.9 141.3 627.2 C 141.3 638.0 145.0 650.3 152.1 663.3 C 159.3 676.6 170.1 686.2 184.2 692.3 C 188.8 693.3 191.1 695.8 191.1 699.2 C 191.1 700.4 189.3 701.7 185.2 702.7 C 162.7 697.0 144.2 684.9 129.9 667.0 C 115.6 648.8 108.2 628.1 107.7 604.5 C 108.5 579.2 116.1 555.6 130.7 533.9 C 145.5 512.1 164.4 496.6 187.6 487.5 L 170.6 400.1 C 132.6 431.6 101.8 464.3 77.9 498.8 C 54.0 533.0 41.7 570.1 40.7 610.2 C 41.2 628.1 44.9 645.6 51.8 662.3 C 58.7 679.3 69.0 694.5 82.8 708.6 C 110.7 736.4 146.9 750.9 191.1 752.3 C 206.1 751.4 222.1 748.6 239.4 744.2 L 201.2 551.6 z M 218.9 549.2 L 257.4 738.3 C 295.4 723.1 314.3 689.9 314.3 639.2 C 312.1 622.2 307.2 607.0 298.8 593.5 C 290.7 579.7 279.8 568.9 266.0 561.0 C 252.2 553.1 236.7 549.2 218.9 549.2 z M 168.4 293.4 C 176.5 288.5 185.9 279.9 196.0 267.8 C 206.1 256.0 216.0 242.0 225.3 226.3 C 235.0 210.3 242.6 194.0 248.3 177.6 C 253.9 161.3 256.6 145.8 256.6 131.6 C 256.6 125.4 256.2 119.3 254.9 113.9 C 253.9 105.0 251.2 98.1 246.5 93.5 C 241.9 89.0 235.9 86.6 228.5 86.6 C 213.8 86.6 200.4 95.7 188.6 113.9 C 179.5 129.6 171.8 148.3 166.4 169.5 C 160.7 190.9 157.5 212.0 157.0 233.4 C 158.3 257.7 162.2 277.7 168.4 293.4 z M 152.9 307.7 C 141.8 267.8 135.6 227.3 134.4 185.9 C 134.6 159.4 137.3 134.5 142.5 111.4 C 147.4 88.3 154.6 68.4 163.9 51.2 C 173.1 33.9 183.7 20.9 195.5 12.1 C 206.1 4.2 213.8 0.0 217.9 0.0 C 221.1 0.0 223.9 1.2 226.3 3.4 C 228.8 5.7 232.0 9.3 235.9 14.3 C 265.3 55.8 280.1 106.0 280.1 164.5 C 280.1 192.3 276.4 219.4 269.0 246.4 C 261.8 273.2 251.2 298.8 237.2 322.7 C 222.9 346.8 206.1 367.7 186.6 385.6 L 206.6 482.5 C 217.4 481.3 224.8 480.3 229.0 480.3 C 247.8 480.3 264.5 484.3 280.1 492.1 C 295.6 500.0 308.9 510.6 319.8 524.1 C 330.6 537.4 339.0 552.6 344.9 569.8 C 350.6 587.1 353.8 605.0 353.8 623.7 C 353.8 652.7 346.1 679.3 330.9 703.1 C 315.6 727.0 292.6 744.5 261.8 755.8 C 263.8 767.8 267.2 785.3 272.4 807.7 C 277.4 830.3 281.1 848.3 283.5 861.5 C 286.0 874.8 287.0 887.6 287.0 900.1 C 287.0 919.6 282.3 936.8 272.9 952.0 C 263.3 967.3 250.5 979.1 234.2 987.5 C 218.2 995.8 200.4 1000.0 181.2 1000.0 C 154.1 1000.0 130.4 992.4 110.2 977.4 C 90.0 962.1 79.1 941.7 78.2 915.6 C 78.9 904.1 81.6 893.3 86.5 882.9 C 91.5 872.6 98.1 864.2 106.8 857.8 C 115.1 851.2 125.2 847.8 136.8 847.0 C 146.4 847.0 155.6 849.7 164.2 854.9 C 172.6 860.3 179.5 867.4 184.7 876.5 C 189.6 885.6 192.3 895.7 192.3 906.5 C 192.3 921.1 187.4 933.3 177.5 943.4 C 167.6 953.5 155.1 958.7 140.0 958.7 L 134.4 958.7 C 144.0 973.4 159.8 981.1 181.7 981.1 C 192.8 981.1 204.1 978.6 215.5 974.2 C 227.1 969.5 236.7 963.4 244.8 955.5 C 252.9 947.6 258.4 939.3 260.6 930.4 C 264.8 920.3 266.8 906.3 266.8 888.8 C 266.8 877.0 265.5 865.2 263.3 853.4 C 261.1 841.9 257.6 826.4 252.9 807.2 C 248.3 788.2 244.8 773.5 242.8 763.4 C 228.0 767.1 212.8 769.1 196.7 769.1 C 169.9 769.1 144.5 763.6 120.6 752.6 C 96.6 741.5 75.7 726.3 57.4 706.6 C 39.4 686.9 25.4 664.8 15.3 639.7 C 5.4 614.9 0.2 588.8 0.0 561.7 C 1.0 536.6 5.7 512.5 14.5 489.9 C 23.4 467.0 34.8 445.4 48.8 425.2 C 62.9 405.1 77.4 386.6 92.5 370.1 C 107.7 353.9 127.7 333.0 152.9 307.7 z';
 const CLEF_BASS = 'M567 -386c0,29,23,52,52,52s52,-23,52,-52s-23,-52,-52,-52s-52,23,-52,52z m0,250c0,29,23,52,52,52s52,-23,52,-52s-23,-52,-52,-52s-52,23,-52,52z m-323,136 c171,0,292,-86,292,-248c0,-263,-264,-415,-517,-521c-2,-2,-5,-3,-8,-3c-6,0,-11,5,-11,11c0,3,1,6,3,8c203,118,415,265,415,494c0,121,-64,237,-174,237c-79,0,-138,-57,-164,-133 c14,8,28,13,43,13c55,0,100,-45,100,-100c0,-58,-44,-107,-100,-107c-60,0,-112,48,-112,107c0,132,103,242,233,242z';
 const INK = '#26252D';
@@ -554,30 +647,40 @@ function staffSVG(o){
   const compact = !!o.compact;
   const noteX = o.noteX || (compact ? 6.4 : 8.9);
   const lineEnd = compact ? 11.7 : 14.6;
-  const y = n.y;
+  const y = n.y;   // 只用配置里的线距坐标，后面不再换算
   let g = '';
 
+  /* 五条线：y 从 0 到 4，一条线一个单位。线宽 0.075 单位，
+     缩到卡片大小时大约 2px，打印和屏幕上都不糊。 */
   for(let i = 0; i < 5; i++){
     g += '<line x1="0" y1="' + i + '" x2="' + lineEnd + '" y2="' + i + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
   }
 
+  /* 谱号：把 512 单位的原始 path 缩放平移到谱表左端。
+     低音谱号的 scale 带负号，是因为它的原始 path 是倒着画的。 */
   if(clef === 'treble'){
     g += '<g transform="translate(0.45 -1.26) scale(0.0071)"><path d="' + CLEF_TREBLE + '" fill="' + INK + '"/></g>';
   }else{
     g += '<g transform="translate(0.5 -0.05) scale(0.004016 -0.004016)"><path d="' + CLEF_BASS + '" fill="' + INK + '"/></g>';
   }
 
+  /* 加线：只画音符左右各 1.15 单位的一小段，不是整条线。 */
   const ledger = (LEDGER[clef] || {})[noteId];
   if(ledger != null){
     g += '<line x1="' + (noteX - 1.15) + '" y1="' + ledger + '" x2="' + (noteX + 1.15) + '" y2="' + ledger + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
   }
 
+  /* 符杆方向就是左右手：右手朝上，左手朝下。
+     这样孩子在屏幕上看到的和纸面谱一致，换回纸质谱不用重学。
+     杆长固定 3.45 单位（约三个半线距），不随音高变化。 */
   const up = n.hand === 'R';
   if(v.stem){
     const sx = up ? noteX + 0.55 : noteX - 0.55;
     const y2 = up ? y - 3.45 : y + 3.45;
     g += '<line x1="' + sx + '" y1="' + (up ? y - 0.02 : y + 0.02) + '" x2="' + sx + '" y2="' + y2 + '" stroke="' + INK + '" stroke-width="0.105" stroke-linecap="round"/>';
   }
+  /* 附点画在符头右侧。音符正好落在线上时（y 是整数），
+     附点要往上挪半格，否则会和线重叠看不清。 */
   if(v.dot){
     const dy = (y === Math.round(y)) ? y - 0.5 : y;
     g += '<circle cx="' + (noteX + 1.38) + '" cy="' + dy + '" r="0.165" fill="' + INK + '"/>';
@@ -585,6 +688,9 @@ function staffSVG(o){
   const rx = (v.id === 'whole') ? 0.7 : 0.58;
   g += '<ellipse cx="' + noteX + '" cy="' + y + '" rx="' + rx + '" ry="0.4" transform="rotate(-18 ' + noteX + ' ' + y + ')" fill="' + (v.filled ? INK : 'none') + '" stroke="' + INK + '" stroke-width="0.16"/>';
 
+  /* 指法数字优先放在谱表外侧：音符在下方（y>=4）就写更下面，
+     在上方（y<=0）就写更上面，中间的才跟着符杆方向走。
+     白色描边是为了压在谱线上也读得清。 */
   if(o.finger){
     let fy;
     if(y >= 4) fy = y + 1.05;
@@ -601,7 +707,10 @@ function staffBlock(opts){
   return '<div class="paper">' + staffSVG(opts) + '</div>';
 }
 
-/* ==================== 键盘 ==================== */
+/* ==================== 键盘 ====================
+   两组键盘拼一张图：从 C3 开始连续 15 个白键（两个八度多一点），
+   黑键按「白键序号」定位，用百分比摆放，所以任何宽度都能自适应。
+   白键用 data-midi 记录音高，判题时只比数字，不比 DOM 位置。 */
 function buildKeyboard(kb, opts){
   opts = opts || {};
   kb.innerHTML = '';
@@ -616,11 +725,15 @@ function buildKeyboard(kb, opts){
     el.dataset.midi = midi;
     el.style.left = (i * w) + '%';
     el.style.width = w + '%';
+    /* 中央 C 加一个小圆点做地标：孩子靠它找音组，不用数键。 */
     if(midi === 60){ el.classList.add('midc'); el.insertAdjacentHTML('beforeend', '<i class="middot"></i>'); }
     if(opts.labels) el.insertAdjacentHTML('beforeend', '<span class="lbl">' + letterOf(midi) + '</span>');
     if(opts.target === midi) el.classList.add('target');
     kb.appendChild(el);
   }
+  /* 黑键贴在相邻白键之间。一个八度里只有 5 个黑键，
+     对应 0,1,3,4,5 这几个白键位置（C# D# F# G# A#），
+     2 和 6 之间是 E–F、B–C 的半音关系，没有黑键。 */
   for(i = 0; i < N; i++){
     deg = i % 7;
     if([0,1,3,4,5].indexOf(deg) < 0) continue;
@@ -644,6 +757,9 @@ function makeKB(opts){
   buildKeyboard(kb, opts);
   wrap.appendChild(kb);
 
+  /* 用 pointerdown 而不是 click：iPad 上按下就出声、就有反馈，
+     比等到抬起更跟手；preventDefault 防止 iOS 再把同一个手势
+     派发成 click，避免一次点击判两次。 */
   kb.addEventListener('pointerdown', function(e){
     const el = e.target.closest ? e.target.closest('.w,.b') : null;
     if(!el) return;
@@ -704,7 +820,15 @@ function confetti(){
   }
 }
 
-/* ==================== 游戏状态 ==================== */
+/* ==================== 游戏状态 ====================
+   全局只有一个可变对象 G：
+     level   当前第几关
+     qs      这一关的题目数组（进关时一次性生成，中途不变）
+     i       第几题
+     first   一次答对的题数，结算时换算星星
+     q       当前题目对象
+     busy    判对之后到换题之前的锁，防止连点
+     session 会话号，每进一次关卡 +1；所有定时器回调靠它判断自己是否过期 */
 const G = { level:1, qs:[], i:0, first:0, q:null, busy:false, session:0 };
 
 function updateDots(){
@@ -717,10 +841,15 @@ function updateDots(){
   }
 }
 
+/* 判题的唯一入口。题型层只负责调用，不直接改 G。
+   对的路径：记一次答对 → 提示 → 等 wait 毫秒 → 换下一题或结算。
+   错的路径：累加 q.wrong，错够 hintAfter 次就调用题目的 reveal()
+   给提示（高亮正确的键、或在标题里说出答案），但不告诉孩子「错了」。 */
 function judge(ok, msg, wait){
   const q = G.q;
   if(!q || q.answered || G.busy) return;
   if(ok){
+    /* 先把会话号存下来：延时结束时会话可能已经变了，那时不能再往下走。 */
     const session = G.session;
     q.answered = true;
     G.busy = true;
@@ -741,6 +870,8 @@ function judge(ok, msg, wait){
   }
 }
 
+/* 换题：清空舞台、答案区、状态，再交给题目自己的 render()。
+   注意每次都重建 DOM，不复用节点，避免上一题的监听器残留。 */
 function renderQuestion(){
   const q = G.qs[G.i];
   G.q = q;
@@ -753,7 +884,16 @@ function renderQuestion(){
   q.render();
 }
 
-/* ==================== 题目 ==================== */
+/* ==================== 题目 ====================
+   每个 q* 都是一个工厂，返回同一套接口：
+     kind    题型标识，用于统计和「按住题不排第一」这类规则
+     render  画题、绑交互；判对判错一律调 judge()
+     reveal  错够次数后的提示
+   题目对象自己保存题目参数（noteId、valueId、beats），
+   因此同一个工厂可以被不同参数调用很多次，互不干扰。 */
+
+/* 第 1 关：给音名，在键盘上点出来。只看音级，不区分音组，
+   所以任何一个 C 都对，这一关不考八度位置。 */
 function qFindKey(letter){
   return {
     kind:'find', letter:letter, wrong:0,
@@ -785,6 +925,8 @@ function qFindKey(letter){
   };
 }
 
+/* 第 2 关（双向之一）：给谱面，在键盘上点出这个音。
+   和上一关不同，这里必须对上具体音组：D4 不能点成 D5。 */
 function qStaffToKey(noteId, valueId){
   const note = NOTES[noteId];
   return {
@@ -816,6 +958,8 @@ function qStaffToKey(noteId, valueId){
   };
 }
 
+/* 第 2 关（双向之二）：高亮一个键，从几张谱例里挑出对应的那张。
+   options 决定给几张：轻松档 2 张，其余 3 张；干扰项从本单元里抽。 */
 function qKeyToStaff(noteId){
   const note = NOTES[noteId];
   const n = diff().options >= 3 ? 3 : 2;
@@ -862,11 +1006,14 @@ function qKeyToStaff(noteId){
   };
 }
 
+/* 生成拍数选项：正确项 + 从剩下的 1–4 里随机补足，最后整体打乱。 */
 function beatsOptions(correct, n){
   const pool = [1,2,3,4].filter(function(x){ return x !== correct; });
   return shuffle([correct].concat(shuffle(pool).slice(0, n - 1)));
 }
 
+/* 第 3 关（之一）：看谱面上的音符，判断几拍。
+   答对后跑 echoBeats，把这个音符按真实拍长弹一遍，让孩子听见「几拍有多长」。 */
 function qBeats(noteId, valueId){
   const v = VALUES[valueId];
   const opts = beatsOptions(v.beats, diff().options === 2 ? 2 : 4);
@@ -903,6 +1050,8 @@ function qBeats(noteId, valueId){
   };
 }
 
+/* 第 3 关（之二）：反过来问，给时值名称，从几个谱例里挑出对应的音符。
+   干扰项固定抽两个其它时值，所以永远是三选一。 */
 function qWhichShape(noteId, valueId){
   const v = VALUES[valueId];
   const others = shuffle(VALUE_IDS.filter(function(x){ return x !== valueId; })).slice(0, 2);
@@ -941,6 +1090,8 @@ function qWhichShape(noteId, valueId){
   };
 }
 
+/* 手的简笔图标。左手把整只手掌水平镜像，
+   这样两只手的拇指朝向正确，孩子一眼能分辨。 */
 function handIcon(side){
   const mirror = (side === 'L') ? ' transform="scale(-1,1) translate(-64,0)"' : '';
   return '<svg class="handicon" viewBox="0 0 64 74" aria-hidden="true"><g fill="currentColor"' + mirror + '>' +
@@ -953,6 +1104,8 @@ function handIcon(side){
     '</g></svg>';
 }
 
+/* 第 4 关（之一）：看符杆方向判断左右手。
+   判定依据就是 NOTES 里的 hand，和谱面画法是同一个数据源。 */
 function qHand(noteId){
   const n = NOTES[noteId];
   const right = n.hand === 'R';
@@ -988,6 +1141,8 @@ function qHand(noteId){
   };
 }
 
+/* 第 4 关（之二）：谱面 + 指法数字，在键盘上点出这个音。
+   判对时把「右手 1 指，中央 C」一起说出来，把指法和音名绑在一起。 */
 function qPosition(noteId){
   const n = NOTES[noteId];
   return {
@@ -1020,6 +1175,10 @@ function qPosition(noteId){
 }
 
 
+/* 第 4 关（之三）：看谱面判断时值，然后按住琴键弹够这个长度。
+   难点在「不告诉孩子是几拍」：拍数藏在谱面里，靠他自己读。
+   判定用毫秒换算成拍数，允许 0.2 拍的误差（手指抬起有延迟）。
+   按住期间每过一拍点亮一个数字，把抽象的「时长」变成看得见的进度。 */
 function qHold(noteId, beats){
   const note = NOTES[noteId];
   const MS = Math.round(60000 / diff().bpm);
@@ -1119,13 +1278,24 @@ function qHold(noteId, beats){
   };
 }
 
-/* ==================== 出题（由易到难） ==================== */
+/* ==================== 出题（由易到难） ====================
+   一关的题目在进关时一次性生成，中途不再变化，
+   所以「第几题」的进度条和星星统计都是确定的。
+   repeatTo 负责把一个池子循环填满到 n 个，再打乱，
+   保证每种音、每种时值出现的次数尽量均匀。 */
 function repeatTo(arr, n){
   const out = [];
   while(out.length < n) out.push.apply(out, shuffle(arr));
   return out.slice(0, n);
 }
 
+/* 每关的题目构成：
+     第 1 关  从预置序列里抽，C 和 B 出现得多一点，先把两端的锚点认熟
+     第 2 关  一半「谱→键」，一半「键→谱」，交替练双向映射
+     第 3 关  每三题插一道「哪个是二分音符」的反向题
+     第 4 关  固定 2 道判手 + 若干道点位置 + 3–4 道按住
+   最后统一打乱，但会把「按住」题从第一位挪走：
+   它要 4 个预备拍才开始，放第一题会让孩子干等。 */
 function buildQuestions(level){
   const d = diff();
   const n = d.count;
@@ -1166,6 +1336,7 @@ function buildQuestions(level){
 }
 
 /* ==================== 流程 ==================== */
+/* 进关：会话号 +1 让上一关所有还没跑完的定时器失效，然后重新生成题目。 */
 function startLevel(id){
   G.session++;
   G.level = id; G.i = 0; G.first = 0; G.busy = false;
@@ -1176,6 +1347,8 @@ function startLevel(id){
   renderQuestion();
 }
 
+/* 结算：一次答对 total-1 题以上给 3 星，total-3 题以上给 2 星，其余 1 星。
+   星星只记录历史最高值，重玩变差不掉星。 */
 function finishLevel(){
   const total = G.qs.length;
   const first = G.first;
@@ -1187,6 +1360,7 @@ function finishLevel(){
   showScreen('result');
 }
 
+/* 结算页：拿三颗星且不在最高难度时，多给一个「试试挑战」的按钮。 */
 function renderResult(stars, first, total){
   const lv = LEVELS[G.level - 1];
   const starHTML = [1,2,3].map(function(i){
@@ -1216,6 +1390,7 @@ function renderResult(stars, first, total){
   }
 }
 
+/* 切屏。离开游戏页时顺手停语音，否则念到一半的题目会跟着到首页去。 */
 function showScreen(name){
   $$('.screen').forEach(function(s){ s.classList.remove('active'); });
   $('#' + name).classList.add('active');
@@ -1230,6 +1405,7 @@ function showHome(){
   renderHome();
 }
 
+/* 首页四张关卡卡片，星星从存档里读，没有记录就是灰星。 */
 function renderHome(){
   const grid = $('#levelGrid');
   grid.innerHTML = '';
@@ -1254,7 +1430,9 @@ function renderHome(){
   });
 }
 
-/* ==================== 设置 ==================== */
+/* ==================== 设置 ====================
+   开关状态只有两个来源：S（存档里的值）和 decorOn()（按日期推出的默认值）。
+   syncSettings 把状态写回界面，事件处理只改 S 再调它，避免两处各写一份。 */
 function syncSettings(){
   $$('[data-toggle]').forEach(function(btn){
     const k = btn.dataset.toggle;
@@ -1302,12 +1480,16 @@ $('#btnReset').addEventListener('click', function(){
 });
 
 /* ==================== 其他 ==================== */
+/* 返回键、重听键；再禁掉 iOS 的双指缩放和双击放大，
+   防止孩子把界面缩花了。 */
 $('#btnBack').addEventListener('click', showHome);
 $('#btnSpeak').addEventListener('click', function(){
   say(promptEl.textContent);
 });
 document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+/* iOS 只在用户手势里允许创建/恢复 AudioContext。
+   这里在第一次触摸时悄悄唤醒，之后各处的 playMidi 才能立刻出声。 */
 document.addEventListener('pointerdown', function once(){
   audioCtx();
   document.removeEventListener('pointerdown', once);
@@ -1319,6 +1501,8 @@ applyDecor();
 syncSettings();
 showHome();
 
+/* 离线缓存只在安全上下文里注册：https 或本机调试。
+   直接双击打开 file:// 时浏览器不支持，注册会静默失败，属正常。 */
 if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('./sw.js').catch(function(){});
