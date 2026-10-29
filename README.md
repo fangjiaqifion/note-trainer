@@ -117,6 +117,13 @@ games/note-trainer/
 
 高音谱号取自 Wikimedia Commons 的 `Treble clef.svg`（作者 Tlusťa），低音谱号取自 `Clef Bass (F).svg`，都是公有领域。两条路径已烘焙进 `index.html`，运行时不需要网络。
 
+## 公开与收录
+
+- 仓库和站点都是公开的。免费账号的 GitHub Pages 只能从公开仓库发布，没有私有选项。
+- 首页写了 `noindex, nofollow, noarchive`，搜索引擎不会建索引、不留快照。
+- 这只防搜索，不防直接访问：拿到网址的人可以打开，仓库里的源码也可以读。
+- 要「只有授权的人能打开」，GitHub Pages 做不到，需要换带访问控制的托管。
+
 ## 已知限制
 
 - 网页判断不出孩子用了哪根手指；第 4 关的指法是识记与读谱，手的动作靠家长在琴上核对。
