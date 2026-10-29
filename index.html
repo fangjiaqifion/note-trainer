@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="三个音">
+<meta name="theme-color" content="#FFF7EC">
+<meta name="format-detection" content="telephone=no">
+<title>三个音 · B C D</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  :root{
+    --bg:#FFF7EC; --ink:#2B2A33; --muted:#8B8175;
+    --card:#FFFFFF; --line:#EADDCB;
+    --blue:#3C7DD9; --orange:#F29B38; --green:#3FA96F; --red:#DE6A5F; --purple:#8E5AA8;
+    --shadow:0 6px 0 rgba(180,150,110,.16), 0 14px 30px rgba(140,105,60,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); overscroll-behavior:none;
+  }
+  button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer;padding:0}
+  #app{
+    position:fixed;inset:0;display:flex;flex-direction:column;z-index:1;
+    padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);padding-bottom:env(safe-area-inset-bottom);
+  }
+  .screen{display:none;flex:1;min-height:0;flex-direction:column}
+  .screen.active{display:flex}
+
+  /* ---------- 节日装饰 ---------- */
+  .decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
+  body.halloween .decor{display:block}
+  .decor span{position:absolute;opacity:.32;filter:saturate(.95);will-change:transform}
+  .decor .witch{position:absolute;width:96px;height:auto;color:#2B2A33;opacity:.22;animation:fly 46s linear infinite}
+  .decor .witch.w2{width:64px;opacity:.15;animation-duration:62s;animation-delay:-20s}
+  .decor .witch.w3{width:112px;opacity:.12;animation-duration:53s;animation-delay:-34s}
+  @keyframes fly{
+    0%{transform:translate(-12vw,0) rotate(-6deg)}
+    50%{transform:translate(50vw,7vh) rotate(7deg)}
+    100%{transform:translate(112vw,2vh) rotate(-4deg)}
+  }
+  .decor .corner{font-size:44px;bottom:2%;animation:bob 4s ease-in-out infinite}
+  .decor .corner.c1{left:1.5%}
+  .decor .corner.c2{right:1.5%;animation-delay:-2s}
+  body.in-play .decor .corner{display:none}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+
+  .fx{position:fixed;inset:0;pointer-events:none;z-index:70}
+  .confetti{position:absolute;animation:burst .95s ease-out forwards;will-change:transform,opacity}
+  @keyframes burst{
+    0%{transform:translate(0,0) rotate(0deg) scale(.7);opacity:1}
+    100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(1.1);opacity:0}
+  }
+
+  /* ---------- 首页 ---------- */
+  .home-head{padding:26px 24px 4px;text-align:center}
+  .home-head h1{font-size:32px;margin:0;letter-spacing:3px;font-weight:800}
+  .home-head .sub{margin:8px 0 0;color:var(--muted);letter-spacing:8px;font-size:15px;font-weight:600}
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,196px);min-height:0}
+  .level-card{
+    display:flex;flex-direction:column;gap:8px;text-align:left;
+    background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 18px;
+    box-shadow:var(--shadow);transition:transform .1s;
+  }
+  .level-card:active{transform:scale(.975)}
+  .lv-top{display:flex;align-items:center;gap:10px}
+  .lv-num{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:21px;color:#fff;flex:none}
+  .lv-title{font-size:19px;font-weight:800;line-height:1.2}
+  .lv-desc{font-size:13px;color:var(--muted);line-height:1.45;margin:0}
+  .lv-stars{font-size:17px;letter-spacing:2px;color:#E7D3A5;margin-top:auto}
+  .lv-stars .on{color:#EFB63F}
+  body.halloween .lv-stars .on{color:#E98A3C}
+  .home-foot{padding:4px 20px 16px;display:flex;justify-content:center;gap:10px}
+  .ghost-btn{font-size:14px;color:var(--muted);padding:10px 18px;border-radius:14px;border:2px solid var(--line);background:#fff}
+
+  /* ---------- 游戏页 ---------- */
+  .topbar{display:flex;align-items:center;gap:10px;padding:12px 16px 2px}
+  .icon-btn{width:44px;height:44px;border-radius:14px;border:2px solid var(--line);background:#fff;font-size:19px;display:grid;place-items:center;flex:none}
+  .level-tag{font-size:15px;font-weight:700;color:var(--muted)}
+  .dots{display:flex;gap:6px;margin-left:auto}
+  .dot{width:9px;height:9px;border-radius:50%;background:#E7DAC7;transition:.2s}
+  .dot.done{background:var(--green)}
+  .dot.now{background:var(--orange);transform:scale(1.35)}
+  body.halloween .dot.done{background:#8E5AA8}
+  .prompt{display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 18px 2px;min-height:56px}
+  .prompt-text{font-size:clamp(21px,3vw,30px);font-weight:800;text-align:center;line-height:1.25}
+  .speak-btn{width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-size:16px;flex:none}
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 14px}
+  .stage.letter{flex-direction:column;justify-content:flex-end;gap:10px;padding-bottom:22px}
+  .answer{display:flex;justify-content:center;align-items:center;gap:14px;padding:6px 14px 14px;flex-wrap:wrap}
+  .answer.opts{gap:12px}
+  .answer.hold{flex-direction:column;gap:8px}
+  .stack{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:980px}
+  .cards-row{display:flex;gap:14px;width:100%;justify-content:center}
+
+  .big-letter{font-size:clamp(84px,15vw,150px);font-weight:900;line-height:1;color:var(--blue);letter-spacing:6px;text-shadow:0 8px 0 #E4EDFA}
+  body.halloween .big-letter{color:#7B4B96;text-shadow:0 8px 0 #EDE1F4}
+  .down-arrow{font-size:44px;color:#D9C6A6;line-height:1;animation:bob 1.6s ease-in-out infinite}
+  .qmark{font-size:clamp(70px,12vw,120px);font-weight:900;color:#E7DAC7}
+
+  .staff{width:100%;height:auto;max-width:840px;max-height:42vh;display:block}
+  .paper{width:auto;max-width:100%;display:inline-block;background:#fff;border:2px solid var(--line);border-radius:24px;padding:10px 12px;box-shadow:0 10px 26px rgba(150,110,60,.09)}
+  .paper .staff{height:38vh;width:auto;max-height:none;max-width:100%}
+
+  /* 键盘 */
+  .kb-wrap{width:100%;max-width:980px;margin:0 auto}
+  .kb{position:relative;width:100%;height:clamp(150px,23vh,235px);touch-action:none}
+  .kb-wrap.waiting{opacity:.45;pointer-events:none;transition:opacity .2s}
+  .kb .w{position:absolute;top:0;bottom:0;background:linear-gradient(#FFFFFF,#FBF5E9);border:1.5px solid #D9CDBA;border-radius:0 0 10px 10px;box-shadow:inset 0 -8px 0 #EFE6D6;transition:background .08s}
+  .kb .w.on{background:linear-gradient(#FFE7C2,#FFD79E)}
+  .kb .w.correct{background:linear-gradient(#D3F2E2,#A6E2C3);border-color:#3FA96F}
+  .kb .w.wrong{animation:shake .35s}
+  .kb .w.hint::after{content:"";position:absolute;inset:4px;border-radius:8px;border:3px dashed var(--orange);animation:fade 1s infinite}
+  .kb .w.target{background:linear-gradient(#FFE7C2,#FFCF8A);box-shadow:inset 0 0 0 3px var(--orange), inset 0 -8px 0 #F2C58C;animation:pulse 1.3s infinite}
+  .kb .w .middot{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:var(--orange);opacity:.9}
+  .kb .w .lbl{position:absolute;bottom:11px;left:0;right:0;text-align:center;font-size:13px;font-weight:700;color:#A8977F}
+  .kb .b{position:absolute;top:0;height:62%;background:linear-gradient(#3B3A44,#26252D);border-radius:0 0 6px 6px;box-shadow:inset 0 -5px 0 #16161B, 0 2px 4px rgba(0,0,0,.25);z-index:2;transition:background .08s}
+  .kb .b.on{background:linear-gradient(#5C5A6B,#3B3A44)}
+  .kb .b.wrong{animation:shake .35s}
+  .kb .b.target{background:linear-gradient(#F2B45F,#E08F2C);box-shadow:inset 0 -5px 0 #B8721F}
+  .kb .b.hint::after{content:"";position:absolute;inset:3px;border-radius:5px;border:3px dashed var(--orange)}
+
+  .opt{width:clamp(78px,11vw,108px);height:clamp(84px,11vw,112px);border-radius:26px;background:#fff;border:2px solid var(--line);box-shadow:0 5px 0 #EADDCB;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:transform .08s,box-shadow .08s}
+  .opt:active{transform:translateY(3px);box-shadow:0 2px 0 #EADDCB}
+  .opt .num{font-size:clamp(28px,4vw,36px);font-weight:800;line-height:1}
+  .opt .unit{font-size:12px;color:var(--muted);font-weight:600}
+  .opt .pips{font-size:8px;letter-spacing:1px;color:#E2B45C;height:10px}
+  .opt.correct{border-color:var(--green);background:#EFFAF4;box-shadow:0 5px 0 #BFE6D2}
+  .opt.wrong{border-color:var(--red);background:#FDF1F0;box-shadow:0 5px 0 #F3CFCB;animation:shake .35s}
+  .opt.hand{width:clamp(104px,16vw,140px)}
+  .opt.hand .num{font-size:clamp(30px,4vw,40px)}
+  .opts{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+
+  .card-btn{flex:1 1 0;max-width:31%;background:#fff;border:2px solid var(--line);border-radius:18px;padding:6px;box-shadow:0 5px 0 #EADDCB;transition:transform .08s}
+  .card-btn:active{transform:translateY(3px)}
+  .card-btn svg{width:100%;height:auto;display:block}
+  .card-btn.correct{border-color:var(--green);background:#F2FBF6;box-shadow:0 5px 0 #BFE6D2}
+  .card-btn.wrong{border-color:var(--red);background:#FDF1F0;box-shadow:0 5px 0 #F3CFCB;animation:shake .35s}
+
+  .beat-box{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .beat-track{display:flex;gap:12px}
+  .beat-track i{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:#fff;display:grid;place-items:center;font-style:normal;font-size:19px;font-weight:800;color:#C9B99F;transition:.15s}
+  .beat-track i.on{background:var(--orange);border-color:var(--orange);color:#fff;transform:scale(1.08);box-shadow:0 4px 0 rgba(220,140,40,.35)}
+  .beat-cap{font-size:14px;color:var(--muted);font-weight:600}
+  .echo-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;margin:2px 0 4px}
+  .echo-track{display:flex;gap:10px;justify-content:center;width:100%}
+  .echo-track i{width:16px;height:16px;border-radius:50%;background:#EADFCB;transition:.15s}
+  .echo-track i.on{background:var(--orange);transform:scale(1.18)}
+  .opt.hand .handicon{width:38px;height:44px;color:#3B3A44;margin-bottom:2px}
+  .hold-pips{display:flex;gap:10px;justify-content:center;height:22px}
+  .hold-pips i{width:16px;height:16px;border-radius:50%;background:#EDE2D1;transition:.15s}
+  .hold-pips i.on{background:var(--orange);transform:scale(1.15)}
+
+  .toast{position:fixed;left:50%;top:16.5%;transform:translate(-50%,-50%) scale(.85);opacity:0;pointer-events:none;background:#fff;border-radius:22px;padding:16px 28px;font-size:24px;font-weight:800;box-shadow:0 18px 40px rgba(90,60,20,.18);transition:opacity .16s,transform .16s;z-index:75;white-space:nowrap;max-width:90vw}
+  .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .toast.ok{color:var(--green)}
+  .toast.bad{color:var(--red)}
+
+  .res-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px}
+  .res-stars{font-size:64px;letter-spacing:8px;color:#E7D3A5}
+  .res-stars .on{color:#EFB63F;text-shadow:0 6px 0 #F7E2B8}
+  body.halloween .res-stars .on{color:#E98A3C}
+  .res-title{font-size:30px;font-weight:800}
+  .res-sub{color:var(--muted);font-size:16px;text-align:center;line-height:1.5}
+  .res-btns{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+  .primary-btn{background:var(--blue);color:#fff;font-size:18px;font-weight:700;padding:16px 28px;border-radius:18px;box-shadow:0 5px 0 #2F66B5}
+  .primary-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2F66B5}
+  .secondary-btn{background:#fff;color:var(--ink);font-size:18px;font-weight:700;padding:16px 24px;border-radius:18px;border:2px solid var(--line);box-shadow:0 5px 0 #EADDCB}
+
+  .modal{position:fixed;inset:0;background:rgba(50,35,15,.35);display:none;align-items:flex-end;justify-content:center;z-index:80}
+  .modal.open{display:flex}
+  .sheet{width:min(560px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:26px 26px 0 0;padding:22px 22px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.15)}
+  .sheet h2{margin:0 0 6px;font-size:20px}
+  .sheet .hint{color:var(--muted);font-size:13px;margin:0 0 10px;line-height:1.5}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid #F3EADC}
+  .row .name{font-size:16px;font-weight:600}
+  .row .desc{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .toggle{width:64px;height:36px;border-radius:18px;background:#E7DAC7;position:relative;transition:.15s;flex:none}
+  .toggle i{position:absolute;top:3px;left:3px;width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:.15s}
+  .toggle.on{background:var(--green)}
+  .toggle.on i{left:31px}
+  .seg{display:flex;border:2px solid var(--line);border-radius:14px;overflow:hidden;flex:none}
+  .seg button{padding:8px 13px;font-size:14px;font-weight:700;color:var(--muted)}
+  .seg button.on{background:var(--blue);color:#fff}
+  .sheet-foot{display:flex;gap:10px;margin-top:16px}
+  .sheet-foot button{flex:1;padding:14px;border-radius:16px;font-weight:700;font-size:16px}
+
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  @keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+  @keyframes fade{0%,100%{opacity:1}50%{opacity:.35}}
+
+  @media (max-width:520px){
+    .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px}
+    .lv-desc{display:none}
+    .home-head h1{font-size:26px}
+  }
+  @media (orientation:landscape) and (max-height:560px){
+    .home-head{padding-top:10px}
+    .levels{gap:10px;grid-auto-rows:minmax(0,150px)}
+    .lv-desc{display:none}
+    .lv-num{width:34px;height:34px;font-size:17px}
+  }
+</style>
+</head>
+<body>
+
+<div class="decor" aria-hidden="true">
+  <svg class="witch w1" style="top:4%" viewBox="0 -20 180 116"><g transform="translate(5 4)"><g fill="currentColor"><path d="M16 72 L-13 42 L-2 72 L-13 102 Z"/><rect x="12" y="69" width="146" height="7" rx="3.5" transform="rotate(-7 12 72)"/><path d="M101 46 C 84 52 66 66 44 80 C 68 87 96 87 108 79 C 112 66 110 54 104 45 Z"/><circle cx="105" cy="40" r="9"/><path d="M89 34 C 95 19 101 3 115 -5 C 107 11 105 23 119 34 Z"/><ellipse cx="105" cy="34" rx="18" ry="3.8"/></g></g></svg>
+  <svg class="witch w2" style="top:11%" viewBox="0 -20 180 116"><g transform="translate(5 4)"><g fill="currentColor"><path d="M16 72 L-13 42 L-2 72 L-13 102 Z"/><rect x="12" y="69" width="146" height="7" rx="3.5" transform="rotate(-7 12 72)"/><path d="M101 46 C 84 52 66 66 44 80 C 68 87 96 87 108 79 C 112 66 110 54 104 45 Z"/><circle cx="105" cy="40" r="9"/><path d="M89 34 C 95 19 101 3 115 -5 C 107 11 105 23 119 34 Z"/><ellipse cx="105" cy="34" rx="18" ry="3.8"/></g></g></svg>
+  <svg class="witch w3" style="top:1%" viewBox="0 -20 180 116"><g transform="translate(5 4)"><g fill="currentColor"><path d="M16 72 L-13 42 L-2 72 L-13 102 Z"/><rect x="12" y="69" width="146" height="7" rx="3.5" transform="rotate(-7 12 72)"/><path d="M101 46 C 84 52 66 66 44 80 C 68 87 96 87 108 79 C 112 66 110 54 104 45 Z"/><circle cx="105" cy="40" r="9"/><path d="M89 34 C 95 19 101 3 115 -5 C 107 11 105 23 119 34 Z"/><ellipse cx="105" cy="34" rx="18" ry="3.8"/></g></g></svg>
+  <span class="corner c1">🎃</span>
+  <span class="corner c2">👻</span>
+</div>
+<div class="fx" id="fx"></div>
+
+<div id="app">
+
+  <section id="home" class="screen active">
+    <div class="home-head">
+      <h1 id="homeTitle">三个音的小游戏</h1>
+      <p class="sub">B · 中央 C · D</p>
+    </div>
+    <div class="levels" id="levelGrid"></div>
+    <div class="home-foot">
+      <button class="ghost-btn" id="btnSettings">⚙️ 设置</button>
+    </div>
+  </section>
+
+  <section id="play" class="screen">
+    <div class="topbar">
+      <button class="icon-btn" id="btnBack">←</button>
+      <div class="level-tag" id="levelTag">第 1 关</div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="prompt">
+      <div class="prompt-text" id="promptText">准备好了吗</div>
+      <button class="speak-btn" id="btnSpeak" aria-label="再听一遍">🔊</button>
+    </div>
+    <div class="stage" id="stage"></div>
+    <div class="answer" id="answer"></div>
+  </section>
+
+  <section id="result" class="screen">
+    <div class="res-wrap" id="resultBox"></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="settingsModal">
+  <div class="sheet">
+    <h2>设置</h2>
+    <p class="hint">设置保存在这台设备上。难度会改变选项数量、提示时机、练习速度和题量。</p>
+    <div class="row">
+      <div><div class="name">难度</div><div class="desc">轻松：2 个选项、错一次就提示、慢速；挑战：题目 10 道、拍速更快</div></div>
+      <div class="seg" id="diffSeg">
+        <button data-diff="easy">轻松</button>
+        <button data-diff="normal">标准</button>
+        <button data-diff="hard">挑战</button>
+      </div>
+    </div>
+    <div class="row">
+      <div><div class="name">琴声</div><div class="desc">点键时发出音高</div></div>
+      <button class="toggle" data-toggle="sound"><i></i></button>
+    </div>
+    <div class="row">
+      <div><div class="name">语音念题</div><div class="desc">每题读一遍，孩子不识字也能玩</div></div>
+      <button class="toggle" data-toggle="speech"><i></i></button>
+    </div>
+    <div class="row">
+      <div><div class="name">键盘显示音名</div><div class="desc">每个白键标 C D E…，算作提示</div></div>
+      <button class="toggle" data-toggle="labels"><i></i></button>
+    </div>
+    <div class="row">
+      <div><div class="name">节日装饰</div><div class="desc">万圣节前后自动打开：飘动的蝙蝠、南瓜、答对时的彩纸</div></div>
+      <button class="toggle" data-toggle="decor"><i></i></button>
+    </div>
+    <div class="sheet-foot">
+      <button class="secondary-btn" id="btnReset">清空星星</button>
+      <button class="primary-btn" id="btnCloseSettings">好了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ==================== 基础 ==================== */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
+const randInt = n => Math.floor(Math.random() * n);
+const pick = a => a[randInt(a.length)];
+const delay = (ms, fn) => setTimeout(fn, ms);
+function shuffle(a){
+  a = a.slice();
+  for(let i = a.length - 1; i > 0; i--){ const j = randInt(i + 1); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+const LETTERS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const letterOf = m => LETTERS[((m % 12) + 12) % 12];
+const WHITE_OFF = [0,2,4,5,7,9,11];
+
+/* 三个音。B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。
+   符杆朝向表示手：右手向上，左手向下。指法写在音符的上端或下端。 */
+const NOTES = {
+  B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2 },
+  C4: { id:'C4', letter:'C', label:'中央 C', midi:60, clef:'treble', y:5.0,  hand:'R', finger:1 },
+  D4: { id:'D4', letter:'D', label:'D',      midi:62, clef:'treble', y:4.5,  hand:'R', finger:2 }
+};
+const NOTE_IDS = ['B3','C4','D4'];
+const LEDGER = { treble: { C4: 5 }, bass: {} };
+
+const VALUES = {
+  quarter: { id:'quarter', beats:1, name:'四分音符',   filled:true,  stem:true,  dot:false },
+  half:    { id:'half',    beats:2, name:'二分音符',   filled:false, stem:true,  dot:false },
+  dotted:  { id:'dotted',  beats:3, name:'附点二分音符', filled:false, stem:true,  dot:true  },
+  whole:   { id:'whole',   beats:4, name:'全音符',     filled:false, stem:false, dot:false }
+};
+const VALUE_IDS = ['quarter','half','dotted','whole'];
+const VALUE_BY_BEATS = { 1:'quarter', 2:'half', 3:'dotted', 4:'whole' };
+
+const LEVELS = [
+  { id:1, name:'找键盘', title:'键盘上的位置', desc:'B、C、D 分别在哪里', color:'#3C7DD9' },
+  { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号的 B，高音谱号的 C、D', color:'#E08A2E' },
+  { id:3, name:'时值',   title:'几拍',       desc:'四分、二分、附点二分、全音符', color:'#3FA96F' },
+  { id:4, name:'读谱',   title:'手、指与拍数', desc:'看符杆和数字，找到这个音', color:'#8E5AA8' }
+];
+
+const DIFFS = {
+  easy:   { key:'easy',   name:'轻松', options:2, hintAfter:1, bpm:52, count:8  },
+  normal: { key:'normal', name:'标准', options:3, hintAfter:2, bpm:60, count:8  },
+  hard:   { key:'hard',   name:'挑战', options:3, hintAfter:3, bpm:76, count:10 }
+};
+
+/* ==================== 设置与存档 ==================== */
+const STORE_KEY = 'bcd-piano-game-v2';
+function loadStore(){
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ return {}; }
+}
+const S = Object.assign({ sound:true, speech:true, labels:false, decor:null, difficulty:'normal', stars:{} }, loadStore());
+function saveStore(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
+}
+function diff(){ return DIFFS[S.difficulty] || DIFFS.normal; }
+function isHalloweenSeason(){
+  const d = new Date();
+  const m = d.getMonth(), day = d.getDate();
+  return (m === 9 && day >= 10) || (m === 10 && day <= 2);
+}
+function decorOn(){
+  return (S.decor === null) ? isHalloweenSeason() : !!S.decor;
+}
+function applyDecor(){
+  const on = decorOn();
+  document.body.classList.toggle('halloween', on);
+  const t = $('#homeTitle');
+  if(t) t.textContent = on ? '🎃 三个音的小游戏 🎃' : '三个音的小游戏';
+}
+
+/* ==================== 声音 ==================== */
+let AC = null;
+function audioCtx(){
+  if(!AC){
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if(!Ctor) return null;
+    AC = new Ctor();
+  }
+  if(AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function playMidi(midi, dur, vol){
+  if(!S.sound) return;
+  const c = audioCtx(); if(!c) return;
+  dur = dur || 0.9; vol = (vol == null) ? 0.2 : vol;
+  const t = c.currentTime + 0.005;
+  const f = 440 * Math.pow(2, (midi - 69) / 12);
+  const out = c.createGain();
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(vol, t + 0.012);
+  out.gain.exponentialRampToValueAtTime(0.0006, t + dur);
+  out.connect(c.destination);
+  [[1,1],[2,0.34],[3,0.13],[4,0.05]].forEach(function(p){
+    const o = c.createOscillator();
+    o.type = 'sine'; o.frequency.value = f * p[0];
+    const g = c.createGain(); g.gain.value = p[1] * 0.55;
+    o.connect(g); g.connect(out);
+    o.start(t); o.stop(t + dur + 0.1);
+  });
+}
+function startTone(midi){
+  if(!S.sound) return null;
+  const c = audioCtx(); if(!c) return null;
+  const t = c.currentTime;
+  const f = 440 * Math.pow(2, (midi - 69) / 12);
+  const out = c.createGain();
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(0.2, t + 0.02);
+  out.gain.linearRampToValueAtTime(0.11, t + 0.22);
+  out.connect(c.destination);
+  const oscs = [[1,1],[2,0.34],[3,0.13],[4,0.05]].map(function(p){
+    const o = c.createOscillator();
+    o.type = 'sine'; o.frequency.value = f * p[0];
+    const g = c.createGain(); g.gain.value = p[1] * 0.55;
+    o.connect(g); g.connect(out); o.start(t);
+    return o;
+  });
+  return {
+    stop: function(fade){
+      const now = c.currentTime;
+      const d = (fade == null) ? 0.15 : fade;
+      const cur = Math.max(0.001, out.gain.value);
+      out.gain.cancelScheduledValues(now);
+      out.gain.setValueAtTime(cur, now);
+      out.gain.exponentialRampToValueAtTime(0.0008, now + d);
+      oscs.forEach(function(o){ try { o.stop(now + d + 0.05); } catch(e){} });
+    }
+  };
+}
+
+function echoBeats(noteId, beats, host){
+  const ms = 60000 / diff().bpm;
+  const session = G.session;
+  const wrap = document.createElement('div');
+  wrap.className = 'echo-wrap';
+  const cap = document.createElement('div');
+  cap.className = 'beat-cap';
+  const track = document.createElement('div');
+  track.className = 'echo-track';
+  const dots = [];
+  for(let i = 0; i < beats; i++){
+    const d = document.createElement('i');
+    track.appendChild(d);
+    dots.push(d);
+  }
+  wrap.appendChild(cap);
+  wrap.appendChild(track);
+  host.insertBefore(wrap, host.firstChild);
+
+  for(let i = 0; i < 4; i++){
+    (function(n){
+      setTimeout(function(){ if(session !== G.session) return; cap.textContent = '预备 ' + (n + 1); clickSound(); }, n * ms);
+    })(i);
+  }
+  setTimeout(function(){
+    if(session !== G.session) return;
+    cap.textContent = VALUES[VALUE_BY_BEATS[beats]].name + '：' + beats + ' 拍';
+    dots[0].classList.add('on');
+    const tone = startTone(NOTES[noteId].midi);
+    let i = 0;
+    const timer = setInterval(function(){
+      i++;
+      if(i < beats) dots[i].classList.add('on');
+      else { clearInterval(timer); if(tone) tone.stop(0.18); }
+    }, ms);
+  }, 4 * ms);
+  return 4 * ms + beats * ms;
+}
+function clickSound(){
+  if(!S.sound) return;
+  const c = audioCtx(); if(!c) return;
+  const t = c.currentTime;
+  const o = c.createOscillator(); o.type = 'square'; o.frequency.value = 1320;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.05, t);
+  g.gain.exponentialRampToValueAtTime(0.0004, t + 0.05);
+  o.connect(g); g.connect(c.destination);
+  o.start(t); o.stop(t + 0.06);
+}
+
+/* ==================== 语音 ==================== */
+let zhVoice = null;
+let enVoice = null;
+const EN_PREFER = ['Samantha','Ava','Allison','Kathy','Karen','Moira','Tessa','Serena','Fiona','Zira','Aria','Google US English'];
+function loadVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices() || [];
+  zhVoice = vs.filter(function(v){ return /^zh[-_]CN/i.test(v.lang); })[0]
+         || vs.filter(function(v){ return /^zh/i.test(v.lang); })[0] || null;
+  const ens = vs.filter(function(v){ return /^en/i.test(v.lang); });
+  enVoice = ens.filter(function(v){
+    return EN_PREFER.some(function(name){ return v.name.indexOf(name) >= 0; });
+  })[0] || ens.filter(function(v){ return /^en[-_]US/i.test(v.lang); })[0] || ens[0] || null;
+}
+if('speechSynthesis' in window){
+  loadVoices();
+  if(speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', loadVoices);
+}
+function say(text){
+  if(!S.speech || !text || !('speechSynthesis' in window)) return;
+  if(!enVoice || !zhVoice) loadVoices();
+  try{
+    speechSynthesis.cancel();
+    const parts = String(text).split(/([A-Za-z])/).filter(function(s){ return s.length; });
+    parts.forEach(function(part){
+      const isLetter = /^[A-Za-z]$/.test(part);
+      const u = new SpeechSynthesisUtterance(part);
+      u.lang = isLetter ? 'en-US' : 'zh-CN';
+      u.rate = isLetter ? 0.85 : 0.95;
+      u.pitch = 1.02;
+      u.volume = 1;
+      if(isLetter && enVoice) u.voice = enVoice;
+      if(!isLetter && zhVoice) u.voice = zhVoice;
+      speechSynthesis.speak(u);
+    });
+  }catch(e){}
+}
+function stopSay(){
+  try { if('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e){}
+}
+
+/* ==================== 五线谱 ==================== */
+const CLEF_TREBLE = 'M 201.2 551.6 C 186.1 555.8 172.6 565.2 160.0 579.4 C 147.4 593.9 141.3 609.9 141.3 627.2 C 141.3 638.0 145.0 650.3 152.1 663.3 C 159.3 676.6 170.1 686.2 184.2 692.3 C 188.8 693.3 191.1 695.8 191.1 699.2 C 191.1 700.4 189.3 701.7 185.2 702.7 C 162.7 697.0 144.2 684.9 129.9 667.0 C 115.6 648.8 108.2 628.1 107.7 604.5 C 108.5 579.2 116.1 555.6 130.7 533.9 C 145.5 512.1 164.4 496.6 187.6 487.5 L 170.6 400.1 C 132.6 431.6 101.8 464.3 77.9 498.8 C 54.0 533.0 41.7 570.1 40.7 610.2 C 41.2 628.1 44.9 645.6 51.8 662.3 C 58.7 679.3 69.0 694.5 82.8 708.6 C 110.7 736.4 146.9 750.9 191.1 752.3 C 206.1 751.4 222.1 748.6 239.4 744.2 L 201.2 551.6 z M 218.9 549.2 L 257.4 738.3 C 295.4 723.1 314.3 689.9 314.3 639.2 C 312.1 622.2 307.2 607.0 298.8 593.5 C 290.7 579.7 279.8 568.9 266.0 561.0 C 252.2 553.1 236.7 549.2 218.9 549.2 z M 168.4 293.4 C 176.5 288.5 185.9 279.9 196.0 267.8 C 206.1 256.0 216.0 242.0 225.3 226.3 C 235.0 210.3 242.6 194.0 248.3 177.6 C 253.9 161.3 256.6 145.8 256.6 131.6 C 256.6 125.4 256.2 119.3 254.9 113.9 C 253.9 105.0 251.2 98.1 246.5 93.5 C 241.9 89.0 235.9 86.6 228.5 86.6 C 213.8 86.6 200.4 95.7 188.6 113.9 C 179.5 129.6 171.8 148.3 166.4 169.5 C 160.7 190.9 157.5 212.0 157.0 233.4 C 158.3 257.7 162.2 277.7 168.4 293.4 z M 152.9 307.7 C 141.8 267.8 135.6 227.3 134.4 185.9 C 134.6 159.4 137.3 134.5 142.5 111.4 C 147.4 88.3 154.6 68.4 163.9 51.2 C 173.1 33.9 183.7 20.9 195.5 12.1 C 206.1 4.2 213.8 0.0 217.9 0.0 C 221.1 0.0 223.9 1.2 226.3 3.4 C 228.8 5.7 232.0 9.3 235.9 14.3 C 265.3 55.8 280.1 106.0 280.1 164.5 C 280.1 192.3 276.4 219.4 269.0 246.4 C 261.8 273.2 251.2 298.8 237.2 322.7 C 222.9 346.8 206.1 367.7 186.6 385.6 L 206.6 482.5 C 217.4 481.3 224.8 480.3 229.0 480.3 C 247.8 480.3 264.5 484.3 280.1 492.1 C 295.6 500.0 308.9 510.6 319.8 524.1 C 330.6 537.4 339.0 552.6 344.9 569.8 C 350.6 587.1 353.8 605.0 353.8 623.7 C 353.8 652.7 346.1 679.3 330.9 703.1 C 315.6 727.0 292.6 744.5 261.8 755.8 C 263.8 767.8 267.2 785.3 272.4 807.7 C 277.4 830.3 281.1 848.3 283.5 861.5 C 286.0 874.8 287.0 887.6 287.0 900.1 C 287.0 919.6 282.3 936.8 272.9 952.0 C 263.3 967.3 250.5 979.1 234.2 987.5 C 218.2 995.8 200.4 1000.0 181.2 1000.0 C 154.1 1000.0 130.4 992.4 110.2 977.4 C 90.0 962.1 79.1 941.7 78.2 915.6 C 78.9 904.1 81.6 893.3 86.5 882.9 C 91.5 872.6 98.1 864.2 106.8 857.8 C 115.1 851.2 125.2 847.8 136.8 847.0 C 146.4 847.0 155.6 849.7 164.2 854.9 C 172.6 860.3 179.5 867.4 184.7 876.5 C 189.6 885.6 192.3 895.7 192.3 906.5 C 192.3 921.1 187.4 933.3 177.5 943.4 C 167.6 953.5 155.1 958.7 140.0 958.7 L 134.4 958.7 C 144.0 973.4 159.8 981.1 181.7 981.1 C 192.8 981.1 204.1 978.6 215.5 974.2 C 227.1 969.5 236.7 963.4 244.8 955.5 C 252.9 947.6 258.4 939.3 260.6 930.4 C 264.8 920.3 266.8 906.3 266.8 888.8 C 266.8 877.0 265.5 865.2 263.3 853.4 C 261.1 841.9 257.6 826.4 252.9 807.2 C 248.3 788.2 244.8 773.5 242.8 763.4 C 228.0 767.1 212.8 769.1 196.7 769.1 C 169.9 769.1 144.5 763.6 120.6 752.6 C 96.6 741.5 75.7 726.3 57.4 706.6 C 39.4 686.9 25.4 664.8 15.3 639.7 C 5.4 614.9 0.2 588.8 0.0 561.7 C 1.0 536.6 5.7 512.5 14.5 489.9 C 23.4 467.0 34.8 445.4 48.8 425.2 C 62.9 405.1 77.4 386.6 92.5 370.1 C 107.7 353.9 127.7 333.0 152.9 307.7 z';
+const CLEF_BASS = 'M567 -386c0,29,23,52,52,52s52,-23,52,-52s-23,-52,-52,-52s-52,23,-52,52z m0,250c0,29,23,52,52,52s52,-23,52,-52s-23,-52,-52,-52s-52,23,-52,52z m-323,136 c171,0,292,-86,292,-248c0,-263,-264,-415,-517,-521c-2,-2,-5,-3,-8,-3c-6,0,-11,5,-11,11c0,3,1,6,3,8c203,118,415,265,415,494c0,121,-64,237,-174,237c-79,0,-138,-57,-164,-133 c14,8,28,13,43,13c55,0,100,-45,100,-100c0,-58,-44,-107,-100,-107c-60,0,-112,48,-112,107c0,132,103,242,233,242z';
+const INK = '#26252D';
+
+function staffSVG(o){
+  o = o || {};
+  const noteId = o.noteId || 'C4';
+  const n = NOTES[noteId];
+  const clef = o.clef || n.clef;
+  const valueId = o.value || 'quarter';
+  const v = VALUES[valueId];
+  const compact = !!o.compact;
+  const noteX = o.noteX || (compact ? 6.4 : 8.9);
+  const lineEnd = compact ? 11.7 : 14.6;
+  const y = n.y;
+  let g = '';
+
+  for(let i = 0; i < 5; i++){
+    g += '<line x1="0" y1="' + i + '" x2="' + lineEnd + '" y2="' + i + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
+  }
+
+  if(clef === 'treble'){
+    g += '<g transform="translate(0.45 -1.26) scale(0.0071)"><path d="' + CLEF_TREBLE + '" fill="' + INK + '"/></g>';
+  }else{
+    g += '<g transform="translate(0.5 -0.05) scale(0.004016 -0.004016)"><path d="' + CLEF_BASS + '" fill="' + INK + '"/></g>';
+  }
+
+  const ledger = (LEDGER[clef] || {})[noteId];
+  if(ledger != null){
+    g += '<line x1="' + (noteX - 1.15) + '" y1="' + ledger + '" x2="' + (noteX + 1.15) + '" y2="' + ledger + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
+  }
+
+  const up = n.hand === 'R';
+  if(v.stem){
+    const sx = up ? noteX + 0.55 : noteX - 0.55;
+    const y2 = up ? y - 3.45 : y + 3.45;
+    g += '<line x1="' + sx + '" y1="' + (up ? y - 0.02 : y + 0.02) + '" x2="' + sx + '" y2="' + y2 + '" stroke="' + INK + '" stroke-width="0.105" stroke-linecap="round"/>';
+  }
+  if(v.dot){
+    const dy = (y === Math.round(y)) ? y - 0.5 : y;
+    g += '<circle cx="' + (noteX + 1.38) + '" cy="' + dy + '" r="0.165" fill="' + INK + '"/>';
+  }
+  const rx = (v.id === 'whole') ? 0.7 : 0.58;
+  g += '<ellipse cx="' + noteX + '" cy="' + y + '" rx="' + rx + '" ry="0.4" transform="rotate(-18 ' + noteX + ' ' + y + ')" fill="' + (v.filled ? INK : 'none') + '" stroke="' + INK + '" stroke-width="0.16"/>';
+
+  if(o.finger){
+    let fy;
+    if(y >= 4) fy = y + 1.05;
+    else if(y <= 0) fy = y - 1.05;
+    else fy = up ? y - 1.05 : y + 1.05;
+    g += '<text x="' + noteX + '" y="' + (fy + 0.34) + '" text-anchor="middle" font-family="PingFang SC, Helvetica, Arial" font-size="0.98" font-weight="700" fill="#7B3FA0" stroke="#FFFFFF" stroke-width="0.26" paint-order="stroke" stroke-linejoin="round">' + n.finger + '</text>';
+  }
+
+  const vb = compact ? '-0.35 -1.95 12.5 8.6' : '-0.35 -1.95 15.3 8.6';
+  return '<svg class="staff" viewBox="' + vb + '" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
+}
+
+function staffBlock(opts){
+  return '<div class="paper">' + staffSVG(opts) + '</div>';
+}
+
+/* ==================== 键盘 ==================== */
+function buildKeyboard(kb, opts){
+  opts = opts || {};
+  kb.innerHTML = '';
+  const N = 15, w = 100 / N;
+  let i, oct, deg, midi, el;
+
+  for(i = 0; i < N; i++){
+    oct = 3 + Math.floor(i / 7); deg = i % 7;
+    midi = 12 * (oct + 1) + WHITE_OFF[deg];
+    el = document.createElement('div');
+    el.className = 'w';
+    el.dataset.midi = midi;
+    el.style.left = (i * w) + '%';
+    el.style.width = w + '%';
+    if(midi === 60){ el.classList.add('midc'); el.insertAdjacentHTML('beforeend', '<i class="middot"></i>'); }
+    if(opts.labels) el.insertAdjacentHTML('beforeend', '<span class="lbl">' + letterOf(midi) + '</span>');
+    if(opts.target === midi) el.classList.add('target');
+    kb.appendChild(el);
+  }
+  for(i = 0; i < N; i++){
+    deg = i % 7;
+    if([0,1,3,4,5].indexOf(deg) < 0) continue;
+    midi = 12 * (3 + Math.floor(i / 7) + 1) + WHITE_OFF[deg] + 1;
+    el = document.createElement('div');
+    el.className = 'b';
+    el.dataset.midi = midi;
+    el.style.left = ((i + 1) * w - 1.95) + '%';
+    el.style.width = '3.9%';
+    if(opts.target === midi) el.classList.add('target');
+    kb.appendChild(el);
+  }
+}
+
+function makeKB(opts){
+  opts = opts || {};
+  const wrap = document.createElement('div');
+  wrap.className = 'kb-wrap';
+  const kb = document.createElement('div');
+  kb.className = 'kb';
+  buildKeyboard(kb, opts);
+  wrap.appendChild(kb);
+
+  kb.addEventListener('pointerdown', function(e){
+    const el = e.target.closest ? e.target.closest('.w,.b') : null;
+    if(!el) return;
+    e.preventDefault();
+    const midi = Number(el.dataset.midi);
+    el.classList.add('on');
+    playMidi(midi, 0.9);
+    if(opts.onDown) opts.onDown(midi, el);
+  }, { passive:false });
+
+  ['pointerup','pointercancel','pointerleave'].forEach(function(ev){
+    kb.addEventListener(ev, function(e){
+      const el = e.target.closest ? e.target.closest('.w,.b') : null;
+      if(!el) return;
+      el.classList.remove('on');
+      if(opts.onUp) opts.onUp(Number(el.dataset.midi), el);
+    });
+  });
+  return wrap;
+}
+
+/* ==================== 通用 UI ==================== */
+const stageEl = $('#stage');
+const answerEl = $('#answer');
+const promptEl = $('#promptText');
+const toastEl = $('#toast');
+const fxEl = $('#fx');
+let toastTimer = null;
+
+function setPrompt(text, speakText){
+  promptEl.textContent = text;
+  if(S.speech && speakText !== false) say(speakText || text);
+}
+function toast(text, kind){
+  toastEl.textContent = text;
+  toastEl.className = 'toast show ' + (kind || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.className = 'toast'; }, 1300);
+}
+const PRAISE = ['对啦','真棒','好听','好厉害','就是这样','很好'];
+function praise(){ return pick(PRAISE); }
+
+function confetti(){
+  if(!decorOn()) return;
+  const bits = ['🍬','⭐','🎃','🦇','✨','🍭'];
+  for(let i = 0; i < 12; i++){
+    const s = document.createElement('i');
+    s.className = 'confetti';
+    s.textContent = pick(bits);
+    s.style.left = (46 + Math.random() * 8) + '%';
+    s.style.top = (30 + Math.random() * 8) + '%';
+    s.style.fontSize = (14 + Math.random() * 14) + 'px';
+    s.style.setProperty('--dx', (Math.random() * 320 - 160).toFixed(0) + 'px');
+    s.style.setProperty('--dy', (-60 - Math.random() * 170).toFixed(0) + 'px');
+    s.style.setProperty('--rot', (Math.random() * 360).toFixed(0) + 'deg');
+    fxEl.appendChild(s);
+    (function(el){ setTimeout(function(){ el.remove(); }, 1000); })(s);
+  }
+}
+
+/* ==================== 游戏状态 ==================== */
+const G = { level:1, qs:[], i:0, first:0, q:null, busy:false, session:0 };
+
+function updateDots(){
+  const dots = $('#dots');
+  dots.innerHTML = '';
+  for(let i = 0; i < G.qs.length; i++){
+    const d = document.createElement('i');
+    d.className = 'dot' + (i < G.i ? ' done' : (i === G.i ? ' now' : ''));
+    dots.appendChild(d);
+  }
+}
+
+function judge(ok, msg, wait){
+  const q = G.q;
+  if(!q || q.answered || G.busy) return;
+  if(ok){
+    const session = G.session;
+    q.answered = true;
+    G.busy = true;
+    if(!q.wrong) G.first++;
+    toast('✓ ' + (msg || praise()), 'ok');
+    confetti();
+    delay(wait || 1050, function(){
+      if(session !== G.session) return;
+      G.busy = false;
+      G.i++;
+      if(G.i >= G.qs.length) finishLevel();
+      else renderQuestion();
+    });
+  }else{
+    q.wrong = (q.wrong || 0) + 1;
+    toast(msg && q.wrong === 1 ? msg : '再试一次', 'bad');
+    if(q.wrong >= diff().hintAfter && q.reveal) q.reveal();
+  }
+}
+
+function renderQuestion(){
+  const q = G.qs[G.i];
+  G.q = q;
+  G.busy = false;
+  answerEl.className = 'answer';
+  stageEl.className = 'stage';
+  stageEl.innerHTML = '';
+  answerEl.innerHTML = '';
+  updateDots();
+  q.render();
+}
+
+/* ==================== 题目 ==================== */
+function qFindKey(letter){
+  return {
+    kind:'find', letter:letter, wrong:0,
+    render: function(){
+      setPrompt('找到 ' + letter, '找到 ' + letter);
+      stageEl.classList.add('letter');
+      stageEl.innerHTML = '<div class="big-letter">' + letter + '</div><div class="down-arrow">↓</div>';
+      const kb = makeKB({
+        labels: S.labels,
+        onDown: function(midi, el){
+          if(G.q.answered) return;
+          if(letterOf(midi) === letter){
+            el.classList.add('correct');
+            judge(true, '对！这是 ' + letter);
+          }else{
+            el.classList.add('wrong');
+            setTimeout(function(){ el.classList.remove('wrong'); }, 420);
+            judge(false);
+          }
+        }
+      });
+      answerEl.appendChild(kb);
+    },
+    reveal: function(){
+      $$('.kb .w, .kb .b', answerEl).forEach(function(k){
+        if(letterOf(Number(k.dataset.midi)) === letter) k.classList.add('hint');
+      });
+    }
+  };
+}
+
+function qStaffToKey(noteId, valueId){
+  const note = NOTES[noteId];
+  return {
+    kind:'s2k', noteId:noteId, valueId:valueId || 'quarter', wrong:0,
+    render: function(){
+      setPrompt('这个音在键盘上哪里？', '这个音在键盘上哪里');
+      stageEl.innerHTML = staffBlock({ noteId:noteId, value: valueId || 'quarter' });
+      const kb = makeKB({
+        labels: S.labels,
+        onDown: function(midi, el){
+          if(G.q.answered) return;
+          if(midi === note.midi){
+            el.classList.add('correct');
+            judge(true, '对！这是 ' + note.label);
+          }else{
+            el.classList.add('wrong');
+            setTimeout(function(){ el.classList.remove('wrong'); }, 420);
+            judge(false);
+          }
+        }
+      });
+      answerEl.appendChild(kb);
+    },
+    reveal: function(){
+      $$('.kb .w, .kb .b', answerEl).forEach(function(k){
+        if(Number(k.dataset.midi) === note.midi) k.classList.add('hint');
+      });
+    }
+  };
+}
+
+function qKeyToStaff(noteId){
+  const note = NOTES[noteId];
+  const n = diff().options >= 3 ? 3 : 2;
+  const others = shuffle(NOTE_IDS.filter(function(x){ return x !== noteId; })).slice(0, n - 1);
+  const order = shuffle([noteId].concat(others));
+
+  return {
+    kind:'k2s', noteId:noteId, wrong:0,
+    render: function(){
+      setPrompt('这个键在五线谱上是哪一个？', '这个键在五线谱上是哪一个');
+      const stack = document.createElement('div');
+      stack.className = 'stack';
+      stack.appendChild(makeKB({ labels: S.labels, target: note.midi }));
+      const row = document.createElement('div');
+      row.className = 'cards-row';
+      order.forEach(function(id){
+        const b = document.createElement('button');
+        b.className = 'card-btn';
+        b.dataset.note = id;
+        b.innerHTML = staffSVG({ noteId:id, compact:true });
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if(id === noteId){
+            b.classList.add('correct');
+            playMidi(note.midi, 0.9);
+            judge(true, '对！这是 ' + note.label);
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false);
+          }
+        });
+        row.appendChild(b);
+      });
+      stack.appendChild(row);
+      stageEl.appendChild(stack);
+    },
+    reveal: function(){
+      $$('.card-btn', stageEl).forEach(function(c){
+        if(c.dataset.note === noteId) c.classList.add('correct');
+      });
+      setPrompt(note.label + ' 在这里', false);
+    }
+  };
+}
+
+function beatsOptions(correct, n){
+  const pool = [1,2,3,4].filter(function(x){ return x !== correct; });
+  return shuffle([correct].concat(shuffle(pool).slice(0, n - 1)));
+}
+
+function qBeats(noteId, valueId){
+  const v = VALUES[valueId];
+  const opts = beatsOptions(v.beats, diff().options === 2 ? 2 : 4);
+  return {
+    kind:'beats', noteId:noteId, valueId:valueId, wrong:0,
+    render: function(){
+      setPrompt('这个音符是几拍？', '这个音符是几拍');
+      stageEl.innerHTML = staffBlock({ noteId:noteId, value:valueId });
+      const box = document.createElement('div');
+      box.className = 'opts';
+      opts.forEach(function(n){
+        const b = document.createElement('button');
+        b.className = 'opt';
+        b.innerHTML = '<span class="num">' + n + '</span><span class="unit">拍</span><span class="pips">' + '●'.repeat(n) + '</span>';
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if(n === v.beats){
+            b.classList.add('correct');
+            const total = echoBeats(noteId, n, answerEl);
+            judge(true, '对！' + v.name + '是 ' + v.beats + ' 拍', total + 400);
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false);
+          }
+        });
+        box.appendChild(b);
+      });
+      answerEl.appendChild(box);
+    },
+    reveal: function(){
+      setPrompt(v.name + '：' + v.beats + ' 拍', false);
+    }
+  };
+}
+
+function qWhichShape(noteId, valueId){
+  const v = VALUES[valueId];
+  const others = shuffle(VALUE_IDS.filter(function(x){ return x !== valueId; })).slice(0, 2);
+  const choices = shuffle([valueId].concat(others));
+  return {
+    kind:'shape', noteId:noteId, valueId:valueId, wrong:0,
+    render: function(){
+      setPrompt('哪个是' + v.name + '？', '哪个是' + v.name);
+      stageEl.innerHTML = '<div class="qmark">?</div>';
+      answerEl.classList.add('cards');
+      choices.forEach(function(id){
+        const b = document.createElement('button');
+        b.className = 'card-btn';
+        b.dataset.value = id;
+        b.innerHTML = staffSVG({ noteId:noteId, value:id, compact:true });
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if(id === valueId){
+            b.classList.add('correct');
+            const total2 = echoBeats(noteId, v.beats, answerEl);
+            judge(true, '对！' + v.name + '，' + v.beats + ' 拍', total2 + 400);
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false);
+          }
+        });
+        answerEl.appendChild(b);
+      });
+    },
+    reveal: function(){
+      $$('.card-btn', answerEl).forEach(function(b, idx){
+        if(choices[idx] === valueId) b.classList.add('correct');
+      });
+    }
+  };
+}
+
+function handIcon(side){
+  const mirror = (side === 'L') ? ' transform="scale(-1,1) translate(-64,0)"' : '';
+  return '<svg class="handicon" viewBox="0 0 64 74" aria-hidden="true"><g fill="currentColor"' + mirror + '>' +
+    '<rect x="17" y="26" width="8.5" height="22" rx="4.2"/>' +
+    '<rect x="27" y="14" width="8.5" height="34" rx="4.2"/>' +
+    '<rect x="37" y="19" width="8.5" height="29" rx="4.2"/>' +
+    '<rect x="47" y="27" width="8.5" height="21" rx="4.2"/>' +
+    '<rect x="2" y="42" width="20" height="10" rx="5" transform="rotate(-42 12 47)"/>' +
+    '<rect x="17" y="40" width="38.5" height="26" rx="12"/>' +
+    '</g></svg>';
+}
+
+function qHand(noteId){
+  const n = NOTES[noteId];
+  const right = n.hand === 'R';
+  return {
+    kind:'hand', noteId:noteId, wrong:0,
+    render: function(){
+      setPrompt('这个音用哪只手？', '这个音用哪只手');
+      stageEl.innerHTML = staffBlock({ noteId:noteId, finger:true });
+      const box = document.createElement('div');
+      box.className = 'opts';
+      [['左手','L'], ['右手','R']].forEach(function(pair){
+        const b = document.createElement('button');
+        b.className = 'opt hand';
+        b.innerHTML = handIcon(pair[1]) + '<span class="unit">' + pair[0] + '</span>';
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if((pair[1] === 'R') === right){
+            b.classList.add('correct');
+            judge(true, pair[0] + '，符杆' + (right ? '朝上' : '朝下'));
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false);
+          }
+        });
+        box.appendChild(b);
+      });
+      answerEl.appendChild(box);
+    },
+    reveal: function(){
+      setPrompt('符杆朝' + (right ? '上' : '下') + '，是' + (right ? '右' : '左') + '手', false);
+    }
+  };
+}
+
+function qPosition(noteId){
+  const n = NOTES[noteId];
+  return {
+    kind:'pos', noteId:noteId, wrong:0,
+    render: function(){
+      setPrompt('点出这个音', '点出这个音');
+      stageEl.innerHTML = staffBlock({ noteId:noteId, finger:true });
+      const kb = makeKB({
+        labels: S.labels,
+        onDown: function(midi, el){
+          if(G.q.answered) return;
+          if(midi === n.midi){
+            el.classList.add('correct');
+            judge(true, (n.hand === 'R' ? '右手' : '左手') + ' ' + n.finger + ' 指，' + n.label);
+          }else{
+            el.classList.add('wrong');
+            setTimeout(function(){ el.classList.remove('wrong'); }, 420);
+            judge(false);
+          }
+        }
+      });
+      answerEl.appendChild(kb);
+    },
+    reveal: function(){
+      $$('.kb .w, .kb .b', answerEl).forEach(function(k){
+        if(Number(k.dataset.midi) === n.midi) k.classList.add('hint');
+      });
+    }
+  };
+}
+
+
+function qHold(noteId, beats){
+  const note = NOTES[noteId];
+  const MS = Math.round(60000 / diff().bpm);
+  let count = 0, timer = null, done = false, tone = null, pressAt = 0;
+
+  return {
+    kind:'hold', noteId:noteId, beats:beats, wrong:0,
+    render: function(){
+      setPrompt('按住这个音，弹够它该有的长度', '按住这个音，弹够它该有的长度');
+      stageEl.innerHTML = staffBlock({ noteId:noteId, value: VALUE_BY_BEATS[beats], finger:true });
+
+      const box = document.createElement('div');
+      box.className = 'beat-box';
+      const track = document.createElement('div');
+      track.className = 'beat-track';
+      const cap = document.createElement('div');
+      cap.className = 'beat-cap';
+      cap.textContent = '按住琴键，每过一拍亮一颗';
+      box.appendChild(track);
+      box.appendChild(cap);
+      answerEl.classList.add('hold');
+      answerEl.appendChild(box);
+
+      let ready = false;
+      const session = G.session;
+      for(let i = 0; i < 4; i++){
+        (function(n){
+          setTimeout(function(){ if(session !== G.session) return; cap.textContent = '预备 ' + (n + 1); clickSound(); }, n * MS);
+        })(i);
+      }
+
+      function paint(){
+        while(track.children.length < Math.min(count, beats)){
+          const d = document.createElement('i');
+          d.textContent = String(track.children.length + 1);
+          track.appendChild(d);
+        }
+        Array.prototype.forEach.call(track.children, function(el, i){
+          el.classList.toggle('on', i < count);
+        });
+        if(count) cap.textContent = '已经数到 ' + Math.min(count, beats) + ' 拍';
+      }
+      function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+      function releaseTone(){ if(tone){ tone.stop(0.14); tone = null; } }
+      function clearTrack(){
+        count = 0;
+        track.innerHTML = '';
+        cap.textContent = '按住琴键，每过一拍亮一颗';
+      }
+
+      const kb = makeKB({
+        onDown: function(midi){
+          if(done || !ready) return;
+          if(midi !== note.midi){
+            judge(false, '先找到这个音');
+            return;
+          }
+          stop(); releaseTone();
+          count = 0; pressAt = performance.now();
+          track.innerHTML = '';
+          cap.textContent = '按住中…';
+          tone = startTone(midi);
+          timer = setInterval(function(){
+            count++;
+            paint();
+          }, MS);
+        },
+        onUp: function(){
+          if(done) return;
+          stop();
+          if(!pressAt) return;
+          const held = (performance.now() - pressAt) / MS;
+          pressAt = 0;
+          releaseTone();
+          if(held >= beats - 0.2){
+            done = true;
+            judge(true, '对！' + VALUES[VALUE_BY_BEATS[beats]].name + '是 ' + beats + ' 拍');
+          }else{
+            const got = Math.min(beats, Math.max(1, Math.round(held)));
+            judge(false, '这个音符是 ' + beats + ' 拍，你按住了 ' + got + ' 拍');
+            setTimeout(function(){ if(!done) clearTrack(); }, 1500);
+          }
+        }
+      });
+      kb.classList.add('waiting');
+      answerEl.appendChild(kb);
+      setTimeout(function(){
+        if(session !== G.session) return;
+        ready = true;
+        kb.classList.remove('waiting');
+        cap.textContent = '开始，按住';
+      }, 4 * MS + 80);
+    },
+    reveal: function(){
+      setPrompt('看谱面：这个音符是 ' + beats + ' 拍', false);
+    }
+  };
+}
+
+/* ==================== 出题（由易到难） ==================== */
+function repeatTo(arr, n){
+  const out = [];
+  while(out.length < n) out.push.apply(out, shuffle(arr));
+  return out.slice(0, n);
+}
+
+function buildQuestions(level){
+  const d = diff();
+  const n = d.count;
+  let qs = [];
+
+  if(level === 1){
+    const base = ['C','C','C','B','B','B','D','D','C','B'];
+    qs = shuffle(base.slice(0, n)).map(qFindKey);
+  }else if(level === 2){
+    const ids = shuffle(repeatTo(NOTE_IDS, n));
+    const half = Math.ceil(n / 2);
+    ids.slice(0, half).forEach(function(id){ qs.push(qStaffToKey(id)); });
+    ids.slice(half).forEach(function(id){ qs.push(qKeyToStaff(id)); });
+    while(qs.length < n) qs.push(qKeyToStaff(pick(NOTE_IDS)));
+  }else if(level === 3){
+    const vals = shuffle(repeatTo(VALUE_IDS, n));
+    for(let i = 0; i < n; i++){
+      const id = pick(NOTE_IDS);
+      qs.push(i % 3 === 2 ? qWhichShape(id, vals[i]) : qBeats(id, vals[i]));
+    }
+  }else{
+    const ids = shuffle(repeatTo(NOTE_IDS, n));
+    const beatsPool = shuffle([2,3,4,2]);
+    const holds = n >= 10 ? 4 : 3;
+    const hands = 2;
+    const pos = n - hands - holds;
+    for(let i = 0; i < hands; i++) qs.push(qHand(ids[i]));
+    for(let i = 0; i < pos; i++) qs.push(qPosition(ids[hands + i]));
+    for(let i = 0; i < holds; i++) qs.push(qHold(ids[(hands + pos + i) % ids.length], beatsPool[i % 4]));
+  }
+
+  qs = shuffle(qs);
+  if(qs.length > 1 && qs[0].kind === 'hold'){
+    const j = qs.findIndex(function(q){ return q.kind !== 'hold'; });
+    if(j > 0){ const t = qs[0]; qs[0] = qs[j]; qs[j] = t; }
+  }
+  return qs;
+}
+
+/* ==================== 流程 ==================== */
+function startLevel(id){
+  G.session++;
+  G.level = id; G.i = 0; G.first = 0; G.busy = false;
+  G.qs = buildQuestions(id);
+  $('#levelTag').textContent = '第 ' + id + ' 关 · ' + LEVELS[id - 1].name;
+  document.body.classList.add('in-play');
+  showScreen('play');
+  renderQuestion();
+}
+
+function finishLevel(){
+  const total = G.qs.length;
+  const first = G.first;
+  const stars = first >= total - 1 ? 3 : (first >= total - 3 ? 2 : 1);
+  const prev = S.stars[G.level] || 0;
+  if(stars > prev) S.stars[G.level] = stars;
+  saveStore();
+  renderResult(stars, first, total);
+  showScreen('result');
+}
+
+function renderResult(stars, first, total){
+  const lv = LEVELS[G.level - 1];
+  const starHTML = [1,2,3].map(function(i){
+    return '<span class="' + (i <= stars ? 'on' : '') + '">★</span>';
+  }).join('');
+  const title = stars === 3 ? '全对，太棒了' : (stars === 2 ? '很不错' : '再练一次会更熟');
+  const canLevelUp = stars === 3 && S.difficulty !== 'hard';
+  const box = $('#resultBox');
+  box.className = 'res-wrap';
+  box.innerHTML =
+    '<div class="res-stars">' + starHTML + '</div>' +
+    '<div class="res-title">' + title + '</div>' +
+    '<div class="res-sub">第 ' + G.level + ' 关 · ' + lv.title + '　一次答对 ' + first + ' / ' + total +
+      '<br>当前难度：' + diff().name + '</div>' +
+    '<div class="res-btns">' +
+      '<button class="primary-btn" id="btnAgain">再练一次</button>' +
+      '<button class="secondary-btn" id="btnHome">选别的关</button>' +
+      (canLevelUp ? '<button class="secondary-btn" id="btnHarder">试试挑战</button>' : '') +
+    '</div>';
+  $('#btnAgain').addEventListener('click', function(){ startLevel(G.level); });
+  $('#btnHome').addEventListener('click', showHome);
+  if(canLevelUp){
+    $('#btnHarder').addEventListener('click', function(){
+      S.difficulty = (S.difficulty === 'easy') ? 'normal' : 'hard';
+      saveStore(); syncSettings(); startLevel(G.level);
+    });
+  }
+}
+
+function showScreen(name){
+  $$('.screen').forEach(function(s){ s.classList.remove('active'); });
+  $('#' + name).classList.add('active');
+  if(name !== 'play'){
+    document.body.classList.remove('in-play');
+    stopSay();
+  }
+}
+
+function showHome(){
+  showScreen('home');
+  renderHome();
+}
+
+function renderHome(){
+  const grid = $('#levelGrid');
+  grid.innerHTML = '';
+  LEVELS.forEach(function(lv){
+    const stars = S.stars[lv.id] || 0;
+    const b = document.createElement('button');
+    b.className = 'level-card';
+    b.innerHTML =
+      '<div class="lv-top">' +
+        '<div class="lv-num" style="background:' + lv.color + '">' + lv.id + '</div>' +
+        '<div class="lv-title">' + lv.title + '</div>' +
+      '</div>' +
+      '<p class="lv-desc">' + lv.desc + '</p>' +
+      '<div class="lv-stars">' +
+        [1,2,3].map(function(i){ return '<span class="' + (i <= stars ? 'on' : '') + '">★</span>'; }).join('') +
+      '</div>';
+    b.addEventListener('click', function(){
+      audioCtx();
+      startLevel(lv.id);
+    });
+    grid.appendChild(b);
+  });
+}
+
+/* ==================== 设置 ==================== */
+function syncSettings(){
+  $$('[data-toggle]').forEach(function(btn){
+    const k = btn.dataset.toggle;
+    const on = (k === 'decor') ? decorOn() : !!S[k];
+    btn.classList.toggle('on', on);
+  });
+  $$('#diffSeg button').forEach(function(btn){
+    btn.classList.toggle('on', btn.dataset.diff === S.difficulty);
+  });
+}
+$$('[data-toggle]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    const k = btn.dataset.toggle;
+    if(k === 'decor'){ S.decor = !decorOn(); }
+    else { S[k] = !S[k]; }
+    saveStore();
+    syncSettings();
+    applyDecor();
+    if(k === 'sound' && S.sound) playMidi(60, 0.6);
+    if(k === 'speech' && S.speech) say('语音已打开');
+  });
+});
+$$('#diffSeg button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    S.difficulty = btn.dataset.diff;
+    saveStore();
+    syncSettings();
+  });
+});
+$('#btnSettings').addEventListener('click', function(){
+  syncSettings();
+  $('#settingsModal').classList.add('open');
+});
+$('#btnCloseSettings').addEventListener('click', function(){
+  $('#settingsModal').classList.remove('open');
+});
+$('#settingsModal').addEventListener('click', function(e){
+  if(e.target === this) this.classList.remove('open');
+});
+$('#btnReset').addEventListener('click', function(){
+  S.stars = {};
+  saveStore();
+  renderHome();
+  toast('已清空', 'ok');
+});
+
+/* ==================== 其他 ==================== */
+$('#btnBack').addEventListener('click', showHome);
+$('#btnSpeak').addEventListener('click', function(){
+  say(promptEl.textContent);
+});
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+document.addEventListener('pointerdown', function once(){
+  audioCtx();
+  document.removeEventListener('pointerdown', once);
+}, { once:true });
+
+window.__dbg = { G: G, NOTES: NOTES, VALUES: VALUES, voice: function(){ return [zhVoice && zhVoice.name, enVoice && enVoice.name]; } };
+applyDecor();
+syncSettings();
+showHome();
+
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
+})();
+</script>
+</body>
+</html>

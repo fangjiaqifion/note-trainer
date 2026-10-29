@@ -1,0 +1,16 @@
+{
+  "name": "三个音 · B C D",
+  "short_name": "三个音",
+  "description": "B、中央 C、D 三个音的键盘位置、五线谱、时值与指法练习",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFF7EC",
+  "theme_color": "#FFF7EC",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
