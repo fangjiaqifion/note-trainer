@@ -39,12 +39,23 @@ Stars and settings live in `localStorage` on the device.
 |---|---|---|
 | 1 · Find the key | A letter (B / C / D) is shown; tap it on either keyboard | Any octave. This level tests the letter, not the register |
 | 2 · Staff ↔ keyboard | Two directions alternate: read a note and tap a key, or read a highlighted key and pick the matching staff image | Exact register, and the correct clef |
-| 3 · How many beats | Read the notehead and stem to choose 1–4 beats, or answer "which one is a half note?" | Quarter 1, half 2, dotted half 3, whole 4. After a correct answer the note sounds for its real length and a dot lights up on every beat |
-| 4 · Hand, finger, hold | Read the stem to choose the hand, read the fingering digit, and hold a key for the note's full length | Hand and finger per the table below. Holding is judged by elapsed beats, with 0.2 beat of tolerance |
+| 3 · How many beats | Read the notehead and stem to choose 1–4 beats, or answer "which one is a half note?" A correct count is followed by holding the key for that many beats | Quarter 1, half 2, dotted half 3, whole 4. In this level the hold is practice, not a test: the key is already highlighted, and releasing early only says how long the note is and lets the child try again |
+| 4 · Hand, finger, hold | Read the stem to choose the hand, read the fingering digit, and hold a key for the note's full length | Hand and finger per the table below. Holding is judged by elapsed beats, with 0.3 beat of tolerance |
 
 Level 4 does not reveal the beat count: the player has to read it from the note. While a key
 is held, one dot lights up per beat and the tone keeps sounding; releasing early gets
 "This note is 3 beats, you held 2".
+
+## Holding a note
+
+Levels 3 and 4 share the same hold interaction (`holdPad` in `index.html`). There is no
+count-in: the child presses whenever ready, and the press itself is beat 1. Each beat
+lights one dot and clicks, and the tone stops by itself at the note's real length, which is
+the signal to let go. Releasing too early says how long the note is and keeps the same
+question on screen, so the child can try again immediately.
+
+The tolerance is 0.3 beat. Sight-reading in time is hard for a four-year-old, and a release
+that is a little late is not the error this level is testing.
 
 ## Notation conventions
 
@@ -60,14 +71,15 @@ to be relearned when the child moves back to paper.
 
 ## Difficulty
 
-| Setting | Options | Hint after | Tempo | Questions |
+| Setting | Options (level 3 / level 2) | Hint after | Tempo | Questions |
 |---|---|---|---|---|
-| Easy | 2 | 1 mistake | 52 BPM | 8 |
-| Normal | 3–4 | 2 mistakes | 60 BPM | 8 |
-| Hard | 3–4 | 3 mistakes | 76 BPM | 10 |
+| Easy | 2 / 2 | 1 mistake | 52 BPM | 8 |
+| Normal | 4 / 3 | 2 mistakes | 60 BPM | 8 |
+| Hard | 4 / 3 | 3 mistakes | 76 BPM | 10 |
 
-Three stars requires 7–8 first-try answers (9–10 on Hard), two stars 5–6, otherwise one.
-Stars only ever go up. Three stars unlocks a "try harder" button on the results screen.
+Three stars requires all but one first-try answer (7/8 on Easy and Normal, 9/10 on Hard);
+two stars requires all but three (5/8 or 7/10); anything lower is one star. Stars only ever
+go up. Three stars unlocks a "try harder" button on the results screen.
 
 Hints are never automatic at the start: after enough mistakes the correct key is highlighted,
 or the answer is shown in the prompt, but the player is never told "that is wrong".
@@ -125,6 +137,15 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-10-29 | Level 3 now ends with holding the key: pick the beat count, then hold for that many beats |
+| 2026-10-29 | Note letters are spoken as letter names ("bee", "see"), never "capital B" |
+| 2026-10-29 | "弹" is read tán, not dàn (speech-only substitution; the screen still shows 弹) |
+| 2026-10-29 | Redrew the left/right hand icons: clear thumb, wrist, correct finger lengths |
+| 2026-10-29 | Fixed: a finger sliding off the keyboard left the key lit and the tone ringing |
+| 2026-10-29 | Fixed: leaving a level mid-hold left the tone playing |
+| 2026-10-29 | Removed the four-beat count-in before a hold; pressing starts the beat |
+| 2026-10-29 | Staff shrinks when the keyboard is on screen, so the keyboard fits on iPad portrait |
+| 2026-10-29 | Offline cache bumped to v2; removed duplicate manifest icon entry |
 | 2026-10-29 | Added `noindex`, so the public site stays out of search results |
 | 2026-10-29 | Added a "试听" (sound check) row in Settings, to diagnose the iPad mute switch |
 | 2026-10-29 | Added structural comments throughout `index.html`; no behavior change |
@@ -206,7 +227,7 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
   device from a broken page.
 - Speech depends on installed system voices: Chinese text uses a Chinese voice, while the
-  letters B / C / D are read by an English voice as letter names. Without the voices the page
-  falls back to text only.
+  letters B / C / D are spoken by an English voice as letter names ("bee", "see", "dee").
+  Without the voices the page falls back to text only.
 - In landscape the staff scales to fit the height, so it looks narrower than on paper.
 - Stars and settings are per device (`localStorage`); clearing website data erases them.
