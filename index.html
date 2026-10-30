@@ -90,7 +90,9 @@
   .home-head{padding:26px 24px 4px;text-align:center}
   .home-head h1{font-size:32px;margin:0;letter-spacing:3px;font-weight:800}
   .home-head .sub{margin:8px 0 0;color:var(--muted);letter-spacing:8px;font-size:15px;font-weight:600}
-  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,196px);min-height:0}
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,196px);min-height:0;overflow-y:auto}
+  /* 五关：前四关两列，第五关居中，避免最后一格空着、整页看着缺一块 */
+  .level-card:nth-child(5){grid-column:1 / -1;justify-self:center;width:calc(50% - 7px)}
   .level-card{
     display:flex;flex-direction:column;gap:8px;text-align:left;
     background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 18px;
@@ -168,9 +170,17 @@
   .opt .pips{font-size:8px;letter-spacing:1px;color:#E2B45C;height:10px}
   .opt.correct{border-color:var(--green);background:#EFFAF4;box-shadow:0 5px 0 #BFE6D2}
   .opt.wrong{border-color:var(--red);background:#FDF1F0;box-shadow:0 5px 0 #F3CFCB;animation:shake .35s}
-  /* 第 4 关的选项是卡通手，卡片比数字选项高一点，才放得下整只手 */
+  /* 第 5 关的选项是卡通手，卡片比数字选项高一点，才放得下整只手 */
   .opt.hand{width:clamp(104px,15vw,140px);height:clamp(126px,17vw,160px);gap:2px}
   .opt.finger{width:clamp(94px,13vw,120px);height:clamp(126px,17vw,160px);gap:2px}
+  /* 第 3 关的谱号选项：谱号本身就是图，只配一个名字 */
+  .opt.clef{width:clamp(104px,15vw,140px);height:clamp(126px,17vw,160px);gap:4px}
+  .opt.clef .cleficon{width:auto;display:block}
+  /* 两种谱号天生比例不同：高音谱号细长、低音谱号宽扁。
+     高度分开定，图标看起来分量才接近。 */
+  .opt.clef .cleficon.treble{height:clamp(74px,11vw,96px)}
+  .opt.clef .cleficon.bass{height:clamp(58px,9vw,76px)}
+  .opt.clef .unit{font-size:13px;font-weight:700;color:#6B6156}
   .opt.hand svg,.opt.finger svg{width:clamp(72px,11.5vw,96px);height:auto;display:block;margin-bottom:2px}
   .opt.hand .unit,.opt.finger .unit{font-size:13px;font-weight:700;color:#6B6156}
   .opts{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
@@ -182,11 +192,8 @@
   .card-btn.wrong{border-color:var(--red);background:#FDF1F0;box-shadow:0 5px 0 #F3CFCB;animation:shake .35s}
 
   .beat-box{display:flex;flex-direction:column;align-items:center;gap:8px}
-  .beat-track{display:flex;gap:12px;min-height:46px}
-  .beat-track i{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:#fff;display:grid;place-items:center;font-style:normal;font-size:19px;font-weight:800;color:#C9B99F;transition:.15s}
-  .beat-track i.on{background:var(--orange);border-color:var(--orange);color:#fff;transform:scale(1.08);box-shadow:0 4px 0 rgba(220,140,40,.35)}
-  /* 不告诉孩子拍数时用这一个圆：按下后从 1 开始往上走，
-     它只显示「已经数到几」，不透露「应该数到几」。 */
+  /* 不告诉孩子拍数时用这一个圆：按下后从 0 开始，每过一拍加 1。
+     它只显示「已经按住几拍」，不透露「应该按住几拍」。 */
   .beat-live{width:66px;height:66px;border-radius:50%;border:3px solid var(--line);background:#fff;display:grid;place-items:center;font-size:30px;font-weight:800;color:#C9B99F;transition:.12s}
   .beat-live.on{border-color:var(--orange);color:var(--orange);background:#FFF6E8;transform:scale(1.04);box-shadow:0 4px 0 rgba(220,140,40,.22)}
   .beat-cap{font-size:15px;color:var(--muted);font-weight:600;text-align:center;line-height:1.4;min-height:21px}
@@ -230,9 +237,12 @@
   @keyframes fade{0%,100%{opacity:1}50%{opacity:.35}}
 
   @media (max-width:520px){
-    .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px}
+    .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px;grid-auto-rows:minmax(0,124px);align-content:start}
+    .level-card:nth-child(5){grid-column:auto;justify-self:stretch;width:auto}
     .lv-desc{display:none}
     .home-head h1{font-size:26px}
+    /* 手机屏窄，24px 的提示语会折成三四行、盖住谱面 */
+    .toast{font-size:20px;padding:13px 20px;max-width:92vw}
   }
   @media (orientation:landscape) and (max-height:560px){
     .home-head{padding-top:10px}
@@ -341,11 +351,11 @@
                 换单元、加音、改难度只动这里，不要动下面的渲染逻辑。
      2. 渲染层  staffSVG（五线谱）、buildKeyboard（键盘）、handSVG（卡通手）
                 只负责把数据画成 SVG / DOM，不判断对错。
-     3. 题型层  qFindKey / qStaffToKey / qKeyToStaff / qBeats /
-                qWhichShape / qPlayNote
+     3. 题型层  qFindKey / qStaffToKey / qKeyToStaff / qClef /
+                qBeats / qWhichShape / qPlayNote
                 每个工厂返回 { kind, render(), reveal() }，
                 render 才绑定交互，reveal 是错够次数后的提示。
-                「按住」这一段由 holdPad 提供，第 3、4 关共用；
+                「按住」这一段由 holdPad 提供，第 4、5 关共用；
                 qPlayNote 自己分三段（手 → 指 → 按住），前两段不判整题。
      4. 流程层  judge / renderQuestion / buildQuestions / startLevel /
                 finishLevel
@@ -393,7 +403,7 @@ const WHITE_OFF = [0,2,4,5,7,9,11];
      clef    用哪个谱号画，'treble' 或 'bass'
      y       在谱表上的纵向位置，单位是「线距」，见 staffSVG 的坐标说明
      hand    'L' 左手 / 'R' 右手；渲染时直接决定符杆朝上还是朝下
-     finger  指法数字，第 4 关写在音符外侧
+     finger  指法数字，第 5 关写在音符外侧
 
    目前是 B3、C4、D4：B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。 */
 const NOTES = {
@@ -420,18 +430,19 @@ const VALUES = {
 };
 const VALUE_IDS = ['quarter','half','dotted','whole'];
 
-/* 四关的顺序就是教学顺序：认键 → 谱键互认 → 时值 → 手、指、按住。
+/* 五关的顺序就是教学顺序：认键 → 谱键互认 → 谱号 → 读谱与拍数 → 手、指、按住。
    首页卡片、关卡标题、结算文案都从这里取，不要另写一份。 */
 const LEVELS = [
   { id:1, name:'找键盘', title:'键盘上的位置', desc:'音名对应哪个键', color:'#3C7DD9' },
   { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号与高音谱号', color:'#E08A2E' },
-  { id:3, name:'时值',   title:'几拍',       desc:'四分、二分、附点二分、全音符', color:'#3FA96F' },
-  { id:4, name:'读谱',   title:'手、指与拍数', desc:'先判手和指，再按住弹够时值', color:'#8E5AA8' }
+  { id:3, name:'谱号',   title:'用哪个谱号',   desc:'B 用低音谱号，中央 C 和 D 用高音谱号', color:'#2E9C8F' },
+  { id:4, name:'时值',   title:'读谱与拍数',   desc:'读谱、找键、弹够时值', color:'#3FA96F' },
+  { id:5, name:'读谱',   title:'手、指与拍数', desc:'先判手和指，再按住弹够时值', color:'#8E5AA8' }
 ];
 
 /* 三档难度。options 是选项个数（按题型取值：时值题最多 4 个，谱例最多 3 张，
-   第 4 关的指法题最多 3 只），hintAfter 是错几次给提示，
-   bpm 决定「按住」时一拍有多长，count 是一关几题（第 4 关每题三段，取 count - 2）。 */
+   第 5 关的指法题最多 3 只），hintAfter 是错几次给提示，
+   bpm 决定「按住」时一拍有多长，count 是一关几题（第 5 关每题三段，取 count - 2）。 */
 const DIFFS = {
   easy:   { key:'easy',   name:'轻松', options:2, hintAfter:1, bpm:52, count:8  },
   normal: { key:'normal', name:'标准', options:3, hintAfter:2, bpm:60, count:8  },
@@ -448,6 +459,15 @@ function loadStore(){
 const S = Object.assign({ sound:true, speech:true, labels:false, decor:null, difficulty:'normal', stars:{} }, loadStore());
 function saveStore(){
   try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
+}
+/* 2026-10-30 在第二关和第三关之间插了一关「谱号」，原来的 3、4 关
+   变成 4、5 关。星星按关卡编号存，这里把旧编号整体往后挪一次；
+   layout 标记防止每次打开都挪一遍。新插进来的第 3 关从 0 星开始。 */
+if(S.layout !== 2){
+  const old = S.stars || {};
+  S.stars = { 1: old[1] || 0, 2: old[2] || 0, 4: old[3] || 0, 5: old[4] || 0 };
+  S.layout = 2;
+  saveStore();
 }
 function diff(){ return DIFFS[S.difficulty] || DIFFS.normal; }
 function isHalloweenSeason(){
@@ -492,7 +512,7 @@ function audioCtx(){
 function playMidi(midi, dur, vol, force){
   if(!S.sound && !force) return;
   const c = audioCtx(); if(!c) return;
-  dur = dur || 0.9; vol = (vol == null) ? 0.2 : vol;
+  dur = dur || 0.9; vol = (vol == null) ? 0.34 : vol;
   const t = c.currentTime + 0.005;
   const f = 440 * Math.pow(2, (midi - 69) / 12);
   const out = c.createGain();
@@ -525,8 +545,8 @@ function startTone(midi){
   const f = 440 * Math.pow(2, (midi - 69) / 12);
   const out = c.createGain();
   out.gain.setValueAtTime(0, t);
-  out.gain.linearRampToValueAtTime(0.2, t + 0.02);
-  out.gain.linearRampToValueAtTime(0.11, t + 0.22);
+  out.gain.linearRampToValueAtTime(0.34, t + 0.02);
+  out.gain.linearRampToValueAtTime(0.2, t + 0.22);
   out.connect(c.destination);
   const oscs = [[1,1],[2,0.34],[3,0.13],[4,0.05]].map(function(p){
     const o = c.createOscillator();
@@ -560,7 +580,7 @@ function clickSound(){
   const t = c.currentTime;
   const o = c.createOscillator(); o.type = 'square'; o.frequency.value = 1320;
   const g = c.createGain();
-  g.gain.setValueAtTime(0.05, t);
+  g.gain.setValueAtTime(0.07, t);
   g.gain.exponentialRampToValueAtTime(0.0004, t + 0.05);
   o.connect(g); g.connect(c.destination);
   o.start(t); o.stop(t + 0.06);
@@ -620,7 +640,8 @@ function say(text, force){
       u.lang = isLetter ? 'en-US' : 'zh-CN';
       u.rate = isLetter ? 0.85 : 0.95;
       u.pitch = 1.02;
-      u.volume = 1;
+      /* 念题只是提示，不要盖过琴声：语音 0.6，钢琴音量已相应调高（见 playMidi）。 */
+      u.volume = 0.6;
       if(isLetter && enVoice) u.voice = enVoice;
       if(!isLetter && zhVoice) u.voice = zhVoice;
       speechSynthesis.speak(u);
@@ -667,8 +688,13 @@ function staffSVG(o){
   }
 
   /* 谱号：把 512 单位的原始 path 缩放平移到谱表左端。
-     低音谱号的 scale 带负号，是因为它的原始 path 是倒着画的。 */
-  if(clef === 'treble'){
+     低音谱号的 scale 带负号，是因为它的原始 path 是倒着画的。
+
+     noClef 用于第 3 关「用哪个谱号」：谱号位置画一个浅色的问号，
+     等孩子选对了再把谱号补上，所以这一个函数要能画两种状态。 */
+  if(o.noClef){
+    g += '<text x="1.2" y="2.6" text-anchor="middle" font-family="PingFang SC, Helvetica, Arial" font-size="2.9" font-weight="700" fill="#DCCDB6" stroke="#FFFFFF" stroke-width="0.32" paint-order="stroke" stroke-linejoin="round">?</text>';
+  }else if(clef === 'treble'){
     g += '<g transform="translate(0.45 -1.26) scale(0.0071)"><path d="' + CLEF_TREBLE + '" fill="' + INK + '"/></g>';
   }else{
     g += '<g transform="translate(0.5 -0.05) scale(0.004016 -0.004016)"><path d="' + CLEF_BASS + '" fill="' + INK + '"/></g>';
@@ -716,6 +742,17 @@ function staffSVG(o){
 
 function staffBlock(opts){
   return '<div class="paper">' + staffSVG(opts) + '</div>';
+}
+
+/* 单独的谱号图标，第 3 关的两个选项用。
+   直接用谱表里同一份 path，选项上看到的和谱表上画出来的必然一致。
+   viewBox 取 path 的原始包围盒；低音谱号的原始 path 是倒着画的，
+   图标这里也要翻一次才正。 */
+function clefSVG(clef){
+  if(clef === 'treble'){
+    return '<svg class="cleficon treble" viewBox="0 0 353.8 1000" aria-hidden="true"><path d="' + CLEF_TREBLE + '" fill="' + INK + '"/></svg>';
+  }
+  return '<svg class="cleficon bass" viewBox="0 0 671 772" aria-hidden="true"><g transform="scale(1,-1)"><path d="' + CLEF_BASS + '" fill="' + INK + '"/></g></svg>';
 }
 
 /* ==================== 键盘 ====================
@@ -879,7 +916,7 @@ function updateDots(){
    错的路径：累加 q.wrong，错够 hintAfter 次就调用题目的 reveal()
    给提示（高亮正确的键、或在标题里说出答案），但不告诉孩子「错了」。
    always = true 时这句提示每次都显示，不只在第一次错时显示：
-   第 4 关一题有三段，每段第一次错都该看到本段的方法提示。 */
+   第 5 关一题有三段，每段第一次错都该看到本段的方法提示。 */
 function judge(ok, msg, wait, always){
   const q = G.q;
   if(!q || q.answered || G.busy) return;
@@ -932,12 +969,20 @@ function renderQuestion(){
    因此同一个工厂可以被不同参数调用很多次，互不干扰。 */
 
 /* 第 1 关：给音名，在键盘上点出来。只看音级，不区分音组，
-   所以任何一个 C 都对，这一关不考八度位置。 */
+   所以任何一个 C 都对，这一关不考八度位置。
+
+   题干只说任务、不重复音名：要按的音就是屏幕上那个大写字母。
+   第一题把整句话念一遍，之后每题只念这个字母，
+   孩子不识字也知道要按哪个音，不必每题都听一遍「找到 B」。 */
 function qFindKey(letter){
   return {
-    kind:'find', letter:letter, wrong:0,
+    /* 题面上没有「找到 B」，但「再听一遍」按钮应该念出这道题的字母，
+       所以把要念的内容挂在题目上，按钮优先读它。 */
+    kind:'find', letter:letter, sayText:letter, wrong:0,
     render: function(){
-      setPrompt('找到 ' + letter, '找到 ' + letter);
+      const first = G.i === 0;
+      setPrompt('在键盘上找到展示音名的位置',
+                first ? '在键盘上找到展示音名的位置 ' + letter : letter);
       stageEl.classList.add('letter');
       stageEl.innerHTML = '<div class="big-letter">' + letter + '</div><div class="down-arrow">↓</div>';
       const kb = makeKB({
@@ -1045,6 +1090,64 @@ function qKeyToStaff(noteId){
   };
 }
 
+/* 音名写法：单个字母前面留一个空格（「这是 B」），中文说明不留（「这是中央 C」）。 */
+function labelOf(n){
+  return /^[A-Z]$/.test(n.label) ? ' ' + n.label : n.label;
+}
+
+/* 第 3 关：谱表上画一个音、不画谱号，告诉孩子这是什么音，问该用哪个谱号。
+   规则就一条，本单元的三个音都落在它上面：
+     比中央 C 低的音写低音谱号；中央 C 和比它高的音写高音谱号。
+   答对之后把谱号补到谱表左边，孩子能直接看到「放对了」。
+   谱面不画谱号时，音符的纵向位置本来就说明不了音名，
+   所以音名必须在题干里给出，这一关考的是「这个音归哪个谱号」。 */
+function qClef(noteId){
+  const n = NOTES[noteId];
+  const right = n.clef;
+  const name = (right === 'treble') ? '高音谱号' : '低音谱号';
+  return {
+    kind:'clef', noteId:noteId, wrong:0,
+    render: function(){
+      setPrompt('这是' + labelOf(n) + '，用哪个谱号？', '这是' + labelOf(n) + '，用哪个谱号');
+      stageEl.innerHTML = staffBlock({ noteId:noteId, noClef:true });
+      const box = document.createElement('div');
+      box.className = 'opts';
+      [['高音谱号','treble'], ['低音谱号','bass']].forEach(function(pair){
+        const b = document.createElement('button');
+        b.className = 'opt clef';
+        b.dataset.clef = pair[1];
+        b.innerHTML = clefSVG(pair[1]) + '<span class="unit">' + pair[0] + '</span>';
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if(pair[1] === right){
+            b.classList.add('correct');
+            /* 把谱号补上：刚才那个问号的位置现在有谱号了。 */
+            stageEl.innerHTML = staffBlock({ noteId:noteId });
+            playMidi(n.midi, 0.9);
+            judge(true, '对，' + n.label + ' 用' + name);
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false, right === 'bass'
+              ? '比中央 C 低，用低音谱号'
+              : '中央 C 及以上，用高音谱号', 0, true);
+          }
+        });
+        box.appendChild(b);
+      });
+      answerEl.appendChild(box);
+    },
+    reveal: function(){
+      /* 提示时把正确的谱号直接画进谱表，孩子在选之前就能看见「放对了」是什么样。 */
+      stageEl.innerHTML = staffBlock({ noteId:noteId });
+      $$('.opt.clef', answerEl).forEach(function(b){
+        if(b.dataset.clef === right) b.classList.add('correct');
+      });
+      setPrompt('这是' + labelOf(n) + '，用' + name, false);
+    }
+  };
+}
+
 /* 生成拍数选项：正确项 + 从剩下的 1–4 里随机补足，最后整体打乱。 */
 function beatsOptions(correct, n){
   const pool = [1,2,3,4].filter(function(x){ return x !== correct; });
@@ -1052,28 +1155,23 @@ function beatsOptions(correct, n){
 }
 
 /* ==================== 按住练习 ====================
-   第 3、4 关共用：把「这个音符有多长」变成按住琴键的实际时长。
+   第 4、5 关共用：把「这个音符有多长」变成按住琴键的实际时长。
 
-   两种模式：
-   默认（看得见拍数，第 3 关「几拍」题用）
-     按下正确的键 → 持续音响起，第 1 颗点亮，响一声
-     每过一拍     → 再亮一颗、再响一声
-     到该有的长度 → 持续音自己收掉，这是「可以松手了」的听觉信号
-     松手         → 只判「够不够长」
+   什么时候松手，孩子自己判断：按住正确的键以后，屏幕上只有一个
+   从 0 开始、每过一拍加 1 的计数器，声音不在到点时收掉，也没有
+   提前排好的拍子格。音符是 2 拍就数到 2 松手，和谱面对得上。
 
-   blind（不告诉拍数，第 3 关「哪个是二分音符」与第 4 关用）
-     拍子格换成一个从 0 开始、每过一拍加 1 的计数器：它显示的是
-     「已经按住几拍」，不显示「应该按几拍」，也不在到点时停掉声音。
-     音符是 2 拍就数到 2 松手，和谱面对得上；
-     该不该松手由孩子自己从谱面判断，所以按过头同样算错。
+   上下两个方向都判：按太短是错，按过头同样是错。容差 tol 拍
+   （默认 0.3）放过的只是「晚一点松手」；超过 tolOver 拍（默认 0.62）
+   才算过头。手指抬起总会晚一点，对 4 岁的孩子宁可放过，
+   也不要为 0.1 拍判错。
 
    没有预备拍。按下就是第一拍，孩子什么时候准备好就什么时候开始。
-   容差 tol 拍（默认 0.3，只放宽「晚一点松手」）。手指抬起总会晚一点，
-   对 4 岁的孩子宁可放过，也不要为 0.1 拍判错。
 
-   这个函数不判对错，成功与失败都交给 onRelease(ok, held, tries)，
-   由题目决定算不算一次错：第 3 关的两段按住都只是练习，失败不扣分；
-   第 4 关按普通题目处理，弹长了、弹短了都记一次错，可以马上重来。
+   这个函数不判对错，成功与失败都交给 onRelease(ok, held, tries, reason)，
+   reason 是 'short' 或 'long'。由题目决定算不算一次错、该怎么提示；
+   同一题错两次以后会把正确的键标出来。第 4 关的按住答对拍数后才开始，
+   第 5 关的按住就是最后一段，两关都按普通题目判。
 
    返回 { stop }。换题、退出关卡时必须调用，否则定时器与持续音
    会跟到下一题去。调用 stop 之后不再接受按压。 */
@@ -1082,58 +1180,32 @@ function holdPad(host, noteId, beats, opts){
   const note = NOTES[noteId];
   const MS = Math.round(60000 / diff().bpm);
   const tol = (opts.tol == null) ? 0.3 : opts.tol;
-  const blind = !!opts.blind;
-  /* 只有 blind 才管「按太久」：看得见拍子时，声音在准确长度上收掉，
-     孩子听到再松手总会晚一点，这时不该判错。blind 时没有这个信号，
-     多给半拍多，否则「自己数」就没有意义。 */
-  const over = blind ? ((opts.tolOver == null) ? 0.62 : opts.tolOver) : Infinity;
-  const MAXB = 8;               // blind 模式最多数到 8 拍，防止一直按着不放
+  const over = (opts.tolOver == null) ? 0.62 : opts.tolOver;
+  const MAXB = 8;               // 最多数到 8 拍，防止一直按着不放
   const session = G.session;
   let count = 0, ticks = 0, timer = null, tone = null, pressAt = 0, tries = 0;
   let finished = false, resetTimer = null;
 
   const box = document.createElement('div');
   box.className = 'beat-box';
+  /* 一个圆，按下后从 0 开始，每过一拍加 1。
+     它只显示「已经按住几拍」，没有「一共几格」，所以看不出答案。 */
+  const circle = document.createElement('div');
+  circle.className = 'beat-live';
+  circle.textContent = '·';
   const cap = document.createElement('div');
   cap.className = 'beat-cap';
-  let track = null, circle = null;
-  if(blind){
-    /* 一个圆，按下后从 0 开始，每过一拍加 1。没有「一共几格」，看不出答案。 */
-    circle = document.createElement('div');
-    circle.className = 'beat-live';
-    circle.textContent = '·';
-    box.appendChild(circle);
-  }else{
-    track = document.createElement('div');
-    track.className = 'beat-track';
-    for(let i = 0; i < beats; i++){
-      const d = document.createElement('i');
-      d.textContent = String(i + 1);
-      track.appendChild(d);
-    }
-    box.appendChild(track);
-  }
+  box.appendChild(circle);
   box.appendChild(cap);
   host.appendChild(box);
 
-  function paint(){
-    if(!track) return;
-    Array.prototype.forEach.call(track.children, function(el, i){
-      el.classList.toggle('on', i < count);
-    });
-  }
   function live(v, on){
-    if(!circle) return;
     circle.textContent = String(v);
     circle.classList.toggle('on', !!on);
   }
   function stopTimer(){ if(timer){ clearInterval(timer); timer = null; } }
   function releaseTone(fade){ if(tone){ tone.stop(fade == null ? 0.14 : fade); tone = null; } }
-  function idleCap(){
-    cap.textContent = blind
-      ? '按住这个音，自己数拍子'
-      : '按住' + (opts.target ? '亮着的键' : '这个音') + '，数满 ' + beats + ' 拍';
-  }
+  function idleCap(){ cap.textContent = '按住这个音，自己数拍子'; }
   function hintKey(){
     $$('.w,.b', kb).forEach(function(k){
       if(Number(k.dataset.midi) === note.midi) k.classList.add('hint');
@@ -1142,7 +1214,6 @@ function holdPad(host, noteId, beats, opts){
 
   const kb = makeKB({
     labels: S.labels,
-    target: opts.target ? note.midi : null,
     onDown: function(midi, el){
       if(finished) return;
       if(midi !== note.midi){
@@ -1153,44 +1224,24 @@ function holdPad(host, noteId, beats, opts){
       }
       if(resetTimer){ clearTimeout(resetTimer); resetTimer = null; }
       stopTimer(); releaseTone(0.06);
-      count = 1; ticks = 0; pressAt = performance.now();
+      count = 0; ticks = 0; pressAt = performance.now();
       clickSound();
       tone = startTone(midi);
-      if(blind){
-        /* 显示「已经按住几拍」，不是「现在是第几拍」：
-           音符是 2 拍，数到 2 就松手，和谱面直接对应。 */
-        live(0, true);
-        cap.textContent = '数拍子，数够了就松手';
-      }else{
-        paint();
-        cap.textContent = '第 1 拍…';
-      }
+      live(0, true);
+      cap.textContent = '数拍子，数够了就松手';
       timer = setInterval(function(){
         if(session !== G.session){ stopTimer(); return; }
         ticks++;
         clickSound();
-        if(blind){
-          /* 不在这里停声音：停了就等于告诉孩子「刚好够了」。 */
-          if(ticks >= MAXB){
-            stopTimer();
-            releaseTone(0.2);
-            cap.textContent = '太长了，松开再试';
-            return;
-          }
-          count = ticks;
-          live(count, true);
-          cap.textContent = '数拍子，数够了就松手';
-          return;
-        }
-        if(ticks >= beats){
+        /* 不在这里停声音：停了就等于告诉孩子「刚好够了」。 */
+        if(ticks >= MAXB){
           stopTimer();
-          releaseTone(0.18);
-          cap.textContent = '刚好 ' + beats + ' 拍，可以松手了';
+          releaseTone(0.2);
+          cap.textContent = '太长了，松开再试';
           return;
         }
-        count = ticks + 1;
-        paint();
-        cap.textContent = '第 ' + count + ' 拍…';
+        count = ticks;
+        live(count, true);
       }, MS);
     },
     onUp: function(){
@@ -1203,31 +1254,24 @@ function holdPad(host, noteId, beats, opts){
       const tooLong = held > beats + over;
       if(held >= beats - tol && !tooLong){
         finished = true;
-        count = beats;
-        paint();
         live(beats, false);
         cap.textContent = '正好 ' + beats + ' 拍';
         if(opts.onRelease) opts.onRelease(true, held, tries);
         return;
       }
-      count = 0;
-      paint();
       live('·', false);
-      cap.textContent = (blind ? '这个音符是 ' : '还差一点：这个音符是 ') + beats + ' 拍';
+      cap.textContent = '这个音符是 ' + beats + ' 拍';
       /* 第 4 个参数告诉题目是「太短」还是「太长」，题目不用自己再算一遍容差。 */
       if(opts.onRelease) opts.onRelease(false, held, tries, tooLong ? 'long' : 'short');
       if(tries >= 2) hintKey();
       resetTimer = setTimeout(function(){
         resetTimer = null;
         if(finished || session !== G.session) return;
-        if(blind) cap.textContent = '这个音符是 ' + beats + ' 拍，再试一次';
-        else idleCap();
-        live('·', false);
-      }, blind ? 1800 : 1200);
+        cap.textContent = '这个音符是 ' + beats + ' 拍，再试一次';
+      }, 1800);
     }
   });
   host.appendChild(kb);
-  paint();
   idleCap();
 
   const api = {
@@ -1242,28 +1286,32 @@ function holdPad(host, noteId, beats, opts){
   return api;
 }
 
-/* 第 3 关（之一）：看谱面上的音符，判断几拍。
-   答对拍数后不直接过题，先接一段 holdPad：这个键亮着，孩子按住它，
-   每过一拍亮一颗、响一声，到该有的长度声音自己收掉。
-   拍数已经答对，所以按早了只提示「还差一点」，不扣分，可以重来。 */
+/* 第 4 关（之一）：读谱面上的音符，判断几拍。
+   这一关要孩子自己完成三件事：这是什么音、在键盘哪里、弹多长。
+   所以答对拍数之后，键盘不会亮键、也不会排出拍子格：
+   位置和时长都得自己从谱面读出来，按错了照常记错、可以说「这是 D」。
+   以前的版本把键和拍子格都摆好，孩子只需要跟着按，思考被省掉了。 */
 function qBeats(noteId, valueId){
   const v = VALUES[valueId];
+  const n = NOTES[noteId];
   const opts = beatsOptions(v.beats, diff().options === 2 ? 2 : 4);
+  let stage = 1;
   return {
     kind:'beats', noteId:noteId, valueId:valueId, wrong:0,
     render: function(){
+      stage = 1;
       setPrompt('这个音符是几拍？', '这个音符是几拍');
       stageEl.innerHTML = staffBlock({ noteId:noteId, value:valueId });
       const box = document.createElement('div');
       box.className = 'opts';
       let picked = false;
-      opts.forEach(function(n){
+      opts.forEach(function(num){
         const b = document.createElement('button');
         b.className = 'opt';
-        b.innerHTML = '<span class="num">' + n + '</span><span class="unit">拍</span><span class="pips">' + '●'.repeat(n) + '</span>';
+        b.innerHTML = '<span class="num">' + num + '</span><span class="unit">拍</span><span class="pips">' + '●'.repeat(num) + '</span>';
         b.addEventListener('click', function(){
           if(picked || G.q.answered) return;
-          if(n !== v.beats){
+          if(num !== v.beats){
             b.classList.add('wrong');
             setTimeout(function(){ b.classList.remove('wrong'); }, 500);
             judge(false);
@@ -1278,37 +1326,56 @@ function qBeats(noteId, valueId){
       });
       answerEl.appendChild(box);
 
-      /* 拍数答对之后的第二段：真的按住这个音，按满它该有的长度。
-         此时这个键已经亮着（target），孩子不用再找键，注意力全在时长上。 */
+      /* 第二段：不亮键、不排拍子格，孩子先要在键盘上找到这个音，
+         再自己数拍子按够长度。失败照常记错，提示只给「先找到这个音」。 */
       function holdIt(){
+        stage = 2;
         answerEl.innerHTML = '';
         answerEl.className = 'answer hold';
-        setPrompt('按住这个音，数满 ' + v.beats + ' 拍', '按住这个音，数满 ' + v.beats + ' 拍');
+        setPrompt('在键盘上找到这个音，弹够它该有的长度', '在键盘上找到这个音，弹够它该有的长度');
         holdPad(answerEl, noteId, v.beats, {
-          target: true,
-          onWrong: function(){ toast('按住亮着的那个键'); },
-          onRelease: function(ok){
-            if(ok) judge(true, '对！' + v.name + '是 ' + v.beats + ' 拍');
+          onWrong: function(){ judge(false, '先找到这个音', 0, true); },
+          onRelease: function(ok, held, tries, reason){
+            if(ok){
+              judge(true, '对！' + v.name + '是 ' + v.beats + ' 拍');
+            }else if(reason === 'long'){
+              judge(false, '长了：' + v.name + '是 ' + v.beats + ' 拍', 0, true);
+            }else if(held < 0.5){
+              judge(false, '太短了，要按住不放', 0, true);
+            }else{
+              judge(false, '短了：你弹了 ' + Math.round(held) + ' 拍，' + v.name + '是 ' + v.beats + ' 拍', 0, true);
+            }
           }
         });
       }
     },
     reveal: function(){
-      setPrompt(v.name + '：' + v.beats + ' 拍', false);
+      if(stage === 1){
+        $$('.opt', answerEl).forEach(function(b){
+          const num = b.querySelector('.num');
+          if(num && Number(num.textContent) === v.beats) b.classList.add('correct');
+        });
+        setPrompt(v.name + '：' + v.beats + ' 拍', false);
+      }else{
+        setPrompt('这是' + labelOf(n) + '，弹 ' + v.beats + ' 拍', false);
+      }
     }
   };
 }
 
-/* 第 3 关（之二）：反过来问，给时值名称，从几个谱例里挑出对应的音符。
+/* 第 4 关（之二）：反过来问，给时值名称，从几个谱例里挑出对应的音符。
    干扰项固定抽两个其它时值，所以永远是三选一。
    选对之后同样接一段「按住」，把刚才认出来的形状按真实长度弹一遍。 */
 function qWhichShape(noteId, valueId){
   const v = VALUES[valueId];
+  const n = NOTES[noteId];
   const others = shuffle(VALUE_IDS.filter(function(x){ return x !== valueId; })).slice(0, 2);
   const choices = shuffle([valueId].concat(others));
+  let stage = 1;
   return {
     kind:'shape', noteId:noteId, valueId:valueId, wrong:0,
     render: function(){
+      stage = 1;
       setPrompt('哪个是' + v.name + '？', '哪个是' + v.name);
       stageEl.innerHTML = '<div class="qmark">?</div>';
       let picked = false;
@@ -1328,24 +1395,23 @@ function qWhichShape(noteId, valueId){
           picked = true;
           b.classList.add('correct');
           /* 把问号换成刚选中的那个谱面，孩子能对着它按。
-             这一段不告诉孩子几拍：只要求「弹够它该有的长度」，
-             按键后出现的是一个从 1 往上走的计数器，不是排好的拍子格。
-             数到几该松手，由孩子自己从谱面判断。 */
+             键盘不亮键、也不排拍子格：音在哪里、弹几拍都由孩子自己读谱决定。 */
+          stage = 2;
           stageEl.innerHTML = staffBlock({ noteId:noteId, value:valueId });
           answerEl.innerHTML = '';
           answerEl.className = 'answer hold';
-          setPrompt('按住这个音，弹够它该有的长度', '按住这个音，弹够它该有的长度');
+          setPrompt('在键盘上找到这个音，弹够它该有的长度', '在键盘上找到这个音，弹够它该有的长度');
           holdPad(answerEl, noteId, v.beats, {
-            target: true,
-            blind: true,
-            onWrong: function(){ toast('按住亮着的那个键'); },
-            onRelease: function(ok, held){
+            onWrong: function(){ judge(false, '先找到这个音', 0, true); },
+            onRelease: function(ok, held, tries, reason){
               if(ok){
                 judge(true, '对！' + v.name + '是 ' + v.beats + ' 拍');
+              }else if(reason === 'long'){
+                judge(false, '长了：' + v.name + '是 ' + v.beats + ' 拍', 0, true);
               }else if(held < 0.5){
-                toast('太短了，' + v.name + '是 ' + v.beats + ' 拍', 'bad');
+                judge(false, '太短了，要按住不放', 0, true);
               }else{
-                toast('你弹了 ' + Math.round(held) + ' 拍，' + v.name + '是 ' + v.beats + ' 拍', 'bad');
+                judge(false, '短了：你弹了 ' + Math.round(held) + ' 拍，' + v.name + '是 ' + v.beats + ' 拍', 0, true);
               }
             }
           });
@@ -1354,6 +1420,10 @@ function qWhichShape(noteId, valueId){
       });
     },
     reveal: function(){
+      if(stage === 2){
+        setPrompt('这是' + labelOf(n) + '，弹 ' + v.beats + ' 拍', false);
+        return;
+      }
       $$('.card-btn', answerEl).forEach(function(b, idx){
         if(choices[idx] === valueId) b.classList.add('correct');
       });
@@ -1362,11 +1432,15 @@ function qWhichShape(noteId, valueId){
 }
 
 /* ==================== 卡通手 ====================
-   手掌朝前、手指朝上。右手拇指在左，左手整只镜像，
+   手掌朝前、手指朝上，五指始终伸开。右手拇指在左，左手整只镜像，
    所以「拇指在哪边」就是左右手的区别，两只手永远画得一模一样。
 
-   up = 0      五指伸开，判左右手用
-   up = 1..5   只竖起这一根，判指法用；竖起的指尖画一圈指法色
+   ring = 0      不戴戒指，判左右手用
+   ring = 1..5   在这一根手指上戴一枚指法色的戒指，判指法用
+
+   为什么用戒指而不是竖手指：竖中指是个不雅手势，而且「竖起一根、
+   其余蜷起」的手形本身会让孩子去模仿手势，而不是记住手指的位置。
+   五指都伸开、只在目标手指上加一枚戒指，看的是「戒指在哪根手指上」。
 
    画法分两层：先把同样几个形状放大 3 画成深色，再压上正常大小的肤色。
    两层的差集只剩一圈外轮廓，手指和手掌接缝处不会出现多余的线，
@@ -1379,21 +1453,17 @@ const HAND_SKIN = '#FFD7B0', HAND_THUMB = '#F4BE8F', HAND_INK = '#3B3A44';
 const HAND_CUFF = { L:'#9FC2EA', R:'#F2B3AA' };
 const FINGER_NAME = ['', '拇指', '食指', '中指', '无名指', '小指'];
 
-function handSVG(side, up){
-  up = up || 0;
+function handSVG(side, ring){
+  ring = ring || 0;
   const ext = [20, 8, 15, 28];       // 食指、中指、无名指、小指伸开时的顶端
   const xs = [35, 52, 69, 86];
-  const W = 14, bottom = 80, curled = 42, palmTop = 54;
+  const W = 14, bottom = 80, palmTop = 54;
   const parts = [];
 
   for(let i = 0; i < 4; i++){
-    const isUp = (up === i + 2);
-    const top = (up === 0 || isUp) ? (isUp ? ext[i] - 5 : ext[i]) : curled;
-    parts.push({ x: xs[i], y: top, w: W, h: bottom - top, rx: W / 2, f: HAND_SKIN });
+    parts.push({ x: xs[i], y: ext[i], w: W, h: bottom - ext[i], rx: W / 2, f: HAND_SKIN });
   }
-  /* 拇指：平时向外张开 38 度；轮到 1 指时几乎竖直并伸长，像「竖起拇指」。 */
-  if(up === 1) parts.push({ x:23, y:26, w:19, h:64, rx:9.5, f:HAND_THUMB, rot:'rotate(-14 32.5 90)' });
-  else         parts.push({ x:23, y:52, w:19, h:38, rx:9.5, f:HAND_THUMB, rot:'rotate(-38 32.5 90)' });
+  parts.push({ x:23, y:52, w:19, h:38, rx:9.5, f:HAND_THUMB, rot:'rotate(-38 32.5 90)' });
   parts.push({ x:33, y:palmTop, w:64, h:60, rx:20, f:HAND_SKIN });
 
   function shape(p, e){
@@ -1404,19 +1474,20 @@ function handSVG(side, up){
   parts.forEach(function(p){ g += shape(p, 3).replace('fill="' + p.f + '"', 'fill="' + HAND_INK + '"'); });
   parts.forEach(function(p){ g += shape(p, 0); });
 
-  /* 五指伸开时加指甲：让「手背朝上、放在琴键上」的姿势看得出来。 */
-  if(up === 0){
-    for(let i = 0; i < 4; i++){
-      g += '<ellipse cx="' + (xs[i] + W/2) + '" cy="' + (ext[i] + 8) + '" rx="3.2" ry="4.2" fill="#FFF0E0"/>';
-    }
+  /* 指甲：让「手背朝上、放在琴键上」的姿势看得出来。 */
+  for(let i = 0; i < 4; i++){
+    g += '<ellipse cx="' + (xs[i] + W/2) + '" cy="' + (ext[i] + 8) + '" rx="3.2" ry="4.2" fill="#FFF0E0"/>';
   }
   g += '<rect x="40" y="104" width="50" height="24" rx="12" fill="' + (HAND_CUFF[side] || '#CBD9EA') + '" stroke="' + HAND_INK + '" stroke-width="3"/>';
 
-  /* 竖起来的那根用手指点色画一圈：和谱面上的指法数字同一个颜色。 */
-  if(up >= 2 && up <= 5){
-    g += '<circle cx="' + (xs[up-2] + W/2) + '" cy="' + (ext[up-2] + 2) + '" r="5" fill="none" stroke="#C2528C" stroke-width="3"/>';
+  /* 戒指：横箍在手指上的一小条，颜色与谱面上的指法数字一致。
+     拇指是斜着的，所以那一枚跟着拇指一起转。 */
+  if(ring >= 2 && ring <= 5){
+    g += '<rect x="' + (xs[ring-2] - 1) + '" y="' + (ext[ring-2] + 9) + '" width="' + (W + 2) + '" height="6" rx="3" fill="#C2528C"/>';
   }
-  if(up === 1) g += '<circle cx="17" cy="35" r="5" fill="none" stroke="#C2528C" stroke-width="3"/>';
+  if(ring === 1){
+    g += '<rect x="21.8" y="65" width="21.4" height="6" rx="3" fill="#C2528C" transform="rotate(-38 32.5 90)"/>';
+  }
 
   /* 右手形状不动，左手整体镜像；平移 10 把整只手挪到画布正中，
      这样左右两只并排时大小、位置完全对称。 */
@@ -1432,7 +1503,7 @@ function fingerChoices(correct, n){
   return shuffle([correct].concat(shuffle(pool).slice(0, Math.min(n, 3) - 1)));
 }
 
-/* ==================== 第 4 关：先判手，再判指，最后弹够拍子 ====================
+/* ==================== 第 5 关：先判手，再判指，最后弹够拍子 ====================
    一题三段，顺序就是学一个音的指法的顺序：
      ① 看符杆判左右手
      ② 看谱面上的指法数字，从两三只卡通手里选出对应的手指
@@ -1441,7 +1512,7 @@ function fingerChoices(correct, n){
    弹对长度时 judge(true)。中间答错照样记错、错够次数照样给提示，
    所以「一次答对」仍然要求三段都一遍过。
 
-   第三段和第 3 关的反向题一样不告诉拍数：拍数要从谱面读出来，
+   第三段和第 4 关的反向题一样不告诉拍数：拍数要从谱面读出来，
    按住的计时器只显示「已经数到几」，几拍该松手由孩子自己判断。 */
 function qPlayNote(noteId, valueId){
   const n = NOTES[noteId];
@@ -1529,7 +1600,7 @@ function qPlayNote(noteId, valueId){
   }
 
   /* 第三段：真的把音按出来，并弹够时值。
-     这一段用 blind：不显示拍子格，只显示已经数到第几拍。 */
+     不显示拍子格，只显示已经按住几拍，几下该松手由孩子自己数。 */
   function askPlay(){
     stage = 3;
     setPrompt(handName + ' ' + n.finger + ' 指，按住这个音，弹够它该有的长度',
@@ -1537,7 +1608,6 @@ function qPlayNote(noteId, valueId){
     stageEl.innerHTML = staff();
     reset('answer hold');
     holdPad(answerEl, noteId, v.beats, {
-      blind: true,
       onWrong: function(){ judge(false, '先找到这个音', 0, true); },
       onRelease: function(ok, held, tries, reason){
         /* 弹长弹短的反馈每次都要说出来，不能被「再试一次」盖掉。 */
@@ -1595,9 +1665,10 @@ function repeatTo(arr, n){
 /* 每关的题目构成：
      第 1 关  从预置序列里抽，C 和 B 出现得多一点，先把两端的锚点认熟
      第 2 关  一半「谱→键」，一半「键→谱」，交替练双向映射
-     第 3 关  每三题插一道「哪个是二分音符」的反向题，每题答对后按住这个音
-     第 4 关  每题三段：判手 → 判指 → 按住弹够时值
-   生成后统一打乱。第 4 关第一段只是选左右手，不难，不需要再挑一道轻题开场。 */
+     第 3 关  谱号题，低音、高音各一半，B 用低音谱号
+     第 4 关  每三题插一道「哪个是二分音符」的反向题，答对后自己找键、自己数拍
+     第 5 关  每题三段：判手 → 判指 → 按住弹够时值
+   生成后统一打乱。第 5 关第一段只是选左右手，不难，不需要再挑一道轻题开场。 */
 function buildQuestions(level){
   const d = diff();
   const n = d.count;
@@ -1613,13 +1684,21 @@ function buildQuestions(level){
     ids.slice(half).forEach(function(id){ qs.push(qKeyToStaff(id)); });
     while(qs.length < n) qs.push(qKeyToStaff(pick(NOTE_IDS)));
   }else if(level === 3){
+    /* 谱号题：本单元只有 B 用低音谱号，所以低音、高音各占一半。
+       若按三个音均匀抽，三分之二都是高音谱号，每次猜高音就能蒙对大半。 */
+    const half = Math.ceil(n / 2);
+    const ids = [];
+    for(let i = 0; i < half; i++) ids.push('B3');
+    shuffle(repeatTo(['C4','D4'], n - half)).forEach(function(id){ ids.push(id); });
+    qs = shuffle(ids).map(qClef);
+  }else if(level === 4){
     const vals = shuffle(repeatTo(VALUE_IDS, n));
     for(let i = 0; i < n; i++){
       const id = pick(NOTE_IDS);
       qs.push(i % 3 === 2 ? qWhichShape(id, vals[i]) : qBeats(id, vals[i]));
     }
   }else{
-    /* 第 4 关每题要走「手 → 指 → 按住」三段，比别的关费时间，
+    /* 第 5 关每题要走「手 → 指 → 按住」三段，比别的关费时间，
        所以题目数减 2，一关仍然在三分钟左右。
        时值只用四分、二分、附点二分：全音符没有符杆，
        而这一关的左右手正是靠符杆方向判断的，用了就无从判断。 */
@@ -1781,7 +1860,7 @@ $('#settingsModal').addEventListener('click', function(e){
 $('#btnTrySound').addEventListener('click', function(){
   const c = audioCtx();
   if(c && c.state === 'suspended') c.resume();
-  playMidi(60, 1.1, 0.2, true);
+  playMidi(60, 1.1, 0.34, true);
   say('这是中央 C，听到声音就说明正常', true);
   toast('听到「咚」和一句话，声音就正常', 'ok');
 });
@@ -1798,7 +1877,8 @@ $('#btnReset').addEventListener('click', function(){
    防止孩子把界面缩花了。 */
 $('#btnBack').addEventListener('click', showHome);
 $('#btnSpeak').addEventListener('click', function(){
-  say(promptEl.textContent);
+  /* 第 1 关的题干不含音名，题目自己带 sayText（那个字母）；其他关读题干。 */
+  say((G.q && G.q.sayText) || promptEl.textContent);
 });
 document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
