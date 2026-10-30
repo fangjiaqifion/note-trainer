@@ -1256,7 +1256,6 @@ function holdPad(host, noteId, beats, opts){
   const MS = Math.round(60000 / diff().bpm);
   const tol = (opts.tol == null) ? 0.3 : opts.tol;
   const over = (opts.tolOver == null) ? 0.62 : opts.tolOver;
-  const MAXB = 8;               // 最多数到 8 拍，防止一直按着不放
   const session = G.session;
   let count = 0, ticks = 0, timer = null, tone = null, pressAt = 0, tries = 0;
   let finished = false, resetTimer = null;
@@ -1299,27 +1298,24 @@ function holdPad(host, noteId, beats, opts){
       }
       if(resetTimer){ clearTimeout(resetTimer); resetTimer = null; }
       stopTimer(); releaseTone(0.06);
-      count = 0; ticks = 0; pressAt = performance.now();
-      /* 按下这一下不出声，也不显示 0：它只是「开始」，不是第一拍。
-         否则 4 拍的音符会先出现 0、再出现 1-2-3-4，看起来像 5 拍。
-         现在按下显示 ·，之后每满一拍显示 1、2、3、4 并响一声：
-         全音符正好四个数字、四声，二分音符两个。 */
+      count = 1; ticks = 0; pressAt = performance.now();
+      /* 按下就是第 1 拍：数字立刻显示 1，并响一声。
+         之后每过一拍才加一，加到音符的拍数就停住，不再加、不再响：
+         全音符显示 1、2、3、4 并响四声，二分音符 1、2 响两声。
+         最后一拍要让这个数字保持一拍——第 N 声之后按住一拍再松手，
+         刚好是 N 拍；这也是孩子要自己数的那一拍。 */
       tone = startTone(midi);
-      live('·', true);
+      live(1, true);
+      clickSound();
       cap.textContent = '数拍子，数够了就松手';
       timer = setInterval(function(){
         if(session !== G.session){ stopTimer(); return; }
         ticks++;
-        clickSound();
-        /* 不在这里停声音：停了就等于告诉孩子「刚好够了」。 */
-        if(ticks >= MAXB){
-          stopTimer();
-          releaseTone(0.2);
-          cap.textContent = '太长了，松开再试';
-          return;
-        }
-        count = ticks;
+        /* 已经数到音符的拍数：停在这里，不多出第 N+1 个数。 */
+        if(ticks >= beats){ stopTimer(); return; }
+        count = ticks + 1;
         live(count, true);
+        clickSound();
       }, MS);
     },
     onUp: function(){

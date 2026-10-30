@@ -68,12 +68,14 @@ hand cue.
 Levels 4 and 5 share the same hold interaction (`holdPad` in `index.html`). There is no
 count-in: the child presses whenever ready, and the press starts the note.
 
-The screen shows one circle that starts with a dot and then shows 1, 2, 3, ... as each beat
-passes, with a click at each number. The press itself is silent and shows no number: it marks
-the start, not beat one. A four-beat note therefore shows 1-2-3-4 and clicks four times, and
-the child releases on the fourth click and the fourth number; a half note shows 1-2. Nothing
-marks the target length in advance, and the tone does not stop at the right moment. The
-keyboard is never highlighted, so finding the note is part of the task.
+The screen shows one circle that reads 1 the moment the key goes down, with a click: the
+press is beat 1. Each following beat adds one and clicks again, and the count stops at the
+note's value, so it never shows one number too many. A four-beat note therefore reads
+1-2-3-4 and clicks four times; a half note reads 1-2. The last number stays on screen for one
+more beat, and that last beat is the part the child has to keep counting: the release comes
+one beat after the fourth click. Nothing marks the target length in advance, and the tone
+does not stop at the right moment. The keyboard is never highlighted, so finding the note is
+part of the task.
 
 The window is 0.3 beat early and 0.62 beat late. A slightly early or late release is forgiven,
 but holding far past the note's length is an error. A wrong release says how long the note is
@@ -177,6 +179,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-10-30 | The hold count starts at 1 on the press and stops at the note's value: 1-2-3-4 and four clicks for a whole note |
 | 2026-10-30 | Clef level adds middle C written on the bass staff's upper ledger line, so there are four spellings |
 | 2026-10-30 | The hold counter no longer shows 0: the press shows a dot, then 1-2-3-4, so a whole note is four numbers, not five |
 | 2026-10-30 | Level 1 draws a fresh sequence each time and never repeats the same note twice in a row |
