@@ -24,8 +24,11 @@ three minutes a day.
   requests. It runs from a static host, and after the first visit it runs offline.
 
 Sound is synthesized at runtime with the Web Audio API; there are no audio files to download.
-The keyboard uses an additive piano voice: ten partials, each an exact integer multiple of the
-equal-tempered fundamental, so the pitch is exact and no sample-shifting is involved.
+The keyboard uses an additive piano voice: twelve partials with the slight stretch of a real
+string, two strings detuned by 0.35 cent so their average is the exact equal-tempered pitch, a
+two-stage decay with no steady sustain, hammer and damper noise, and a light room reverb
+generated in code. The fundamental is always the exact equal-tempered frequency, and no
+sample-shifting is involved.
 Stars and settings live in `localStorage` on the device.
 
 ## Quick start
@@ -181,6 +184,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-10-30 | The piano voice now decays naturally instead of holding a steady tone, with unison strings, stretched partials, hammer and damper noise, and a light room reverb |
 | 2026-10-30 | Keyboard notes use an additive piano voice with exact equal-tempered pitch; still no audio files |
 | 2026-10-30 | The hold count starts at 1 on the press and stops at the note's value: 1-2-3-4 and four clicks for a whole note |
 | 2026-10-30 | Clef level adds middle C written on the bass staff's upper ledger line, so there are four spellings |

@@ -567,61 +567,119 @@ function audioCtx(){
      6 秒内收到 32% 并保持（按住四个拍也还有声）
    松键由 stop() 统一淡出；短音用 o.dur 预约收尾，
    像松键后止音器落下。 */
+/* 一个很轻的房间混响：用程序生成的脉冲响应，不需要音频文件。
+   所有琴音共用一条，只加一点点湿度，免得干合成的「电子味」。
+   脉冲是 0.8 秒的衰减噪声。 */
+let REVERB = null;
+function roomReverb(c){
+  if(REVERB) return REVERB;
+  try{
+    const sr = c.sampleRate;
+    const len = Math.floor(sr * 0.8);
+    const buf = c.createBuffer(2, len, sr);
+    for(let ch = 0; ch < 2; ch++){
+      const d = buf.getChannelData(ch);
+      for(let i = 0; i < len; i++){
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.8);
+      }
+    }
+    const conv = c.createConvolver();
+    conv.buffer = buf;
+    const wet = c.createGain();
+    wet.gain.value = 0.1;
+    conv.connect(wet); wet.connect(c.destination);
+    REVERB = conv;
+  }catch(e){ REVERB = null; }
+  return REVERB;
+}
+
+/* 一小段噪声，用于击弦（起音）和止音（松键）。
+   kind = 'hammer' 时亮一些，'damper' 时闷一些。 */
+function noiseBurst(c, at, out, kind){
+  try{
+    const sr = c.sampleRate;
+    const dur = (kind === 'damper') ? 0.03 : 0.024;
+    const len = Math.max(1, Math.floor(sr * dur));
+    const buf = c.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    for(let i = 0; i < len; i++){
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, (kind === 'damper') ? 2 : 3);
+    }
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter();
+    if(kind === 'damper'){
+      f.type = 'bandpass'; f.frequency.value = 1300; f.Q.value = 0.9;
+    }else{
+      f.type = 'lowpass'; f.frequency.value = 2600;
+    }
+    const g = c.createGain();
+    g.gain.value = (kind === 'damper') ? 0.05 : 0.13;
+    src.connect(f); f.connect(g); g.connect(out);
+    src.start(at); src.stop(at + dur + 0.01);
+  }catch(e){}
+}
+
 function pianoVoice(midi, o){
   o = o || {};
   const c = audioCtx(); if(!c) return null;
-  const f = 440 * Math.pow(2, (midi - 69) / 12);
-  const t = c.currentTime + 0.004;
-  const vol = (o.vol == null) ? 0.3 : o.vol;
+  const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+  const t = c.currentTime + 0.006;
+  const vol = (o.vol == null) ? 0.32 : o.vol;
   const out = c.createGain();
   out.gain.setValueAtTime(vol, t);
   out.connect(c.destination);
+  const rev = roomReverb(c);
+  if(rev){ try { out.connect(rev); } catch(e){} }
 
-  /* 低音更亮；高音短促。bright 只改各次泛音的相对音量，不改频率。 */
-  const bright = midi < 57 ? 1 : (midi < 70 ? 0.72 : 0.52);
+  /* 低音：衰减慢、泛音多；高音：衰减快、泛音少。
+     这个系数只改衰减和相对音量，基频始终是等分音。 */
+  const low = Math.max(0, Math.min(1, (72 - midi) / 30));
+  const tau0 = 3.2 + 3.6 * low;             // 基频衰减时间常数（秒）
+  const B = 0.0004;                          // 轻微非谐性：真实钢琴的高次泛音偏亮
+  const dark = 0.5 + 0.5 * low;              // 高音泛音少
   const oscs = [];
-  for(let i = 1; i <= 10; i++){
-    const amp = Math.pow(i, -1.35) * (i === 1 ? 1 : bright);
-    if(amp < 0.004) continue;
-    const osc = c.createOscillator();
-    osc.type = 'sine';
-    /* 严格整数倍泛音：音高只由基频决定 */
-    osc.frequency.value = f * i;
-    const g = c.createGain();
-    const peak = amp * 0.75;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(peak, t + 0.004 + i * 0.0008);
-    g.gain.exponentialRampToValueAtTime(peak * 0.55, t + 0.1 + i * 0.012);
-    g.gain.exponentialRampToValueAtTime(peak * 0.32, t + 6.1);
-    g.gain.setValueAtTime(peak * 0.32, t + 6.1);
-    osc.connect(g); g.connect(out);
-    osc.start(t);
-    osc.stop(t + 12);                 /* 安全兜底；正常由 stop() 提前结束 */
-    oscs.push(osc);
+
+  for(let n = 1; n <= 12; n++){
+    const amp = Math.pow(n, -1.25) * (n === 1 ? 1 : dark);
+    if(amp < 0.0035) continue;
+    /* 非谐性让第 n 个泛音略高；n=1 时公式为 1，基频不被拉高 */
+    const fn = n * f0 * Math.sqrt(1 + B * (n * n - 1));
+    const tau = tau0 / (1 + 0.25 * (n - 1));
+    /* 每根弦拆成两根，各偏 ±0.35 音分：平均值正好是等分音。
+       偏得再大就会在按住的三四拍里听到一次明显的音量起伏，
+       所以只留一点点缓慢的拍频，给余音一点「活气」。 */
+    for(let k = 0; k < 2; k++){
+      const cents = (k === 0) ? -0.35 : 0.35;
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = fn * Math.pow(2, cents / 1200);
+      const g = c.createGain();
+      const peak = amp * (k === 0 ? 0.52 : 0.48) * 0.72;
+      const tk = tau * (k === 0 ? 1.04 : 0.96);
+      const atk = t + 0.003 + n * 0.0006 + k * 0.0015;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), atk);
+      /* 两段衰减：击弦后 60ms 先掉到六成（这一下是「敲」的味道），
+         然后一路指数衰减，没有稳态平台——按住三四拍是钢琴的自然余音。 */
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * 0.6), atk + 0.06);
+      g.gain.setTargetAtTime(0.0001, atk + 0.06, tk);
+      osc.connect(g); g.connect(out);
+      osc.start(t);
+      osc.stop(t + 14);                 /* 安全兜底；正常由 stop() 提前结束 */
+      oscs.push(osc);
+    }
   }
 
-  /* 击弦噪声：25ms 的衰减噪声，音量很小，只给起音一点木头声 */
-  try{
-    const len = Math.max(1, Math.floor(c.sampleRate * 0.025));
-    const buf = c.createBuffer(1, len, c.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i = 0; i < len; i++){
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
-    }
-    const nsrc = c.createBufferSource(); nsrc.buffer = buf;
-    const lp = c.createBiquadFilter();
-    lp.type = 'lowpass'; lp.frequency.value = (midi < 60) ? 1600 : 2400;
-    const ng = c.createGain(); ng.gain.value = 0.12;
-    nsrc.connect(lp); lp.connect(ng); ng.connect(out);
-    nsrc.start(t); nsrc.stop(t + 0.04);
-  }catch(e){}
+  /* 击弦噪声：起音的一点木头声 */
+  noiseBurst(c, t, out, 'hammer');
 
-  /* 短音：预约在 dur 处淡出，像松键。 */
+  /* 短音：预约在 dur 处淡出，像松键 */
   if(o.dur){
     const end = t + o.dur;
     out.gain.setValueAtTime(vol, end);
-    out.gain.exponentialRampToValueAtTime(0.0004, end + 0.18);
-    oscs.forEach(function(osc){ try { osc.stop(end + 0.25); } catch(e){} });
+    out.gain.exponentialRampToValueAtTime(0.0004, end + 0.16);
+    noiseBurst(c, end, out, 'damper');
+    oscs.forEach(function(osc){ try { osc.stop(end + 0.22); } catch(e){} });
   }
 
   let stopped = false;
@@ -630,7 +688,8 @@ function pianoVoice(midi, o){
       if(stopped) return;
       stopped = true;
       const now = c.currentTime;
-      const d = (fade == null) ? 0.15 : fade;
+      const d = (fade == null) ? 0.12 : fade;
+      noiseBurst(c, now, out, 'damper');
       out.gain.cancelScheduledValues(now);
       out.gain.setValueAtTime(vol, now);
       out.gain.exponentialRampToValueAtTime(0.0004, now + d);
