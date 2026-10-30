@@ -553,32 +553,100 @@ function audioCtx(){
   if(AC.state === 'suspended') AC.resume();
   return AC;
 }
-/* 弹一个短音。基频按十二平均律从 A4=440 反推：f = 440 * 2^((midi-69)/12)。
-   音色用 4 个正弦泛音叠加（1、2、3、4 倍频，音量递减），
-   比单个正弦更接近钢琴，又不用采样文件。 */
+/* ==================== 钢琴音色 ====================
+   页面里仍然没有音频文件：用加法合成做钢琴音色。
+   每个泛音的频率都是基频的整数倍，基频
+     f = 440 * 2^((midi - 69) / 12)
+   就是 MIDI 对应的十二平均律频率，所以换音色不会改变音高，
+   也不会出现采样移调带来的几个音分偏差。
+
+   像钢琴的地方主要在泛音的衰减：高次泛音比基频衰减得快，
+   起音亮、余音渐暗；再叠一下很短的击弦噪声，听感是「敲」出来的。
+   每个泛音的生命周期：
+     起音 4-12ms → 落到 55%（击弦后的第一段衰减）
+     6 秒内收到 32% 并保持（按住四个拍也还有声）
+   松键由 stop() 统一淡出；短音用 o.dur 预约收尾，
+   像松键后止音器落下。 */
+function pianoVoice(midi, o){
+  o = o || {};
+  const c = audioCtx(); if(!c) return null;
+  const f = 440 * Math.pow(2, (midi - 69) / 12);
+  const t = c.currentTime + 0.004;
+  const vol = (o.vol == null) ? 0.3 : o.vol;
+  const out = c.createGain();
+  out.gain.setValueAtTime(vol, t);
+  out.connect(c.destination);
+
+  /* 低音更亮；高音短促。bright 只改各次泛音的相对音量，不改频率。 */
+  const bright = midi < 57 ? 1 : (midi < 70 ? 0.72 : 0.52);
+  const oscs = [];
+  for(let i = 1; i <= 10; i++){
+    const amp = Math.pow(i, -1.35) * (i === 1 ? 1 : bright);
+    if(amp < 0.004) continue;
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    /* 严格整数倍泛音：音高只由基频决定 */
+    osc.frequency.value = f * i;
+    const g = c.createGain();
+    const peak = amp * 0.75;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.004 + i * 0.0008);
+    g.gain.exponentialRampToValueAtTime(peak * 0.55, t + 0.1 + i * 0.012);
+    g.gain.exponentialRampToValueAtTime(peak * 0.32, t + 6.1);
+    g.gain.setValueAtTime(peak * 0.32, t + 6.1);
+    osc.connect(g); g.connect(out);
+    osc.start(t);
+    osc.stop(t + 12);                 /* 安全兜底；正常由 stop() 提前结束 */
+    oscs.push(osc);
+  }
+
+  /* 击弦噪声：25ms 的衰减噪声，音量很小，只给起音一点木头声 */
+  try{
+    const len = Math.max(1, Math.floor(c.sampleRate * 0.025));
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i = 0; i < len; i++){
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    }
+    const nsrc = c.createBufferSource(); nsrc.buffer = buf;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = (midi < 60) ? 1600 : 2400;
+    const ng = c.createGain(); ng.gain.value = 0.12;
+    nsrc.connect(lp); lp.connect(ng); ng.connect(out);
+    nsrc.start(t); nsrc.stop(t + 0.04);
+  }catch(e){}
+
+  /* 短音：预约在 dur 处淡出，像松键。 */
+  if(o.dur){
+    const end = t + o.dur;
+    out.gain.setValueAtTime(vol, end);
+    out.gain.exponentialRampToValueAtTime(0.0004, end + 0.18);
+    oscs.forEach(function(osc){ try { osc.stop(end + 0.25); } catch(e){} });
+  }
+
+  let stopped = false;
+  return {
+    stop: function(fade){
+      if(stopped) return;
+      stopped = true;
+      const now = c.currentTime;
+      const d = (fade == null) ? 0.15 : fade;
+      out.gain.cancelScheduledValues(now);
+      out.gain.setValueAtTime(vol, now);
+      out.gain.exponentialRampToValueAtTime(0.0004, now + d);
+      oscs.forEach(function(osc){ try { osc.stop(now + d + 0.05); } catch(e){} });
+    }
+  };
+}
+
 /* force 只在「试听」按钮里用：即使孩子把琴声关掉了，也要能试出声。 */
 function playMidi(midi, dur, vol, force){
   if(!S.sound && !force) return;
-  const c = audioCtx(); if(!c) return;
-  dur = dur || 0.9; vol = (vol == null) ? 0.34 : vol;
-  const t = c.currentTime + 0.005;
-  const f = 440 * Math.pow(2, (midi - 69) / 12);
-  const out = c.createGain();
-  out.gain.setValueAtTime(0, t);
-  out.gain.linearRampToValueAtTime(vol, t + 0.012);
-  out.gain.exponentialRampToValueAtTime(0.0006, t + dur);
-  out.connect(c.destination);
-  [[1,1],[2,0.34],[3,0.13],[4,0.05]].forEach(function(p){
-    const o = c.createOscillator();
-    o.type = 'sine'; o.frequency.value = f * p[0];
-    const g = c.createGain(); g.gain.value = p[1] * 0.55;
-    o.connect(g); g.connect(out);
-    o.start(t); o.stop(t + dur + 0.1);
-  });
+  pianoVoice(midi, { dur: dur || 0.9, vol: (vol == null) ? 0.3 : vol });
 }
+
 /* 起一个持续音，返回 { stop(fade) }。
-   「按住」关和「听拍数」都用它：音要一直响到松手或拍数数完，
-   所以音量先起后落，再交给调用方决定什么时候淡出。
+   「按住」关用它：音要一直响到松手，所以不预约收尾，由调用方淡出。
    所有还在响的长音都登记在 LIVE 里，切屏或换题时统一停掉，
    否则孩子按住键点「←」离开，琴音会一直留在首页。 */
 const LIVE = new Set();
@@ -588,32 +656,13 @@ function stopAllTones(){
 }
 function startTone(midi){
   if(!S.sound) return null;
-  const c = audioCtx(); if(!c) return null;
-  const t = c.currentTime;
-  const f = 440 * Math.pow(2, (midi - 69) / 12);
-  const out = c.createGain();
-  out.gain.setValueAtTime(0, t);
-  out.gain.linearRampToValueAtTime(0.34, t + 0.02);
-  out.gain.linearRampToValueAtTime(0.2, t + 0.22);
-  out.connect(c.destination);
-  const oscs = [[1,1],[2,0.34],[3,0.13],[4,0.05]].map(function(p){
-    const o = c.createOscillator();
-    o.type = 'sine'; o.frequency.value = f * p[0];
-    const g = c.createGain(); g.gain.value = p[1] * 0.55;
-    o.connect(g); g.connect(out); o.start(t);
-    return o;
-  });
+  const v = pianoVoice(midi, { vol: 0.3 });
+  if(!v) return null;
   const handle = {
     stop: function(fade){
       if(!LIVE.has(handle)) return;
       LIVE.delete(handle);
-      const now = c.currentTime;
-      const d = (fade == null) ? 0.15 : fade;
-      const cur = Math.max(0.001, out.gain.value);
-      out.gain.cancelScheduledValues(now);
-      out.gain.setValueAtTime(cur, now);
-      out.gain.exponentialRampToValueAtTime(0.0008, now + d);
-      oscs.forEach(function(o){ try { o.stop(now + d + 0.05); } catch(e){} });
+      v.stop(fade);
     }
   };
   LIVE.add(handle);
