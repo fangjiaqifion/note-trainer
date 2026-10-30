@@ -66,11 +66,12 @@ hand cue.
 Levels 4 and 5 share the same hold interaction (`holdPad` in `index.html`). There is no
 count-in: the child presses whenever ready, and the press itself is beat 1.
 
-The screen shows one circle that starts at 0 and adds one for each beat held. It shows how
-many beats have been held, never how many are needed, and nothing marks the target length;
-the tone does not stop at the right moment either. A two-beat note means "count to 2 and let
-go", which matches the score. The keyboard is never highlighted, so finding the note is part
-of the task.
+The screen shows one circle that starts at 0 and adds one for each beat held, and a click
+sounds at each of those beats. The press itself is silent: it marks the start, not beat one.
+A four-beat note therefore clicks four times, and the child releases on the fourth click and
+the fourth number, which matches the score. Nothing marks the target length in advance, and
+the tone does not stop at the right moment. The keyboard is never highlighted, so finding the
+note is part of the task.
 
 The window is 0.3 beat early and 0.62 beat late. A slightly early or late release is forgiven,
 but holding far past the note's length is an error. A wrong release says how long the note is
@@ -168,6 +169,9 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-10-30 | Level 1 draws a fresh sequence each time and never repeats the same note twice in a row |
+| 2026-10-30 | The beat counter clicks once per beat held; the press is silent, so a four-beat note counts four clicks, not five |
+| 2026-10-30 | Question speech is queued one sentence at a time, so changing between the Chinese and English voices cannot drop a prompt |
 | 2026-10-30 | Added a clef level between the staff/keyboard level and the beat-count level; levels are renumbered and saved stars move with them |
 | 2026-10-30 | Level 4 no longer highlights the key or shows the beat count: finding the note and judging the length are part of the answer |
 | 2026-10-30 | Level 1 states the task once instead of naming the note in the instruction every time |

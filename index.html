@@ -382,6 +382,40 @@ function shuffle(a){
   for(let i = a.length - 1; i > 0; i--){ const j = randInt(i + 1); const t = a[i]; a[i] = a[j]; a[j] = t; }
   return a;
 }
+/* 把一串字母重排成「不连着出现同一个」的顺序。
+   先洗牌，再把重复处和别处交换；修完还有重复就重新洗一次再修。
+   第 1 关只有 B、C、D，纯洗牌经常连出三个 C，
+   孩子会觉得「怎么又是这个」。 */
+function spreadLetters(list){
+  function hasRun(a, i){
+    return (i > 0 && a[i] === a[i-1]) || (i + 1 < a.length && a[i] === a[i+1]);
+  }
+  function hasAnyRun(a){
+    for(let i = 1; i < a.length; i++){ if(a[i] === a[i-1]) return true; }
+    return false;
+  }
+  /* 把每一处重复和另一个不同的字母对调，要求对调后两处附近都不重复。 */
+  function repair(a){
+    for(let pass = 0; pass < 8; pass++){
+      let moved = false;
+      for(let i = 1; i < a.length; i++){
+        if(a[i] !== a[i-1]) continue;
+        for(let j = 0; j < a.length; j++){
+          if(j === i || j === i - 1 || a[j] === a[i-1]) continue;
+          const t = a[i]; a[i] = a[j]; a[j] = t;
+          if(!hasRun(a, i) && !hasRun(a, j)){ moved = true; break; }
+          const u = a[i]; a[i] = a[j]; a[j] = u;
+        }
+      }
+      if(!moved) break;
+    }
+    return a;
+  }
+  let a = repair(shuffle(list));
+  /* 少数牌型一次修不干净，换一个洗牌结果再修；修不好就返回当前这个。 */
+  for(let t = 0; t < 20 && hasAnyRun(a); t++){ a = repair(shuffle(list)); }
+  return a;
+}
 
 /* 十二平均律的音级表，一个八度内 C 到 B。
    midi 音高除以 12 取余就得到音级，负数的余数要先 +12 转正。 */
@@ -621,34 +655,61 @@ if('speechSynthesis' in window){
   if(speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', loadVoices);
 }
 /* force 同上：试听时不管「语音念题」开关，直接念一句。 */
+/* 依次念的序号：每次 say 换一个新号，旧句子的 onend 回调就不再往下念。
+   否则退出关卡后，没念完的句子还会继续排队念下去。 */
+let saySeq = 0;
+
 function say(text, force){
   if((!S.speech && !force) || !text || !('speechSynthesis' in window)) return;
   if(!enVoice || !zhVoice) loadVoices();
+  let line = String(text);
+  SAY_FIX.forEach(function(p){ line = line.replace(p[0], p[1]); });
+  /* 捕获组切开：'找到 C' → ['找到 ', 'C']。
+     单个字母走英文声音，其余整段走中文声音。 */
+  const parts = line.split(/([A-Za-z])/).filter(function(s){ return s.length; });
+  const items = parts.map(function(part){
+    const isLetter = /^[A-Za-z]$/.test(part);
+    const spoken = isLetter ? (LETTER_SAY[part.toLowerCase()] || part) : part;
+    const u = new SpeechSynthesisUtterance(spoken);
+    u.lang = isLetter ? 'en-US' : 'zh-CN';
+    u.rate = isLetter ? 0.85 : 0.95;
+    u.pitch = 1.02;
+    /* 念题只是提示，不要盖过琴声：语音 0.6，钢琴音量已相应调高（见 playMidi）。 */
+    u.volume = 0.6;
+    if(isLetter && enVoice) u.voice = enVoice;
+    if(!isLetter && zhVoice) u.voice = zhVoice;
+    return u;
+  });
+  const seq = ++saySeq;
   try{
-    /* 没有正在念的就不要 cancel：iOS 上 cancel 之后紧接着 speak，
-       第一句偶尔会被吞掉。 */
-    if(speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
-    let line = String(text);
-    SAY_FIX.forEach(function(p){ line = line.replace(p[0], p[1]); });
-    /* 捕获组切开：'找到 C' → ['找到 ', 'C']。
-       单个字母走英文声音，其余整段走中文声音。 */
-    const parts = line.split(/([A-Za-z])/).filter(function(s){ return s.length; });
-    parts.forEach(function(part){
-      const isLetter = /^[A-Za-z]$/.test(part);
-      const spoken = isLetter ? (LETTER_SAY[part.toLowerCase()] || part) : part;
-      const u = new SpeechSynthesisUtterance(spoken);
-      u.lang = isLetter ? 'en-US' : 'zh-CN';
-      u.rate = isLetter ? 0.85 : 0.95;
-      u.pitch = 1.02;
-      /* 念题只是提示，不要盖过琴声：语音 0.6，钢琴音量已相应调高（见 playMidi）。 */
-      u.volume = 0.6;
-      if(isLetter && enVoice) u.voice = enVoice;
-      if(!isLetter && zhVoice) u.voice = zhVoice;
+    const wasBusy = speechSynthesis.speaking || speechSynthesis.pending;
+    if(wasBusy) speechSynthesis.cancel();
+    let i = 0;
+    /* 一句念完再排下一句。把三句一次性塞进队列时，iOS 上换语种的
+       那一句偶尔会被吞掉，整段题干就不响了。 */
+    function next(){
+      if(seq !== saySeq || i >= items.length) return;
+      const u = items[i++];
+      let done = false;
+      let guard = null;
+      function advance(){
+        if(done) return;
+        done = true;
+        if(guard) clearTimeout(guard);
+        next();
+      }
+      /* onend 偶尔不触发，用一个按字数估的兜底计时器接着往下走。 */
+      guard = setTimeout(advance, 2500 + u.text.length * 160);
+      u.onend = advance;
+      u.onerror = advance;
       speechSynthesis.speak(u);
-    });
+    }
+    /* iOS 上 cancel 之后紧接着 speak，第一句容易被吞，先让出一点时间。 */
+    setTimeout(next, wasBusy ? 90 : 0);
   }catch(e){}
 }
 function stopSay(){
+  saySeq++;
   try { if('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e){}
 }
 
@@ -1108,7 +1169,7 @@ function qClef(noteId){
   return {
     kind:'clef', noteId:noteId, wrong:0,
     render: function(){
-      setPrompt('这是' + labelOf(n) + '，用哪个谱号？', '这是' + labelOf(n) + '，用哪个谱号');
+      setPrompt('这个音符是' + labelOf(n) + '，用哪个谱号？', '这个音符是' + labelOf(n) + '，用哪个谱号');
       stageEl.innerHTML = staffBlock({ noteId:noteId, noClef:true });
       const box = document.createElement('div');
       box.className = 'opts';
@@ -1143,7 +1204,7 @@ function qClef(noteId){
       $$('.opt.clef', answerEl).forEach(function(b){
         if(b.dataset.clef === right) b.classList.add('correct');
       });
-      setPrompt('这是' + labelOf(n) + '，用' + name, false);
+      setPrompt('这个音符是' + labelOf(n) + '，用' + name, false);
     }
   };
 }
@@ -1225,7 +1286,10 @@ function holdPad(host, noteId, beats, opts){
       if(resetTimer){ clearTimeout(resetTimer); resetTimer = null; }
       stopTimer(); releaseTone(0.06);
       count = 0; ticks = 0; pressAt = performance.now();
-      clickSound();
+      /* 按下这一下不出声：它只是「开始」，不是第一拍。
+         否则 4 拍的音符会响 5 下（按下 1 下 + 之后 4 下），
+         孩子会数成 5 拍。现在每过满一拍才响一下，
+         计数器的数字和响声一一对应：数到 4 就是响 4 下。 */
       tone = startTone(midi);
       live(0, true);
       cap.textContent = '数拍子，数够了就松手';
@@ -1662,6 +1726,24 @@ function repeatTo(arr, n){
   return out.slice(0, n);
 }
 
+/* 第 1 关的字母序列：从一组按权重摆好的字母里随机抽 n 个，
+   所以每次的题量构成会略有不同（不会永远是 3C/3B/2D）。
+   两个约束：三个音都要出现；相邻两题不重复同一个音。
+   纯随机洗牌时常连出三个 C，孩子会觉得「怎么又是这个」。 */
+function findKeyLetters(n){
+  const base = ['C','C','C','B','B','B','D','D','C','B'];  // C、B 多：两端的锚点
+  const picked = shuffle(base).slice(0, n);
+  ['B','C','D'].forEach(function(need){
+    if(picked.indexOf(need) >= 0) return;
+    const count = {};
+    picked.forEach(function(x){ count[x] = (count[x] || 0) + 1; });
+    let idx = -1, best = 0;
+    picked.forEach(function(x, i){ if(count[x] > best){ best = count[x]; idx = i; } });
+    if(idx >= 0 && best > 1) picked[idx] = need;
+  });
+  return spreadLetters(picked);
+}
+
 /* 每关的题目构成：
      第 1 关  从预置序列里抽，C 和 B 出现得多一点，先把两端的锚点认熟
      第 2 关  一半「谱→键」，一半「键→谱」，交替练双向映射
@@ -1675,8 +1757,7 @@ function buildQuestions(level){
   let qs = [];
 
   if(level === 1){
-    const base = ['C','C','C','B','B','B','D','D','C','B'];
-    qs = shuffle(base.slice(0, n)).map(qFindKey);
+    qs = findKeyLetters(n).map(qFindKey);
   }else if(level === 2){
     const ids = shuffle(repeatTo(NOTE_IDS, n));
     const half = Math.ceil(n / 2);
@@ -1708,7 +1789,9 @@ function buildQuestions(level){
     for(let i = 0; i < m; i++) qs.push(qPlayNote(ids[i], vals[i]));
   }
 
-  return shuffle(qs);
+  /* 第 1 关已经在生成时排成「不连着重复」的顺序，这里不能再洗一次，
+     否则刚打散的字母又被洗回一长串同样的音。其它关照常打乱。 */
+  return (level === 1) ? qs : shuffle(qs);
 }
 
 /* ==================== 流程 ==================== */
