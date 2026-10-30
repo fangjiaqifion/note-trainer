@@ -1062,10 +1062,10 @@ function beatsOptions(correct, n){
      松手         → 只判「够不够长」
 
    blind（不告诉拍数，第 3 关「哪个是二分音符」与第 4 关用）
-     拍子格换成一个从 1 往上走的计数器：它只显示已经数到几，
-     不显示应该数到几，也不在到点时停掉声音。
-     数到几该松手，由孩子自己从谱面判断；
-     所以上下两个方向都判，按过头同样算错。
+     拍子格换成一个从 0 开始、每过一拍加 1 的计数器：它显示的是
+     「已经按住几拍」，不显示「应该按几拍」，也不在到点时停掉声音。
+     音符是 2 拍就数到 2 松手，和谱面对得上；
+     该不该松手由孩子自己从谱面判断，所以按过头同样算错。
 
    没有预备拍。按下就是第一拍，孩子什么时候准备好就什么时候开始。
    容差 tol 拍（默认 0.3，只放宽「晚一点松手」）。手指抬起总会晚一点，
@@ -1098,7 +1098,7 @@ function holdPad(host, noteId, beats, opts){
   cap.className = 'beat-cap';
   let track = null, circle = null;
   if(blind){
-    /* 一个圆，按下后从 1 往上走。没有「一共几格」，所以看不出答案。 */
+    /* 一个圆，按下后从 0 开始，每过一拍加 1。没有「一共几格」，看不出答案。 */
     circle = document.createElement('div');
     circle.className = 'beat-live';
     circle.textContent = '·';
@@ -1157,7 +1157,9 @@ function holdPad(host, noteId, beats, opts){
       clickSound();
       tone = startTone(midi);
       if(blind){
-        live(1, true);
+        /* 显示「已经按住几拍」，不是「现在是第几拍」：
+           音符是 2 拍，数到 2 就松手，和谱面直接对应。 */
+        live(0, true);
         cap.textContent = '数拍子，数够了就松手';
       }else{
         paint();
@@ -1175,7 +1177,7 @@ function holdPad(host, noteId, beats, opts){
             cap.textContent = '太长了，松开再试';
             return;
           }
-          count = ticks + 1;
+          count = ticks;
           live(count, true);
           cap.textContent = '数拍子，数够了就松手';
           return;

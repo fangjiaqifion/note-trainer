@@ -65,10 +65,11 @@ There are two display modes:
 - **Dots** (level 3, "how many beats"): one dot per beat, filled as the beats pass, and the
   tone stops by itself at the note's real length, which is the signal to let go. The beat
   count has already been answered, so showing it gives nothing away.
-- **Counter** (level 3 "which one", and all of level 4): one circle that counts up from 1
-  while the key is held. It shows how many beats have passed, never how many are needed, and
-  nothing marks the target length. The player has to judge from the score when to let go, so
-  holding too long is an error too, not just releasing early.
+- **Counter** (level 3 "which one", and all of level 4): one circle that starts at 0 and adds
+  one for each beat held. It shows how many beats have been held, never how many are needed,
+  and nothing marks the target length. A two-beat note means "count to 2 and let go", which
+  matches the score. The player has to judge when to let go, so holding too long is an error
+  too, not just releasing early.
 
 In counter mode the window is 0.3 beat early and 0.62 beat late. Sight-reading in time is
 hard for a four-year-old, so a slightly early or late release is forgiven; holding far past
