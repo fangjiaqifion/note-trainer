@@ -429,29 +429,43 @@ const WHITE_OFF = [0,2,4,5,7,9,11];
    当前单元。换单元只改这三处：往 NOTES 里加音、把 id 放进 UNIT.notes、
    必要时登记 LEDGER 加线。关卡会按 NOTE_IDS 自动扩到新音。
 
-   每个音七个字段：
+   每个音至少有七个字段：
      id      内部键名，和文件名、题库里用的字符串一致
      letter  音名，第 1 关按它出题，只比音级不比音组
      label   中文说明，判对时的提示语用
      midi    MIDI 音高，59=B3、60=中央 C、62=D4；发声和键盘定位都靠它
      clef    用哪个谱号画，'treble' 或 'bass'
      y       在谱表上的纵向位置，单位是「线距」，见 staffSVG 的坐标说明
-     hand    'L' 左手 / 'R' 右手；渲染时直接决定符杆朝上还是朝下
+     hand    'L' 左手 / 'R' 右手；渲染时决定符杆朝上还是朝下
      finger  指法数字，第 5 关写在音符外侧
 
-   目前是 B3、C4、D4：B 用低音谱号（上加一间），中央 C 与 D 用高音谱号。 */
+   可选字段：
+     stem      'up' / 'down'，覆盖 hand 给出的符杆方向（用于谱表上方的音）
+     clefHint  第 3 关答错时给的那句提示
+
+   目前是 B3、C4、D4，外加只给第 3 关用的 C4B：
+   B 用低音谱号（上加一间），中央 C 与 D 用高音谱号；
+   C4B 是中央 C 的低音谱号写法（上加一线）。 */
 const NOTES = {
-  B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2 },
-  C4: { id:'C4', letter:'C', label:'中央 C', midi:60, clef:'treble', y:5.0,  hand:'R', finger:1 },
-  D4: { id:'D4', letter:'D', label:'D',      midi:62, clef:'treble', y:4.5,  hand:'R', finger:2 }
+  B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2,
+        clefHint:'B 比中央 C 低，写在低音谱号里' },
+  C4: { id:'C4', letter:'C', label:'中央 C', midi:60, clef:'treble', y:5.0,  hand:'R', finger:1,
+        clefHint:'中央 C 写在高音谱号的下加一线上' },
+  D4: { id:'D4', letter:'D', label:'D',      midi:62, clef:'treble', y:4.5,  hand:'R', finger:2,
+        clefHint:'D 在中央 C 上面，写在高音谱号里' },
+  /* 中央 C 的另一种写法：低音谱号的上加一线。音高同 C4，只给第 3 关
+     「用哪个谱号」用，所以不放进 UNIT.notes。它在谱表上方，
+     按惯例符杆朝下，用 stem 覆盖 hand 决定的方向。 */
+  C4B:{ id:'C4B', letter:'C', label:'中央 C', midi:60, clef:'bass', y:-1, hand:'R', finger:1, stem:'down',
+        clefHint:'中央 C 也可以写在低音谱号的上加一线上' }
 };
 /* 单元标题只影响首页副标题，真正出题用的是 notes 数组。 */
 const UNIT = { name:'第一单元', label:'B · 中央 C · D', notes:['B3','C4','D4'] };
 const NOTE_IDS = UNIT.notes;
 /* 需要加线的音登记在这里：{ 谱号: { 音 id: 加线的 y 位置 } }。
-   中央 C 在高音谱号下加一线，所以是 5；低音谱号当前没有加线音。
+   中央 C 有两种写法：高音谱号下加一线（y=5）、低音谱号上加一线（y=-1）。
    漏登记的表现是：音符漂浮在谱表外，没有那条短横线。 */
-const LEDGER = { treble: { C4: 5 }, bass: {} };
+const LEDGER = { treble: { C4: 5 }, bass: { C4B: -1 } };
 
 /* 四种时值。beats 是拍数，也是判题依据；
    filled / stem / dot 描述符头要不要实心、有没有符杆、有没有附点，
@@ -469,7 +483,7 @@ const VALUE_IDS = ['quarter','half','dotted','whole'];
 const LEVELS = [
   { id:1, name:'找键盘', title:'键盘上的位置', desc:'音名对应哪个键', color:'#3C7DD9' },
   { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号与高音谱号', color:'#E08A2E' },
-  { id:3, name:'谱号',   title:'用哪个谱号',   desc:'B 用低音谱号，中央 C 和 D 用高音谱号', color:'#2E9C8F' },
+  { id:3, name:'谱号',   title:'用哪个谱号',   desc:'同一个中央 C，有高音、低音两种写法', color:'#2E9C8F' },
   { id:4, name:'时值',   title:'读谱与拍数',   desc:'读谱、找键、弹够时值', color:'#3FA96F' },
   { id:5, name:'读谱',   title:'手、指与拍数', desc:'先判手和指，再按住弹够时值', color:'#8E5AA8' }
 ];
@@ -770,7 +784,9 @@ function staffSVG(o){
   /* 符杆方向就是左右手：右手朝上，左手朝下。
      这样孩子在屏幕上看到的和纸面谱一致，换回纸质谱不用重学。
      杆长固定 3.45 单位（约三个半线距），不随音高变化。 */
-  const up = n.hand === 'R';
+  /* 符杆方向一般由左右手决定，个别写法用 note.stem 覆盖：
+     中央 C 写在低音谱号上加一线时在谱表上方，按惯例符杆朝下。 */
+  const up = n.stem ? (n.stem === 'up') : (n.hand === 'R');
   if(v.stem){
     const sx = up ? noteX + 0.55 : noteX - 0.55;
     const y2 = up ? y - 3.45 : y + 3.45;
@@ -1189,9 +1205,7 @@ function qClef(noteId){
           }else{
             b.classList.add('wrong');
             setTimeout(function(){ b.classList.remove('wrong'); }, 500);
-            judge(false, right === 'bass'
-              ? '比中央 C 低，用低音谱号'
-              : '中央 C 及以上，用高音谱号', 0, true);
+            judge(false, n.clefHint || '先看这个音在谱表的哪一边', 0, true);
           }
         });
         box.appendChild(b);
@@ -1286,12 +1300,12 @@ function holdPad(host, noteId, beats, opts){
       if(resetTimer){ clearTimeout(resetTimer); resetTimer = null; }
       stopTimer(); releaseTone(0.06);
       count = 0; ticks = 0; pressAt = performance.now();
-      /* 按下这一下不出声：它只是「开始」，不是第一拍。
-         否则 4 拍的音符会响 5 下（按下 1 下 + 之后 4 下），
-         孩子会数成 5 拍。现在每过满一拍才响一下，
-         计数器的数字和响声一一对应：数到 4 就是响 4 下。 */
+      /* 按下这一下不出声，也不显示 0：它只是「开始」，不是第一拍。
+         否则 4 拍的音符会先出现 0、再出现 1-2-3-4，看起来像 5 拍。
+         现在按下显示 ·，之后每满一拍显示 1、2、3、4 并响一声：
+         全音符正好四个数字、四声，二分音符两个。 */
       tone = startTone(midi);
-      live(0, true);
+      live('·', true);
       cap.textContent = '数拍子，数够了就松手';
       timer = setInterval(function(){
         if(session !== G.session){ stopTimer(); return; }
@@ -1765,13 +1779,9 @@ function buildQuestions(level){
     ids.slice(half).forEach(function(id){ qs.push(qKeyToStaff(id)); });
     while(qs.length < n) qs.push(qKeyToStaff(pick(NOTE_IDS)));
   }else if(level === 3){
-    /* 谱号题：本单元只有 B 用低音谱号，所以低音、高音各占一半。
-       若按三个音均匀抽，三分之二都是高音谱号，每次猜高音就能蒙对大半。 */
-    const half = Math.ceil(n / 2);
-    const ids = [];
-    for(let i = 0; i < half; i++) ids.push('B3');
-    shuffle(repeatTo(['C4','D4'], n - half)).forEach(function(id){ ids.push(id); });
-    qs = shuffle(ids).map(qClef);
+    /* 谱号题有四种写法：B、中央 C 的高音写法、中央 C 的低音写法、D。
+       低音、高音各占一半，避免每次都猜高音就蒙对大半。 */
+    qs = shuffle(repeatTo(['B3','C4','D4','C4B'], n)).map(qClef);
   }else if(level === 4){
     const vals = shuffle(repeatTo(VALUE_IDS, n));
     for(let i = 0; i < n; i++){

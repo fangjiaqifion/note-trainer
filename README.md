@@ -39,15 +39,17 @@ Stars and settings live in `localStorage` on the device.
 |---|---|---|
 | 1 · Find the key | A big letter (B / C / D) is shown under one instruction, "find the position of the displayed note name". Tap that key on either keyboard | Any octave. This level tests the letter, not the register |
 | 2 · Staff ↔ keyboard | Two directions alternate: read a note and tap a key, or read a highlighted key and pick the matching staff image | Exact register, and the correct clef |
-| 3 · Which clef | A note is drawn on a staff that has no clef, and the prompt says which note it is ("this is B"). Choose the treble or the bass clef | B3 takes the bass clef; middle C and D4 take the treble clef. A correct choice draws the clef into the staff, so the player sees the score completed |
+| 3 · Which clef | A note is drawn on a staff that has no clef, and the prompt says which note it is ("this is B" / "this is middle C"). Choose the treble or the bass clef | Four spellings: B3 in the space above the bass staff takes the bass clef; middle C on the first ledger line below the treble staff takes the treble clef; middle C on the first ledger line above the bass staff takes the bass clef; D4 in the space below the treble staff takes the treble clef |
 | 4 · Read and hold | Read the note, choose how many beats it lasts, then find the key on the keyboard yourself and hold it for that long | Quarter 1, half 2, dotted half 3, whole 4 for the first step. The key is not highlighted and the beat count is not shown again: finding the key and judging the length are part of the answer |
 | 5 · Hand, finger, hold | Three stages per question: choose the hand, choose the finger, then hold the key for the note's full length | Hand and finger per the table below; holding is judged in both directions |
 
-**The clef level teaches one rule.** Middle C is the boundary: notes below it are written in
-the bass clef, middle C and the notes above it in the treble clef. The staff is drawn without
-a clef and the prompt names the note, so the question is only which clef that note belongs to.
-On a correct answer the clef appears where the question mark was. Low and high are balanced
-fifty-fifty, because only B3 is a bass-clef note in this unit.
+**The clef level teaches one reading.** Middle C has two spellings: on the first ledger line
+below the treble staff, and on the first ledger line above the bass staff. The level adds one
+more note on each side, B3 in the space above the bass staff and D4 in the space below the
+treble staff. The staff is drawn without a clef and the prompt names the note, so the question
+is which clef makes that written position that note. On a correct answer the clef appears
+where the question mark was. The four spellings appear equally often, so always guessing one
+clef cannot beat the level.
 
 **Level 4 asks three things, one after another.** The player reads the note, answers how many
 beats, then has to find that note on the keyboard and hold it for the right length. An older
@@ -64,14 +66,14 @@ hand cue.
 ## Holding a note
 
 Levels 4 and 5 share the same hold interaction (`holdPad` in `index.html`). There is no
-count-in: the child presses whenever ready, and the press itself is beat 1.
+count-in: the child presses whenever ready, and the press starts the note.
 
-The screen shows one circle that starts at 0 and adds one for each beat held, and a click
-sounds at each of those beats. The press itself is silent: it marks the start, not beat one.
-A four-beat note therefore clicks four times, and the child releases on the fourth click and
-the fourth number, which matches the score. Nothing marks the target length in advance, and
-the tone does not stop at the right moment. The keyboard is never highlighted, so finding the
-note is part of the task.
+The screen shows one circle that starts with a dot and then shows 1, 2, 3, ... as each beat
+passes, with a click at each number. The press itself is silent and shows no number: it marks
+the start, not beat one. A four-beat note therefore shows 1-2-3-4 and clicks four times, and
+the child releases on the fourth click and the fourth number; a half note shows 1-2. Nothing
+marks the target length in advance, and the tone does not stop at the right moment. The
+keyboard is never highlighted, so finding the note is part of the task.
 
 The window is 0.3 beat early and 0.62 beat late. A slightly early or late release is forgiven,
 but holding far past the note's length is an error. A wrong release says how long the note is
@@ -87,7 +89,9 @@ and keeps the same question on screen; after two failed holds the correct key is
 
 The stem direction *is* the hand: right hand up, left hand down. The fingering digit sits
 outside the staff, on the far side from the note. This matches printed music, so nothing has
-to be relearned when the child moves back to paper.
+to be relearned when the child moves back to paper. Middle C has a second legal spelling, on
+the first ledger line above the bass staff; it is `C4B` in `NOTES` and appears only in the
+clef level.
 
 The digit is drawn in the same colour as the ring on the cartoon hand, so "the 2 on the
 score" and "the hand whose index finger wears the ring" are visibly the same thing. The hand
@@ -129,6 +133,10 @@ const UNIT = { name:'第一单元', label:'B · 中央 C · D', notes:['B3','C4'
 const LEDGER = { treble: { C4: 5 }, bass: {} };
 ```
 
+The clef level also uses `C4B`, a second spelling of middle C on the bass staff
+(`clef:'bass'`, `y:-1`, `stem:'down'`, registered in `LEDGER.bass`). It is not in
+`UNIT.notes`, so only the clef level draws it.
+
 To add a note:
 
 1. Add an entry to `NOTES`.
@@ -169,6 +177,8 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-10-30 | Clef level adds middle C written on the bass staff's upper ledger line, so there are four spellings |
+| 2026-10-30 | The hold counter no longer shows 0: the press shows a dot, then 1-2-3-4, so a whole note is four numbers, not five |
 | 2026-10-30 | Level 1 draws a fresh sequence each time and never repeats the same note twice in a row |
 | 2026-10-30 | The beat counter clicks once per beat held; the press is silent, so a four-beat note counts four clicks, not five |
 | 2026-10-30 | Question speech is queued one sentence at a time, so changing between the Chinese and English voices cannot drop a prompt |
@@ -272,9 +282,9 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   picture, but the actual hand position still has to be checked on the piano by an adult.
 - Holding is judged by duration only, not by which finger pressed. In level 5 the hand and
   finger are checked before the key is pressed, not while it is held.
-- The clef level teaches a rule of thumb, not a law of notation: in beginner piano music
-  notes below middle C use the bass clef and middle C and above use the treble clef, but
-  clefs are not defined by register in general.
+- The clef level covers the four spellings this unit uses, not the general rule that clefs
+  are chosen by register: middle C is legal in both clefs, and one pitch can be written more
+  than one way.
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
   device from a broken page.
 - Speech depends on installed system voices: Chinese text uses a Chinese voice, while the
