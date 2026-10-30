@@ -39,23 +39,42 @@ Stars and settings live in `localStorage` on the device.
 |---|---|---|
 | 1 · Find the key | A letter (B / C / D) is shown; tap it on either keyboard | Any octave. This level tests the letter, not the register |
 | 2 · Staff ↔ keyboard | Two directions alternate: read a note and tap a key, or read a highlighted key and pick the matching staff image | Exact register, and the correct clef |
-| 3 · How many beats | Read the notehead and stem to choose 1–4 beats, or answer "which one is a half note?" A correct count is followed by holding the key for that many beats | Quarter 1, half 2, dotted half 3, whole 4. In this level the hold is practice, not a test: the key is already highlighted, and releasing early only says how long the note is and lets the child try again |
-| 4 · Hand, finger, hold | Read the stem to choose the hand, read the fingering digit, and hold a key for the note's full length | Hand and finger per the table below. Holding is judged by elapsed beats, with 0.3 beat of tolerance |
+| 3 · How many beats | Read the notehead and stem to choose 1–4 beats, or answer "which one is a half note?" A correct answer is followed by holding the key for that many beats | Quarter 1, half 2, dotted half 3, whole 4. In the "how many beats" variant the hold is practice, not a test: the key is already highlighted, and releasing early only says how long the note is and lets the child try again. In the "which one" variant the app never says how many beats to count: the child watches a beat counter and decides when to let go |
+| 4 · Hand, finger, hold | Three stages per question: read the stem and choose the hand, read the fingering digit and choose the finger, then hold the key for the note's full length | Hand and finger per the table below. Holding is judged by elapsed beats: 0.3 beat early is forgiven, holding past the note's length is an error |
 
-Level 4 does not reveal the beat count: the player has to read it from the note. While a key
-is held, one dot lights up per beat and the tone keeps sounding; releasing early gets
-"This note is 3 beats, you held 2".
+**Level 4 is three questions in one.** Each note asks, in order: which hand, which finger,
+then play it for its full length. The first two stages are answered by tapping a picture, so
+the finger number is actually tested rather than merely printed. The finger choices are two or
+three cartoon hands (depending on difficulty), each with one finger raised and labelled with
+the finger's name; the score prints the digit, and the player has to connect "2" with the
+index finger. A correct hand or finger just moves on to the next stage; only the final hold
+is judged for stars, and a mistake at any stage still costs the first-try star.
+
+Level 4 never shows the beat count: the player has to read it from the note. It draws only
+quarter, half, and dotted half notes, because a whole note has no stem, and the stem direction
+is what encodes the hand. The whole note stays in level 3.
 
 ## Holding a note
 
 Levels 3 and 4 share the same hold interaction (`holdPad` in `index.html`). There is no
-count-in: the child presses whenever ready, and the press itself is beat 1. Each beat
-lights one dot and clicks, and the tone stops by itself at the note's real length, which is
-the signal to let go. Releasing too early says how long the note is and keeps the same
-question on screen, so the child can try again immediately.
+count-in: the child presses whenever ready, and the press itself is beat 1. Every beat
+clicks, and the tone keeps sounding until the key is released.
 
-The tolerance is 0.3 beat. Sight-reading in time is hard for a four-year-old, and a release
-that is a little late is not the error this level is testing.
+There are two display modes:
+
+- **Dots** (level 3, "how many beats"): one dot per beat, filled as the beats pass, and the
+  tone stops by itself at the note's real length, which is the signal to let go. The beat
+  count has already been answered, so showing it gives nothing away.
+- **Counter** (level 3 "which one", and all of level 4): one circle that counts up from 1
+  while the key is held. It shows how many beats have passed, never how many are needed, and
+  nothing marks the target length. The player has to judge from the score when to let go, so
+  holding too long is an error too, not just releasing early.
+
+In counter mode the window is 0.3 beat early and 0.62 beat late. Sight-reading in time is
+hard for a four-year-old, so a slightly early or late release is forgiven; holding far past
+the note's length is not. In dots mode a late release is not penalised at all, because the
+tone stopping is the cue to let go. A wrong release says how long the note is and keeps the
+same question on screen, so the child can try again immediately.
 
 ## Notation conventions
 
@@ -69,17 +88,26 @@ The stem direction *is* the hand: right hand up, left hand down. The fingering d
 outside the staff, on the far side from the note. This matches printed music, so nothing has
 to be relearned when the child moves back to paper.
 
+The digit is drawn in the same colour as the raised finger on the cartoon hands, so "the 2 on
+the score" and "the hand with the index finger up" are visibly the same thing. The hand
+pictures show the thumb clearly (right hand: thumb on the left) and use a blue sleeve for the
+left hand and a coral sleeve for the right, the convention many beginner piano books use.
+
 ## Difficulty
 
-| Setting | Options (level 3 / level 2) | Hint after | Tempo | Questions |
+| Setting | Options (level 3 / level 2 / finger) | Hint after | Tempo | Questions (levels 1–3 / level 4) |
 |---|---|---|---|---|
-| Easy | 2 / 2 | 1 mistake | 52 BPM | 8 |
-| Normal | 4 / 3 | 2 mistakes | 60 BPM | 8 |
-| Hard | 4 / 3 | 3 mistakes | 76 BPM | 10 |
+| Easy | 2 / 2 / 2 | 1 mistake | 52 BPM | 8 / 6 |
+| Normal | 4 / 3 / 3 | 2 mistakes | 60 BPM | 8 / 6 |
+| Hard | 4 / 3 / 3 | 3 mistakes | 76 BPM | 10 / 8 |
 
-Three stars requires all but one first-try answer (7/8 on Easy and Normal, 9/10 on Hard);
-two stars requires all but three (5/8 or 7/10); anything lower is one star. Stars only ever
-go up. Three stars unlocks a "try harder" button on the results screen.
+Level 4 runs two questions fewer because each one takes three stages, which keeps a session
+at about three minutes.
+
+Three stars requires all but one first-try answer; two stars all but three; anything lower
+is one star. That is 7/8 and 5/8 on Easy and Normal, 9/10 and 7/10 on Hard, and 5/6 and 3/6
+in level 4, which has fewer questions. Stars only ever go up. Three stars unlocks a "try
+harder" button on the results screen.
 
 Hints are never automatic at the start: after enough mistakes the correct key is highlighted,
 or the answer is shown in the prompt, but the player is never told "that is wrong".
@@ -137,6 +165,12 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-10-30 | Middle C is labelled "中央 C" at the keyboard's top-right corner, next to the same orange dot |
+| 2026-10-30 | "Which one is a half note" no longer says the beat count before holding; a counter shows the beats passed and the child judges when to let go |
+| 2026-10-30 | Level 4 rebuilt as three stages per note: choose the hand, choose the finger from cartoon hands, then hold for the full length |
+| 2026-10-30 | New cartoon hand icons: thumb side, wrist, fingernails, blue left sleeve and coral right sleeve |
+| 2026-10-30 | Level 4 drops whole notes: without a stem there is no hand cue |
+| 2026-10-30 | Offline cache bumped to v3 |
 | 2026-10-29 | Level 3 now ends with holding the key: pick the beat count, then hold for that many beats |
 | 2026-10-29 | Note letters are spoken as letter names ("bee", "see"), never "capital B" |
 | 2026-10-29 | "弹" is read tán, not dàn (speech-only substitution; the screen still shows 弹) |
@@ -212,7 +246,7 @@ The treble clef is `Treble clef.svg` by Tlusťa, and the bass clef is `Clef Bass
 both from Wikimedia Commons and in the public domain. Both paths are inlined in
 `index.html`; nothing is fetched at runtime.
 
-The hand icons, keyboard, and cover image were drawn for this project.
+The cartoon hands, keyboard, and cover image were drawn for this project.
 
 ## License
 
@@ -221,9 +255,10 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 
 ## Known limitations
 
-- The page cannot tell which finger was used. Level 4 tests reading and memory; the actual
-  hand position has to be checked on the piano by an adult.
-- Holding is judged by duration only, not by which finger pressed.
+- The page cannot tell which finger was used. Level 4 asks which finger and shows the right
+  picture, but the actual hand position still has to be checked on the piano by an adult.
+- Holding is judged by duration only, not by which finger pressed. In level 4 the hand and
+  finger are checked before the key is pressed, not while it is held.
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
   device from a broken page.
 - Speech depends on installed system voices: Chinese text uses a Chinese voice, while the
