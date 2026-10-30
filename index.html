@@ -624,7 +624,7 @@ function pianoVoice(midi, o){
   const c = audioCtx(); if(!c) return null;
   const f0 = 440 * Math.pow(2, (midi - 69) / 12);
   const t = c.currentTime + 0.006;
-  const vol = (o.vol == null) ? 0.32 : o.vol;
+  const vol = (o.vol == null) ? 0.4 : o.vol;
   const out = c.createGain();
   out.gain.setValueAtTime(vol, t);
   out.connect(c.destination);
@@ -701,7 +701,7 @@ function pianoVoice(midi, o){
 /* force 只在「试听」按钮里用：即使孩子把琴声关掉了，也要能试出声。 */
 function playMidi(midi, dur, vol, force){
   if(!S.sound && !force) return;
-  pianoVoice(midi, { dur: dur || 0.9, vol: (vol == null) ? 0.3 : vol });
+  pianoVoice(midi, { dur: dur || 0.9, vol: (vol == null) ? 0.4 : vol });
 }
 
 /* 起一个持续音，返回 { stop(fade) }。
@@ -715,7 +715,7 @@ function stopAllTones(){
 }
 function startTone(midi){
   if(!S.sound) return null;
-  const v = pianoVoice(midi, { vol: 0.3 });
+  const v = pianoVoice(midi, { vol: 0.4 });
   if(!v) return null;
   const handle = {
     stop: function(fade){
@@ -2057,7 +2057,7 @@ $('#settingsModal').addEventListener('click', function(e){
 $('#btnTrySound').addEventListener('click', function(){
   const c = audioCtx();
   if(c && c.state === 'suspended') c.resume();
-  playMidi(60, 1.1, 0.34, true);
+  playMidi(60, 1.1, 0.4, true);
   say('这是中央 C，听到声音就说明正常', true);
   toast('听到「咚」和一句话，声音就正常', 'ok');
 });
