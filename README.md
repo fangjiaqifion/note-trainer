@@ -122,6 +122,11 @@ directly above the keyboard. The staff or the large prompt occupies the space ab
 keyboard therefore never jumps between the middle and the bottom, and the keys stay at the
 bottom edge where the hand naturally rests.
 
+The local keyboard in the first spotlight step shows only one black-key group. It keeps the
+same key width as the full keyboard: its container is 3/15 (or 4/15) of the keyboard width and
+is centered, so the black keys keep their normal proportions instead of stretching across the
+screen.
+
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
 six fixed skill cards below that. The chips are the only part that grows with the note set.
 
@@ -448,7 +453,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v15`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v16`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README
