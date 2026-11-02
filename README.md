@@ -49,7 +49,7 @@ Stars and settings live in `localStorage` on the device.
 | 3 · Which clef | A note is drawn on a staff that has no clef, and the prompt says which note it is ("this is B" / "this is middle C"). Choose the treble or the bass clef | Four spellings: B3 in the space above the bass staff takes the bass clef; middle C on the first ledger line below the treble staff takes the treble clef; middle C on the first ledger line above the bass staff takes the bass clef; D4 in the space below the treble staff takes the treble clef |
 | 4 · Read and hold | Read the note, choose how many beats it lasts, then find the key on the keyboard yourself and hold it for that long | Quarter 1, half 2, dotted half 3, whole 4 for the first step. The key is not highlighted and the beat count is not shown again: finding the key and judging the length are part of the answer |
 | 5 · Hand, finger, hold | Three stages per question: choose the hand, choose the finger, then hold the key for the note's full length | Hand and finger per the table below; holding is judged in both directions |
-| 6 · Lines and spaces | A bare five-line staff. The prompt asks where line 3 or space 2 is; later questions add a treble or bass clef | Tap the line or space itself. Lines and spaces are numbered from the bottom, so line 1 is the bottom line |
+| 6 · Lines and spaces | A bare five-line staff. The prompt asks where line 3 or space 2 is; later questions add a treble or bass clef without naming it | Tap the line or space itself. Lines and spaces are numbered from the bottom, so line 1 is the bottom line |
 
 **The clef level teaches one reading.** Middle C has two spellings: on the first ledger line
 below the treble staff, and on the first ledger line above the bass staff. The level adds one
@@ -76,9 +76,9 @@ no ledger lines, no key. The question is "where is line 3?" or "where is space 2
 child taps the staff. Lines and spaces are counted from the bottom: line 1 is the bottom line,
 space 1 is between the two bottom lines. The first question of a session is always line 1 and
 says "count from the bottom" once. The first half of the questions has no clef; the second
-half adds a treble or bass clef and names it in the prompt. The clef does not change which
-line is the third line, so it is there for recognition, not as part of the answer. A tap is
-rounded to the nearest line or space of the kind asked, so a slightly off tap still counts;
+half adds a treble or bass clef as a distractor. The prompt never names the clef: the question
+stays "where is space 2?", and the clef neither changes the line number nor the answer. A tap
+is rounded to the nearest line or space of the kind asked, so a slightly off tap still counts;
 the game marks what it understood before judging. One tap per question, so the level uses the
 full question count and takes about a minute.
 
@@ -201,7 +201,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
-| 2026-11-02 | Level 6: a bare five-line staff, tap the line or space asked; the first half has no clef, the second half adds a treble or bass clef |
+| 2026-11-02 | Level 6: a bare five-line staff, tap the line or space asked; the first half has no clef, the second half adds a treble or bass clef as a distractor |
 | 2026-11-02 | Added `LEVELS.md`, a Chinese record of what each level trains and what it leaves out |
 | 2026-11-02 | The home screen fits six levels in two columns without scrolling on iPad landscape |
 | 2026-10-30 | The piano voice now decays naturally instead of holding a steady tone, with unison strings, stretched partials, hammer and damper noise, and a light room reverb |
@@ -316,8 +316,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 - The clef level covers the four spellings this unit uses, not the general rule that clefs
   are chosen by register: middle C is legal in both clefs, and one pitch can be written more
   than one way.
-- Level 6 uses the clef as context, not as part of the answer: the third line is the third
-  line in either clef. Naming the pitch of a line comes after the note set grows.
+- Level 6 uses the clef as a distractor: the second half shows one but never names it, and
+  the answer is the same in either clef. Naming the clef or the pitch of a line comes later.
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
   device from a broken page.
 - Speech depends on installed system voices: Chinese text uses a Chinese voice, while the

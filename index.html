@@ -1908,8 +1908,8 @@ function qPlayNote(noteId, valueId){
    这一关回到谱面本身：只有五条线，没有音符，问「第 3 线在哪」或
    「第 2 间在哪」。线、间都从下往上数，第 1 线在最下面，
    第 1 间在最下面两条线之间。前半段不加谱号；后半段加高音或低音谱号，
-   题干带上谱号名。谱号只改变这些线读成什么音，不改变线、间的编号，
-   所以这一关的谱号是「认得出它」的复习，不是判题条件。
+   但题干不提谱号，仍然只问第几条线、第几间。谱号在这里是干扰因素：
+   它不改变线、间的编号，也不影响答案，孩子要学会不被它带走。
 
    答题方式是在谱面上直接点。问线时按「离哪条线最近」归到 1–5，
    问间时按「离哪个间最近」归到 1–4，点偏一点也算对；
@@ -1917,8 +1917,7 @@ function qPlayNote(noteId, valueId){
 function qStaffSpot(spot, num, clef, intro){
   const isLine = (spot === 'line');
   const unit = isLine ? '线' : '间';
-  const clefName = (clef === 'treble') ? '高音谱号' : (clef === 'bass' ? '低音谱号' : '');
-  const what = (clefName ? clefName + '的' : '') + '第 ' + num + ' ' + unit;
+  const what = '第 ' + num + ' ' + unit;
   const wrongMsg = isLine ? '从下往上数：最下面一条是第 1 线' : '间在两条线之间，也从下往上数';
   let svg = null;
 
@@ -1940,10 +1939,10 @@ function qStaffSpot(spot, num, clef, intro){
     kind:'spot', spot:spot, n:num, clef:clef, wrong:0,
     render: function(){
       /* 第一题把「从下往上数」说一次；之后只问题目本身，
-         否则每题都重复一句，孩子会把注意力放在套话上。 */
-      const head = (clefName ? clefName + '的' : '') + '第 ' + num + ' ' + unit;
-      setPrompt((intro ? '五线谱从下往上数。' : '') + head + '在哪？',
-                (intro ? '五线谱从下往上数，' : '') + head + '在哪');
+         否则每题都重复一句，孩子会把注意力放在套话上。
+         题干不提谱号：画面上有谱号也不改变问法。 */
+      setPrompt((intro ? '五线谱从下往上数。' : '') + what + '在哪？',
+                (intro ? '五线谱从下往上数，' : '') + what + '在哪');
       const paper = document.createElement('div');
       paper.className = 'paper lines';
       paper.innerHTML = staffLinesSVG({ clef: clef });
