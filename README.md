@@ -2,17 +2,18 @@
 
 A single-page, offline-capable notation trainer for young piano beginners. It drills one
 chain: note name → key on the keyboard → staff and clef → duration → hand and finger, then
-returns to the staff itself to name its lines and spaces. New notes are introduced one at a
-time in a short spotlight, then folded into the same six skills.
+returns to the staff itself: first to name its lines and spaces, then to compare two notes by
+position, with and without a clef. New notes are introduced one at a time in a short spotlight,
+then folded into the same seven skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
 current new note; F4 and G4 are queued. Learned notes can be checked or unchecked on the home
-screen, and every skill and the daily session use only the checked notes. The note set is
+screen, and skills 1–6 and the daily session use only the checked notes. The note set is
 configuration, not code: adding a note is one registry entry plus one queue slot, see
-[Adding a note](#adding-a-note). The six skills stay the same as the set grows; the menu does
+[Adding a note](#adding-a-note). The seven skills stay the same as the set grows; the menu does
 not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
@@ -83,8 +84,9 @@ contains:
 | `session_id` | Groups the questions of one session |
 | `phase` | `pre`, `post`, or empty for practice |
 | `mode` | `skill`, `daily`, `spotlight`, `note`, or `test` |
-| `skill`, `kind` | Skill 1–6 and the question factory |
+| `skill`, `kind` | Skill 1–7 and the question factory |
 | `note`, `letter`, `value`, `clef`, `line_space` | What the item asked |
+| `relation`, `staff_y1`, `staff_y2`, `higher` | Skill 7 geometry: up/down/same, the two staff positions, and which note was higher (empty for other skills) |
 | `difficulty` | Difficulty used for that session |
 | `first_try`, `wrong_count` | Whether the first attempt was correct, and how many attempts failed |
 | `response_ms` | Time from the question appearing to the correct answer |
@@ -99,7 +101,8 @@ years of ten questions a day); export before clearing it. The panel shows the cu
 finding, staff ↔ keyboard, clef, duration, hand/finger, and lines/spaces, using only notes
 that have already been taught. **后测** replays the same items with the same difficulty. Test
 rows carry the battery id and are excluded from the daily accuracy and the adaptive
-difficulty. The report shows overall and per-skill change in percentage points.
+difficulty. The report shows overall and per-skill change in percentage points. Skill 7 is not
+yet part of the fixed battery; its practice rows still appear in the per-skill report.
 
 The battery needs at least two checked notes with staff positions. If a checked note has no
 finger flag yet, the hand/finger item is replaced by an extra staff ↔ keyboard item, so the
@@ -128,11 +131,11 @@ is centered, so the black keys keep their normal proportions instead of stretchi
 screen.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-six fixed skill cards below that. The chips are the only part that grows with the note set.
+seven fixed skill cards below that. The chips are the only part that grows with the note set.
 
-## The six skills
+## The seven skills
 
-The six cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The seven cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -143,10 +146,18 @@ skill automatically once that flag is open.
 | 4 | 时值 · Read and hold | Read the note, choose the beat count, then find the key and hold it | `key` + `pos` |
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
+| 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher note, first without and then with a clef | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
 does not grow with the note set. F, G and A are all treble notes; adding them would turn the
 level into "is it B3?", so the pool is deliberately kept at four spellings.
+
+Skill 7 is the bridge from staff geometry to pitch. It always shows two whole notes with no
+stems, so the only cue is vertical position. The first three questions, with no clef, ask
+whether the second note goes up, down, or stays the same. The next questions ask which note is
+higher, answered by tapping one of the two notes. The last group adds a clef, one clef per
+question, and asks the same question; tapping a note now also plays its pitch, so the clef is
+audible as well as visible. The skill uses no note pool and starts without any learned notes.
 
 ## New notes: an eight-step spotlight
 
@@ -175,7 +186,7 @@ The flow has eight steps, taken four at a time, so a note takes two short sessio
 After step 3 the key and position flags are open, but the note is not yet in the checked set.
 After step 7 all three flags are open, the note is checked automatically in **我的音**, and it
 joins every skill that asks for it. The two spotlight sessions are therefore the acquisition
-phase: the note does not appear in the daily session or the six skills before it is complete.
+phase: the note does not appear in the daily session or skills 1–6 before it is complete.
 The home screen then shows a **下一个音** (Next note) button; the parent decides when to start
 the next note. The game never advances the note set on its own.
 
@@ -205,7 +216,7 @@ The daily session does not insert the current new note. To learn it, tap the pul
 only B, C and D are checked, the daily session only asks B, C and D.
 
 The home screen also has a row of note chips (**我的音**). A learned chip is a checkbox: tap it
-to include or exclude that note in the daily session and all six skills. A selected note has
+to include or exclude that note in the daily session and skills 1–6. A selected note has
 a filled check; an unselected learned note stays white; the current new note pulses and opens
 the spotlight; notes that have not been taught are dimmed. A single-note review of a note and
 its neighbours is available from the **练** button beside each note in the parent report.
@@ -320,15 +331,15 @@ To add a note:
    should accept only the exact pitch, and the mixed step should offer the new note and its
    learned neighbours.
 
-No other code changes are needed. The six skills read `activeNotes(needs)` and pick up the
-new note once it is complete and checked.
+No other code changes are needed. Skills 1–6 read `activeNotes(needs)` and pick up the
+new note once it is complete and checked. Skill 7 uses no note pool.
 
 ## Adding a skill
 
 Add one entry to `SKILLS` and one `make` function:
 
 ```js
-{ id:7, key:'interval', name:'音程', title:'音程',
+{ id:8, key:'interval', name:'音程', title:'音程',
   desc:'两个音之间隔几步', color:'#5C6B3F',
   needs:['key','pos'], pool:'active', make:makeInterval }
 ```
@@ -337,9 +348,10 @@ Add one entry to `SKILLS` and one `make` function:
 `'fixed'` (the `ids` list) or `'none'` (no notes). `make(ids, n)` returns an array of question
 objects with the same `{ kind, render(), reveal() }` interface as the existing factories.
 `buildQuestions` is a registry lookup now, not a chain of `if`/`else`, so adding a skill does
-not touch the note data or the other skills.
+not touch the note data or the other skills. `id` is also the display number and the star key;
+it must stay unique, and adding an eighth card changes the home grid.
 
-`SKILLS` also drives the home screen. The menu length is fixed at six; new skills would be
+`SKILLS` also drives the home screen. The menu length is fixed at seven; new skills would be
 added only when the interface has room for them.
 
 ## Roadmap
@@ -351,6 +363,7 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 | F4 and G4 | Queued | Data is in `NOTES`; they enter after E, through the same spotlight |
 | A4 and hand position | Idea | A4 is outside the C five-finger position; needs a hand-shift lesson |
 | Note names for staff lines | Idea | Skill 6 asks where line 2 is; the next step is "line 2 is G" |
+| Skill 7 in daily and pre/post | Idea | Two-note comparison is not in the daily mix or the 12-item battery yet |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
 | More left-hand notes | Idea | B3 is the only left-hand note, so skill 5 is right-hand heavy |
 | Progress history for parents | Shipped 2026-11-02 | Per-question log, per-skill and per-note accuracy, 14-day chart |
@@ -369,6 +382,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-02 | Level 7 **两个音**: two whole notes with no clef, first up/down/repeat, then tap the higher note; the last group adds one clef per question and plays the tapped pitch |
 | 2026-11-02 | Learner profiles with a four-digit local PIN, per-profile progress and a per-question practice log; parent report, CSV/JSON export, backup import, and a frozen pre/post battery |
 | 2026-11-02 | **我的音** chips are checkboxes: all skills and the daily session use only the checked notes; the daily session no longer inserts the current new note automatically |
 | 2026-11-02 | The keyboard is docked at the bottom in every question; in the keyboard → staff direction the answer cards sit directly above it |

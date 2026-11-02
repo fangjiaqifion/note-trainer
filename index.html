@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <title>识谱小练习 · 我的音</title>
-<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间。六项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
+<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低。七项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
      但不需要被搜索引擎收录：noindex 让爬虫不要建索引，
      nofollow 不追踪页面里的链接，noarchive 不留快照。
@@ -20,7 +20,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="识谱小练习">
 <meta property="og:title" content="识谱小练习 · 我的音">
-<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间。六项技能按孩子的进度加入新音，三档难度，可离线。">
+<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音。七项技能按孩子的进度加入新音，三档难度，可离线。">
 <meta property="og:url" content="https://fangjiaqifion.github.io/note-trainer/">
 <meta property="og:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="识谱小练习 · 我的音">
-<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间。六项技能按孩子的进度加入新音。">
+<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音。七项技能按孩子的进度加入新音。">
 <meta name="twitter:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -95,9 +95,9 @@
   .who .who-dot{width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;flex:none}
   .who:active{transform:scale(.96)}
 
-  /* 「我的音」：一排可勾选的音符。勾上的进入今日练习和六项技能；
+  /* 「我的音」：一排可勾选的音符。勾上的进入今日练习和技能关；
      当前新音单独脉动，点进去是导入；还没学的灰掉。
-     这一排是首页唯一会随音集长大的区域；下面六张技能卡永远不变，
+     这一排是首页唯一会随音集长大的区域；下面七张技能卡永远不变，
      所以加音不会把菜单撑长。 */
   .chips-wrap{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px 2px;flex-wrap:wrap}
   .chips-label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:2px;flex:none}
@@ -119,21 +119,25 @@
   .chip .chip-new{position:absolute;top:-7px;right:-6px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;border:1.5px solid #fff;letter-spacing:0}
   .chip.focus .box{display:none}
 
-  /* 今日练习：孩子只需要按这一个按钮。六张技能卡留给想专项练的时候。 */
+  /* 今日练习：孩子只需要按这一个按钮。技能卡留给想专项练的时候。 */
   .daily-card{display:flex;flex-direction:column;align-items:center;gap:2px;margin:8px 20px 2px;padding:11px 18px;border-radius:22px;background:linear-gradient(180deg,#4E8FE8,#3C7DD9);color:#fff;box-shadow:0 5px 0 #2F66B5;transition:transform .1s}
   .daily-card:active{transform:translateY(3px);box-shadow:0 2px 0 #2F66B5}
   .daily-title{font-size:20px;font-weight:800;letter-spacing:2px}
   .daily-sub{font-size:12px;font-weight:600;opacity:.9}
 
-  /* 六张技能卡排成两列三行。星星按技能存，和新音无关。
-     行高 136，加上 chips、今日练习、页脚，iPad 竖屏一屏放得下。 */
-  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:center;grid-auto-rows:minmax(0,136px);min-height:0;overflow-y:auto}
+  /* 技能卡排成两列。星星按技能存，和新音无关。
+     行高 136，加上 chips、今日练习、页脚，iPad 竖屏一屏放得下；
+     七张卡比六张多一行，矮屏上允许从卡片区滚动。 */
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:center;grid-auto-rows:136px;min-height:0;overflow-y:auto}
   .level-card{
     display:flex;flex-direction:column;gap:6px;text-align:left;
     background:var(--card);border:2px solid var(--line);border-radius:22px;padding:13px 16px;
     box-shadow:var(--shadow);transition:transform .1s;
   }
   .level-card:active{transform:scale(.975)}
+  /* 七张卡排完最后剩一张：让它横跨两列、保持一张卡的宽度并居中，
+     不把最后一行空出半边。手机单列时恢复整行宽。 */
+  .levels .level-card:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc(50% - 6px)}
   .lv-top{display:flex;align-items:center;gap:10px}
   .lv-num{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;font-weight:800;font-size:19px;color:#fff;flex:none}
   .lv-title{font-size:18px;font-weight:800;line-height:1.2}
@@ -199,6 +203,20 @@
   .paper .staff.lines{width:100%;height:auto}
   .spot-cap{font-size:13px;color:var(--muted);font-weight:600}
 
+  /* 第 7 关：两个全音符。谱面同样铺满纸宽；两个音一左一右，
+     点按区按中线分开，整条谱表都能点。 */
+  .paper.pair{width:100%;max-width:880px}
+  .paper .staff.pair{width:100%;height:auto}
+  .staff.pair{touch-action:none}
+  .staff .note-hit{fill:transparent;pointer-events:all}
+  .staff .note{pointer-events:none}
+  .staff .note-ring{fill:none;stroke:var(--green);stroke-width:.16;opacity:0;transition:opacity .12s}
+  .staff .note.correct .note-ring{opacity:1}
+  .staff .note.wrong .note-ring{stroke:var(--red);opacity:1}
+  .staff .note.hint .note-ring{stroke:var(--orange);stroke-width:.2;stroke-dasharray:.42 .3;opacity:1}
+  .staff .note.correct ellipse{fill:#EFFAF4;stroke:var(--green)}
+  .staff .note.wrong ellipse{stroke:var(--red)}
+
   /* 键盘 */
   .kb-wrap{width:100%;max-width:980px;margin:0 auto}
   /* 中央 C 的图例：黄点画在键上，说明写在键盘右上角。
@@ -243,6 +261,11 @@
   .opt.clef .unit{font-size:13px;font-weight:700;color:#6B6156}
   .opt.hand svg,.opt.finger svg{width:clamp(72px,11.5vw,96px);height:auto;display:block;margin-bottom:2px}
   .opt.hand .unit,.opt.finger .unit{font-size:13px;font-weight:700;color:#6B6156}
+  /* 第 7 关的方向选项：图标就是两个音头的高低关系，
+     孩子不识字也能先比图案；下面的字给家长看。 */
+  .opt.dir{width:clamp(84px,24vw,118px);height:clamp(96px,12.5vw,122px);gap:3px}
+  .opt.dir svg{width:clamp(58px,8vw,72px);height:auto;display:block}
+  .opt.dir .unit{font-size:13px;font-weight:700;color:#6B6156}
   .opts{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 
   .card-btn{flex:1 1 0;max-width:220px;background:#fff;border:2px solid var(--line);border-radius:18px;padding:6px;box-shadow:0 5px 0 #EADDCB;transition:transform .08s}
@@ -373,9 +396,9 @@
   @keyframes fade{0%,100%{opacity:1}50%{opacity:.35}}
 
   /* 屏幕矮（iPad 横屏、桌面小窗）时收起说明文字、压低行高，
-     六张卡片仍能一屏放下；再矮就允许从头滚动。 */
+     让卡片尽量一屏放下；再矮就允许从头滚动。 */
   @media (max-height:880px){
-    .levels{grid-auto-rows:minmax(0,118px)}
+    .levels{grid-auto-rows:112px;align-content:start}
     .lv-desc{display:none}
     .chips-wrap{padding-top:6px}
     .chips-tip{display:none}
@@ -384,7 +407,8 @@
     .keypad button{height:50px}
   }
   @media (max-width:520px){
-    .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px;grid-auto-rows:minmax(0,112px);align-content:start}
+    .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px;grid-auto-rows:112px;align-content:start}
+    .levels .level-card:last-child:nth-child(odd){width:100%}
     .lv-desc{display:none}
     .home-head{padding-top:56px}
     .home-head h1{font-size:26px}
@@ -462,7 +486,7 @@
       <span class="chips-label">我的音 <b>勾选</b></span>
       <div class="chips" id="noteChips"></div>
     </div>
-    <p class="chips-tip">勾上今天要练的音；今日练习和六项技能只用勾上的音</p>
+    <p class="chips-tip">勾上今天要练的音；今日练习和技能关只用勾上的音</p>
     <!-- 孩子的主入口：自动拼一节课，不需要先选关卡。 -->
     <button class="daily-card" id="btnDaily">
       <span class="daily-title">今日练习</span>
@@ -883,14 +907,17 @@ const SKILLS = [
     count:function(n){ return Math.max(4, n - 2); } },
   { id:6, key:'spot',     name:'线与间', title:'五线谱的线与间',
     desc:'从下往上数，指出第几条线、第几间', color:'#C2543F',
-    needs:[], pool:'none', make:makeSpot }
+    needs:[], pool:'none', make:makeSpot },
+  { id:7, key:'twoNotes', name:'两个音', title:'两个音的高低',
+    desc:'上行、下行、重复；加谱号后哪个更高', color:'#B0577E',
+    needs:[], pool:'none', make:makeTwoNotes }
 ];
 
 /* ---------------------------------------------------------------------
    配置层之三：新音导入。
 
-   新音不是第 7、8、9 关，而是一段临时流程。八个步骤分成两次练习，
-   每次四步；走完就把这个音的三个标记打开，它自动进入上面六种技能。
+   新音不是新的关卡，而是一段临时流程。八个步骤分成两次练习，
+   每次四步；走完就把这个音的三个标记打开，它自动进入需要这个音的技能。
    顺序对应「先在键盘上认，再在谱面上认，再连指法，最后混合」：
      0 局部键盘：只看 C4 到新音这几个白键，先看清黑键地标
      1 完整键盘：任意八度，只认字母
@@ -1038,14 +1065,35 @@ function newState(){
   st.practiceSeq = 0;           // 只数练习，不数测验；自动难度的冷却和门槛用它
   st.autoHistory = [];          // 自动难度每次改档的时间和依据
   st.battery = null;            // 前测固定题组，后测复用它
+  /* 第 7 关的迁移标记。旧版第 7 关是 E 的完整一课，旧存档里可能有
+     stars[7]；新版第 7 关改成「两个音」，不能把旧星星算到新关卡上。
+     level7 表示这份存档已经做过这次迁移，legacyE4 只在一瞬间使用。 */
+  st.level7 = 1;
+  st.legacyE4 = 0;
   st.createdAt = Date.now();
   st.updatedAt = st.createdAt;
+  return st;
+}
+
+/* 把旧存档升级到「第 7 关 = 两个音」的语义。
+   只在存档里还没有 level7 字段时执行一次：
+   旧 stars[7] 说明孩子做过 E 的完整一课，E4 的三个标记要补上；
+   这颗星星随后删掉，否则新第 7 关会白得三星。
+   新账户的 newState 已经带 level7=1，不会走到这里。 */
+function upgradeState(st){
+  if(!st || ('level7' in st)) return st;
+  if(st.stars && st.stars[7]){
+    st.legacyE4 = 1;
+    delete st.stars[7];
+  }
+  st.level7 = 1;
   return st;
 }
 
 function loadAccountState(id){
   const st = readJSON(stateKey(id));
   if(!st) return newState();
+  upgradeState(st);
   const out = Object.assign(newState(), st);
   out.events = Array.isArray(st.events) ? st.events : [];
   out.autoHistory = Array.isArray(st.autoHistory) ? st.autoHistory : [];
@@ -1091,6 +1139,12 @@ function migrateLegacyState(){
   st.events = [];
   st.autoHistory = [];
   st.battery = null;
+  /* 旧版第 7 关是 E 的完整一课。建档时先记下来，ensureProgress 会把
+     E4 补满；这颗星星属于旧关卡，不能留给新的第 7 关。 */
+  if(st.stars && st.stars[7]){
+    st.legacyE4 = 1;
+    delete st.stars[7];
+  }
   st.createdAt = (old && old.createdAt) || Date.now();
   return st;
 }
@@ -1131,9 +1185,11 @@ function ensureProgress(){
     S.progress[id] = { key:1, pos:1, fin:1 };
   });
   /* 旧版第 7 关就是 E 的完整一课。如果孩子已经打过这一关，
-     把 E 的三个标记补上，不让她重学一遍。 */
-  if(S.stars && S.stars[7] && S.progress.E4 && !S.progress.E4.key){
-    S.progress.E4 = { key:1, pos:1, fin:1 };
+     把 E 的三个标记补上，不让她重学一遍。这条只在升级时生效一次：
+     upgradeState 把旧 stars[7] 换成 legacyE4，新第 7 关的星星不参与。 */
+  if(S.legacyE4){
+    if(S.progress.E4 && !S.progress.E4.key) S.progress.E4 = { key:1, pos:1, fin:1 };
+    S.legacyE4 = 0;
   }
   /* S.spot 三态：undefined = 还没建过；对象 = 导入进行到第几步；
      null = 当前新音已经学完。只有 undefined 才初始化。 */
@@ -1263,6 +1319,7 @@ function eventSkill(e){
     case 'beats': case 'shape': return 4;
     case 'play': return 5;
     case 'spot': return 6;
+    case 'pairdir': case 'higher': return 7;
   }
   return 0;
 }
@@ -1790,6 +1847,101 @@ function staffLinesSVG(o){
   return '<svg class="staff lines" viewBox="-0.35 -1.95 15.3 8.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
 }
 
+/* ==================== 第 7 关：两个音 ====================
+   两个全音符画在同一条谱表上。前两组不加谱号，只比较两个音在谱面上的
+   高低关系；第三组加谱号，谱号决定这一对音实际有多高，所以点音时
+   直接听到那个音，孩子听到的和看到的对得上。
+
+   坐标沿用 staffSVG：y=0 是最上面一条线，y=4 是最下面一条线。
+   两个音固定一左一右，点按区按中线分开，整条谱表都能点。 */
+const PAIR_GAP = 3.9;
+function pairXs(clef){
+  const center = clef ? 9.0 : 7.3;
+  return [center - PAIR_GAP / 2, center + PAIR_GAP / 2];
+}
+
+/* 谱表外的音要补加线。第 7 关目前只在五条线以内出题，
+   这个函数是为以后把中央 C 的低音写法放进来留的。 */
+function pairLedger(y, x){
+  let g = '';
+  const x1 = x - 1.15, x2 = x + 1.15;
+  if(y > 4){
+    for(let k = 5; k <= Math.floor(y); k++){
+      g += '<line x1="' + x1 + '" y1="' + k + '" x2="' + x2 + '" y2="' + k + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
+    }
+  }else if(y < 0){
+    for(let k = -1; k >= Math.ceil(y); k--){
+      g += '<line x1="' + x1 + '" y1="' + k + '" x2="' + x2 + '" y2="' + k + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
+    }
+  }
+  return g;
+}
+
+/* 两个全音符 + 可选谱号。hits 为 true 时加两块透明点按区：
+   中线左边算第 1 个音，右边算第 2 个音。点按区最后画，
+   才能压在音符上面接到点击。 */
+function staffPairSVG(o){
+  o = o || {};
+  const ys = o.ys || [3, 2];
+  const clef = o.clef || null;
+  const xs = pairXs(clef);
+  const split = (xs[0] + xs[1]) / 2;
+  let g = staffLinesMarkup(14.6);
+  if(clef) g += clefMarkup(clef);
+  ys.forEach(function(y, i){ g += pairLedger(y, xs[i]); });
+  ys.forEach(function(y, i){
+    const x = xs[i];
+    g += '<g class="note" data-i="' + i + '">' +
+      '<circle class="note-ring" cx="' + x + '" cy="' + y + '" r="1.02"/>' +
+      '<ellipse cx="' + x + '" cy="' + y + '" rx="0.7" ry="0.4" transform="rotate(-18 ' + x + ' ' + y + ')" fill="none" stroke="' + INK + '" stroke-width="0.16"/>' +
+      '</g>';
+  });
+  if(o.hits){
+    const x0 = clef ? 3.65 : 0.15;
+    g += '<rect class="note-hit" data-i="0" x="' + x0 + '" y="-1.9" width="' + (split - x0) + '" height="8.4"/>';
+    g += '<rect class="note-hit" data-i="1" x="' + split + '" y="-1.9" width="' + (14.55 - split) + '" height="8.4"/>';
+  }
+  return '<svg class="staff pair" viewBox="-0.35 -1.95 15.3 8.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
+}
+
+function staffPairBlock(o){
+  return '<div class="paper pair">' + staffPairSVG(o) + '</div>';
+}
+
+/* 方向选项的小图：两个空心音头，第二个比第一个高、低或一样高。
+   和谱面上的全音符同一个形状，放大缩小都不走样。 */
+function pairIcon(rel){
+  const ys = (rel === 'up') ? [29, 13] : (rel === 'down' ? [13, 29] : [21, 21]);
+  let g = '';
+  [0, 1].forEach(function(i){
+    const x = i ? 43 : 17;
+    g += '<ellipse cx="' + x + '" cy="' + ys[i] + '" rx="8.4" ry="4.8" transform="rotate(-18 ' + x + ' ' + ys[i] + ')" fill="none" stroke="' + INK + '" stroke-width="2.4"/>';
+  });
+  return '<svg class="diricon" viewBox="0 0 60 42" aria-hidden="true">' + g + '</svg>';
+}
+
+/* 谱面位置 → 实际音高。第 7 关第三组用它在点音时发声，
+   也方便以后把这两个音接到键盘或音名练习。
+   一线一间等于一个二度，所以半线距数 × 2 就是二度步数。
+   高音谱表最下面一条线是 E4，低音谱表最下面一条线是 G2。 */
+const STAFF_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const STAFF_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
+const STAFF_REF = {
+  treble: { y:4, index:4 * 7 + 2 },   // E4
+  bass:   { y:4, index:2 * 7 + 4 }    // G2
+};
+function staffPitch(clef, y){
+  const ref = STAFF_REF[clef] || STAFF_REF.treble;
+  const index = ref.index - Math.round((y - ref.y) * 2);
+  const octave = Math.floor(index / 7);
+  const k = ((index % 7) + 7) % 7;
+  return {
+    letter: STAFF_LETTERS[k],
+    octave: octave,
+    midi: (octave + 1) * 12 + STAFF_SEMITONES[k]
+  };
+}
+
 /* 单独的谱号图标，第 3 关的两个选项用。
    直接用谱表里同一份 path，选项上看到的和谱表上画出来的必然一致。
    viewBox 取 path 的原始包围盒；低音谱号的原始 path 是倒着画的，
@@ -1958,9 +2110,9 @@ function confetti(){
 
 /* ==================== 游戏状态 ====================
    全局只有一个可变对象 G：
-     mode    'skill' 六张技能卡 / 'daily' 今日练习 / 'spotlight' 新音导入 /
+     mode    'skill' 技能卡 / 'daily' 今日练习 / 'spotlight' 新音导入 /
              'note' 单音复习 / 'test' 前测后测
-     level   技能模式下的关卡编号（1–6），也是星星的存档键
+     level   技能模式下的关卡编号（1–7），也是星星的存档键
      qs      这一次练习的题目数组（开始时一次性生成，中途不变）
      i       第几题
      first   一次答对的题数，结算时换算星星
@@ -2050,6 +2202,12 @@ function recordAnswer(q){
     value: q.valueId || '',
     clef: q.clef || (n ? n.clef : ''),
     spot: q.spot ? q.spot + String(q.n || '') : '',
+    /* 第 7 关的几何量。其他题型没有这几项，导出成空列；
+       有了它们才能回看「上行/下行/重复」和谱面位置难在哪。 */
+    relation: q.relation || '',
+    staffY1: (q.y1 == null ? '' : q.y1),
+    staffY2: (q.y2 == null ? '' : q.y2),
+    higher: (q.higher == null ? '' : q.higher),
     diff: G.diffKey || currentDiffKey(),
     first: q.wrong ? 0 : 1,
     wrong: q.wrong || 0,
@@ -2866,6 +3024,122 @@ function qStaffSpot(spot, num, clef, intro){
   };
 }
 
+/* ==================== 第 7 关：两个全音符 ====================
+   这一关不点名音、不按键，只看两个音在谱面上的相对位置。
+   三组题按顺序出现，后一组只比前一组多一个条件：
+
+     A 不加谱号：两个音是上行、下行，还是重复？
+     B 不加谱号：哪一个音更高？直接点那个音。
+     C 加上谱号（每题只有高音或低音一种）：再判断哪一个更高。
+
+   第 7 关的音池是 'none'：它练的是谱面几何，不依赖孩子已经学了
+   哪几个音，所以首页卡片不需要任何标记就能开始。 */
+function qPairDirection(ys, intro){
+  const rel = ys[1] < ys[0] ? 'up' : (ys[1] > ys[0] ? 'down' : 'same');
+  const names = { up:'上行', down:'下行', same:'重复音' };
+  const name = names[rel];
+  return {
+    kind:'pairdir', valueId:'whole', relation:rel, y1:ys[0], y2:ys[1], wrong:0,
+    render: function(){
+      /* 第一题把三个词各解释一次。屏幕只留问题，长句只念出来：
+         孩子不识字，句子写在屏幕上只会挡住谱面。 */
+      setPrompt('这两个音怎么走？',
+        intro ? '看这两个音。第二个音比第一个音高，是上行；比第一个音低，是下行；一样高，是重复音。这两个音怎么走'
+              : '这两个音怎么走');
+      stageEl.innerHTML = staffPairBlock({ ys:ys });
+      const box = document.createElement('div');
+      box.className = 'opts';
+      shuffle(['up', 'down', 'same']).forEach(function(key){
+        const b = document.createElement('button');
+        b.className = 'opt dir';
+        b.dataset.rel = key;
+        b.innerHTML = pairIcon(key) + '<span class="unit">' + names[key] + '</span>';
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if(key === rel){
+            b.classList.add('correct');
+            judge(true, '对！' + name);
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false, '比一比：第二个音比第一个音高还是低？');
+          }
+        });
+        box.appendChild(b);
+      });
+      answerEl.appendChild(box);
+    },
+    reveal: function(){
+      $$('.opt.dir', answerEl).forEach(function(b){
+        if(b.dataset.rel === rel) b.classList.add('correct');
+      });
+      setPrompt(rel === 'same' ? '两个音一样高，是重复音'
+        : (rel === 'up' ? '第二个音比第一个音高，是上行' : '第二个音比第一个音低，是下行'), false);
+    }
+  };
+}
+
+function qWhichHigher(ys, clef, intro){
+  const higher = ys[1] < ys[0] ? 1 : 0;
+  const clefName = (clef === 'bass') ? '低音谱号' : '高音谱号';
+  let svg = null;
+
+  function noteEl(i){
+    return svg ? svg.querySelector('.note[data-i="' + i + '"]') : null;
+  }
+  function pitchOf(i){
+    return staffPitch(clef, ys[i]).midi;
+  }
+
+  return {
+    kind:'higher', valueId:'whole', clef:clef || '', y1:ys[0], y2:ys[1], higher:higher, wrong:0,
+    render: function(){
+      const lead = clef ? clefName + '，' : '';
+      const screen = lead + '哪个音更高？点它。';
+      const spoken = (intro && clef ? '现在加上谱号。' : (intro ? '没有谱号，也能看谁在上面。' : '')) + screen;
+      setPrompt(screen, spoken);
+      stageEl.innerHTML = staffPairBlock({ ys:ys, clef:clef, hits:true });
+      svg = stageEl.querySelector('svg');
+      answerEl.innerHTML = '<div class="spot-cap">点一下那个音</div>';
+
+      /* 点在左半边算第 1 个音，右半边算第 2 个音。点按区铺满谱表，
+         孩子不用瞄准音头；点中的那个音先闪一下，告诉他点到了谁。
+         有谱号时点哪个就响哪个，谱号和音高的对应关系当场听得到。 */
+      svg.addEventListener('pointerdown', function(e){
+        if(G.q.answered || !svg) return;
+        const hit = e.target.closest ? e.target.closest('.note-hit') : null;
+        if(!hit) return;
+        e.preventDefault();
+        const i = Number(hit.dataset.i);
+        const el = noteEl(i);
+        if(clef) playMidi(pitchOf(i), 0.7);
+        if(i === higher){
+          if(el){ el.classList.remove('hint', 'wrong'); el.classList.add('correct'); }
+          judge(true, '对！上面的音更高');
+        }else{
+          if(el) el.classList.add('wrong');
+          setTimeout(function(){ if(el) el.classList.remove('wrong'); }, 480);
+          judge(false, '比一比：哪个音在上面？');
+        }
+      }, { passive:false });
+    },
+    reveal: function(){
+      const el = noteEl(higher);
+      if(el){ el.classList.remove('wrong'); el.classList.add('hint'); }
+      setPrompt('上面的音更高', false);
+      /* 提示时把两个音按从低到高弹一遍，孩子能听到「上面」确实更响（更高）。 */
+      if(clef){
+        const lo = staffPitch(clef, Math.max(ys[0], ys[1])).midi;
+        const hi = staffPitch(clef, Math.min(ys[0], ys[1])).midi;
+        playMidi(lo, 0.9);
+        delay(320, function(){
+          if(document.getElementById('play').classList.contains('active')) playMidi(hi, 1.0);
+        });
+      }
+    }
+  };
+}
+
 /* ==================== 新音导入用的键盘题 ====================
    qKeyboardFind：在键盘上找到指定的音，可以限定键盘范围。
    局部键盘（C4 到新音）用在新音导入的第 0 步，先把黑键地标看清楚；
@@ -3043,7 +3317,7 @@ function balanceHands(ids, m){
   return list;
 }
 
-/* ==================== 六种技能的出题函数 ====================
+/* ==================== 各技能的出题函数 ====================
    每个函数签名都是 (ids, n)：ids 是已经按 needs 过滤好的音池，
    n 是这一节要出几题。返回题目数组。
    SKILLS 里的 make 指向这些函数，buildQuestions 只负责查表和取池，
@@ -3111,6 +3385,69 @@ function makeSpot(ids, n){
   return spotQuestions(n);
 }
 
+/* 第 7 关出题。题量按难度来（轻松/标准 8，挑战 10）：
+   前 3 题是方向判断，三种关系各一题；剩下的题对半分给「不加谱号」
+   和「加谱号」的哪一边更高。加谱号的一组放在最后，难度是往上走的。
+   音高位置从 0 到 4（五条线以内），不借用音集，也不出加线。 */
+function randHalf(min, max){
+  const steps = Math.max(0, Math.round((max - min) * 2));
+  return min + randInt(steps + 1) / 2;
+}
+
+function pairFor(rel, maxD){
+  if(rel === 'same'){
+    const y = randHalf(0, 4);
+    return [y, y];
+  }
+  const max = maxD || 2.5;
+  const ds = [0.5, 1, 1.5, 2, 2.5, 3].filter(function(d){ return d <= max; });
+  const d = pick(ds);
+  const base = randHalf(0, 4 - d);
+  return (rel === 'up') ? [base + d, base] : [base, base + d];
+}
+
+/* 上行、下行交替出现，避免孩子学会「右边那个总是更高」。
+   第一个方向随机，后面每个方向都跟上一次相反。 */
+function alternateDirs(n){
+  const out = [];
+  let dir = Math.random() < 0.5 ? 'up' : 'down';
+  for(let i = 0; i < n; i++){
+    out.push(dir);
+    dir = (dir === 'up') ? 'down' : 'up';
+  }
+  return out;
+}
+
+/* 第三组每次只出现一种谱号。两种谱号交替，孩子不会靠「上次是高音谱号」
+   猜；题目数量是奇数时，多出来的那一题随机落在某种谱号上。 */
+function alternateClefs(n){
+  const out = [];
+  let clef = Math.random() < 0.5 ? 'treble' : 'bass';
+  for(let i = 0; i < n; i++){
+    out.push(clef);
+    clef = (clef === 'treble') ? 'bass' : 'treble';
+  }
+  return out;
+}
+
+function makeTwoNotes(ids, n){
+  const total = Math.max(5, n || 8);
+  const qs = shuffle(['up', 'down', 'same']).map(function(rel, i){
+    return qPairDirection(pairFor(rel, 2.5), i === 0);
+  });
+  const rest = total - 3;
+  const bN = Math.max(1, Math.floor(rest / 2));
+  const cN = Math.max(1, rest - bN);
+  alternateDirs(bN).forEach(function(rel, i){
+    qs.push(qWhichHigher(pairFor(rel, 2.5), null, i === 0));
+  });
+  const clefs = alternateClefs(cN);
+  alternateDirs(cN).forEach(function(rel, i){
+    qs.push(qWhichHigher(pairFor(rel, 3), clefs[i], i === 0));
+  });
+  return qs;
+}
+
 /* 按技能注册表出题。这是以前 buildQuestions 的大 if/else 的替代：
    取哪条技能 → 按 needs 过滤音池 → 交给 make。 */
 function buildQuestions(skillId){
@@ -3166,8 +3503,8 @@ function buildDailySession(){
 }
 
 /* ==================== 流程 ====================
-   六个入口最后都走 startSession：
-     六张技能卡      startLevel(id)
+   各入口最后都走 startSession：
+     技能卡          startLevel(id)
      今日练习        startDaily()
      新音导入        startSpotlight()
      单音复习        startNoteReview(noteId)
@@ -3200,7 +3537,7 @@ function startSession(tag, build, opts){
   renderQuestion();
 }
 
-/* 六张技能卡。G.level 只对技能模式有意义，星星也按它存。 */
+/* 技能卡。G.level 只对技能模式有意义，星星也按它存。 */
 function startLevel(id){
   const skill = SKILLS[id - 1];
   if(!skill) return;
@@ -3401,7 +3738,7 @@ function showHome(){
 }
 
 /* 「我的音」：每个音一个 chip。
-   已学：点一下勾选 / 取消，决定今日练习和六项技能练哪几个音；
+   已学：点一下勾选 / 取消，决定今日练习和技能关练哪几个音；
    当前新音：脉动，点进去是新音导入；
    还没学：灰掉，点了只提示，不会开始练习。 */
 function renderChips(){
@@ -3481,7 +3818,7 @@ function renderNextNote(){
   if(show) btn.textContent = '下一个音：' + NOTES[next].letter;
 }
 
-/* 首页：chips + 今日练习 + 六张技能卡。
+/* 首页：chips + 今日练习 + 技能卡。
    菜单长度固定，音集只在 chips 里长大。 */
 function renderHome(){
   renderChips();
@@ -3900,7 +4237,7 @@ function renderReport(){
       ? '还没有日常练习记录；下面的前测/后测结果仍然保留。'
       : '还没有答题记录。做完一次今日练习或任意一关，这里就会长出数据。') + '</div>';
   }else{
-    html += '<div class="report-sec"><h3>六项技能</h3>';
+    html += '<div class="report-sec"><h3>各项技能</h3>';
     SKILLS.forEach(function(sk){ html += statBar(sk.name, statsOf(ev, 'skill', sk.id)); });
     html += '</div><div class="report-sec"><h3>每个音</h3>';
     NOTE_ORDER.forEach(function(id){
@@ -4001,13 +4338,15 @@ function exportCsv(){
   if(!CURRENT) return;
   const head = ['participant', 'display_name', 'event_seq', 'datetime_iso', 'date_local', 'session_id',
     'phase', 'mode', 'skill', 'kind', 'note', 'letter', 'value', 'clef', 'line_space',
-    'difficulty', 'first_try', 'wrong_count', 'response_ms', 'battery'];
+    'difficulty', 'first_try', 'wrong_count', 'response_ms', 'battery',
+    'relation', 'staff_y1', 'staff_y2', 'higher'];
   const rows = [head];
   S.events.forEach(function(e){
     const d = new Date(e.t);
     rows.push([CURRENT.id, CURRENT.name, e.seq, d.toISOString(), dayKey(d), e.sid,
       e.phase, e.mode, e.skill, e.kind, e.note, e.letter, e.value, e.clef, e.spot,
-      e.diff, e.first, e.wrong, e.ms, e.battery]);
+      e.diff, e.first, e.wrong, e.ms, e.battery,
+      e.relation, e.staffY1, e.staffY2, e.higher]);
   });
   const text = '\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
   download('note-trainer_' + safeName(CURRENT.name) + '_' + dayKey(new Date()) + '.csv',
@@ -4039,6 +4378,7 @@ function importBackup(file){
     const st = payload && (payload.state || payload);
     if(!st || !st.progress || !st.stars){ toast('这份备份里没有账户数据', 'bad'); return; }
     if(!window.confirm('导入会覆盖「' + CURRENT.name + '」的全部记录、进度和勾选，继续？')) return;
+    upgradeState(st);
     S = Object.assign(newState(), st);
     S.v = SCHEMA_VERSION;
     ensureProgress();
