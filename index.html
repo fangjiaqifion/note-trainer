@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <title>识谱小练习 · 第一单元 B C D</title>
-<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法与线与间。六关、三档难度、可离线，iPad 可用。">
+<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间和 E 音。七关、三档难度、可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
      但不需要被搜索引擎收录：noindex 让爬虫不要建索引，
      nofollow 不追踪页面里的链接，noarchive 不留快照。
@@ -20,7 +20,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="识谱小练习">
 <meta property="og:title" content="识谱小练习 · 第一单元 B C D">
-<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间。六关、三档难度、可离线。">
+<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → E 音。七关、三档难度、可离线。">
 <meta property="og:url" content="https://fangjiaqifion.github.io/note-trainer/">
 <meta property="og:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="识谱小练习 · 第一单元 B C D">
-<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间。">
+<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → E 音。">
 <meta name="twitter:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -90,9 +90,10 @@
   .home-head{padding:26px 24px 4px;text-align:center}
   .home-head h1{font-size:32px;margin:0;letter-spacing:3px;font-weight:800}
   .home-head .sub{margin:8px 0 0;color:var(--muted);letter-spacing:8px;font-size:15px;font-weight:600}
-  /* 六关正好排成两列三行。行高比五关时的 196 略低，
-     iPad 横屏（768 高）也不用滚动，最后一张卡片不会被折到屏幕外。 */
-  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,178px);min-height:0;overflow-y:auto}
+  /* 七关排成两列：前六关三行，第七关单独居中一行，避免最后一格空着。
+     行高 160，iPad 竖屏（1024 高）放得下；矮屏在下面的媒体查询里收窄。 */
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,160px);min-height:0;overflow-y:auto}
+  .level-card:nth-child(7){grid-column:1 / -1;justify-self:center;width:calc(50% - 7px)}
   .level-card{
     display:flex;flex-direction:column;gap:8px;text-align:left;
     background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 18px;
@@ -256,8 +257,15 @@
   @keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
   @keyframes fade{0%,100%{opacity:1}50%{opacity:.35}}
 
+  /* 屏幕矮（iPad 横屏、桌面小窗）时收起说明文字、压低行高，
+     七张卡片仍能一屏放下；再矮就允许从头滚动。 */
+  @media (max-height:880px){
+    .levels{grid-auto-rows:minmax(0,132px)}
+    .lv-desc{display:none}
+  }
   @media (max-width:520px){
     .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px;grid-auto-rows:minmax(0,124px);align-content:start}
+    .level-card:nth-child(7){grid-column:auto;justify-self:stretch;width:auto}
     .lv-desc{display:none}
     .home-head h1{font-size:26px}
     /* 手机屏窄，24px 的提示语会折成三四行、盖住谱面 */
@@ -265,7 +273,7 @@
   }
   @media (orientation:landscape) and (max-height:560px){
     .home-head{padding-top:10px}
-    .levels{gap:10px;grid-auto-rows:minmax(0,150px)}
+    .levels{gap:10px;grid-auto-rows:minmax(0,150px);align-content:start}
     .lv-desc{display:none}
     .lv-num{width:34px;height:34px;font-size:17px}
   }
@@ -371,12 +379,14 @@
      2. 渲染层  staffSVG（五线谱）、buildKeyboard（键盘）、handSVG（卡通手）
                 只负责把数据画成 SVG / DOM，不判断对错。
      3. 题型层  qFindKey / qStaffToKey / qKeyToStaff / qClef /
-                qBeats / qWhichShape / qPlayNote / qStaffSpot
+                qBeats / qWhichShape / qPlayNote / qStaffSpot /
+                qKeyboardFind / qKeyName
                 每个工厂返回 { kind, render(), reveal() }，
                 render 才绑定交互，reveal 是错够次数后的提示。
                 「按住」这一段由 holdPad 提供，第 4、5 关共用；
                 qPlayNote 自己分三段（手 → 指 → 按住），前两段不判整题；
-                qStaffSpot 直接在谱面上点线或间，训练的是谱面坐标。
+                qStaffSpot 直接在谱面上点线或间，训练的是谱面坐标；
+                qKeyboardFind / qKeyName 是第 7 关认 E 用的键盘题。
      4. 流程层  judge / renderQuestion / buildQuestions / startLevel /
                 finishLevel
                 管对错、连击、换题、结算；渲染层和题型层都不碰这里。
@@ -463,9 +473,10 @@ const WHITE_OFF = [0,2,4,5,7,9,11];
      stem      'up' / 'down'，覆盖 hand 给出的符杆方向（用于谱表上方的音）
      clefHint  第 3 关答错时给的那句提示
 
-   目前是 B3、C4、D4，外加只给第 3 关用的 C4B：
-   B 用低音谱号（上加一间），中央 C 与 D 用高音谱号；
-   C4B 是中央 C 的低音谱号写法（上加一线）。 */
+   目前是 B3、C4、D4，外加两个只给特定关卡用的音：
+     C4B  只给第 3 关，中央 C 的低音谱号写法
+     E4   只给第 7 关，高音谱表第一线
+   B 用低音谱号（上加一间）；中央 C、D、E 用高音谱号。 */
 const NOTES = {
   B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2,
         clefHint:'B 比中央 C 低，写在低音谱号里' },
@@ -473,13 +484,17 @@ const NOTES = {
         clefHint:'中央 C 写在高音谱号的下加一线上' },
   D4: { id:'D4', letter:'D', label:'D',      midi:62, clef:'treble', y:4.5,  hand:'R', finger:2,
         clefHint:'D 在中央 C 上面，写在高音谱号里' },
+  E4: { id:'E4', letter:'E', label:'E',      midi:64, clef:'treble', y:4.0,  hand:'R', finger:3,
+        clefHint:'E 在高音谱号的第一条线上' },
   /* 中央 C 的另一种写法：低音谱号的上加一线。音高同 C4，只给第 3 关
      「用哪个谱号」用，所以不放进 UNIT.notes。它在谱表上方，
      按惯例符杆朝下，用 stem 覆盖 hand 决定的方向。 */
   C4B:{ id:'C4B', letter:'C', label:'中央 C', midi:60, clef:'bass', y:-1, hand:'R', finger:1, stem:'down',
         clefHint:'中央 C 也可以写在低音谱号的上加一线上' }
 };
-/* 单元标题只影响首页副标题，真正出题用的是 notes 数组。 */
+/* 单元标题只影响首页副标题，真正出题用的是 notes 数组。
+   E4 不在这里：它只在第 7 关出现，第 1–5 关仍然只出 B3、C4、D4，
+   不会在孩子还没学过 E 的时候突然考到它。等 E 练熟后再决定要不要并进单元。 */
 const UNIT = { name:'第一单元', label:'B · 中央 C · D', notes:['B3','C4','D4'] };
 const NOTE_IDS = UNIT.notes;
 /* 需要加线的音登记在这里：{ 谱号: { 音 id: 加线的 y 位置 } }。
@@ -498,8 +513,9 @@ const VALUES = {
 };
 const VALUE_IDS = ['quarter','half','dotted','whole'];
 
-/* 六关的顺序就是教学顺序：认键 → 谱键互认 → 谱号 → 读谱与拍数 →
-   手、指、按住 → 谱面坐标。第六关退回到五线谱本身，先认清五条线与四个间。
+/* 七关的顺序就是教学顺序：认键 → 谱键互认 → 谱号 → 读谱与拍数 →
+   手、指、按住 → 谱面坐标 → 加入 E。第六关退回到五线谱本身；
+   第七关先认 E，再把 B、C、D、E 放在一起比键盘位置和谱面位置。
    首页卡片、关卡标题、结算文案都从这里取，不要另写一份。
    每一关训练什么、不考什么，另见 LEVELS.md。 */
 const LEVELS = [
@@ -508,12 +524,14 @@ const LEVELS = [
   { id:3, name:'谱号',   title:'用哪个谱号',   desc:'同一个中央 C，有高音、低音两种写法', color:'#2E9C8F' },
   { id:4, name:'时值',   title:'读谱与拍数',   desc:'读谱、找键、弹够时值', color:'#3FA96F' },
   { id:5, name:'读谱',   title:'手、指与拍数', desc:'先判手和指，再按住弹够时值', color:'#8E5AA8' },
-  { id:6, name:'线与间', title:'五线谱的线与间', desc:'从下往上数，指出第几条线、第几间', color:'#C2543F' }
+  { id:6, name:'线与间', title:'五线谱的线与间', desc:'从下往上数，指出第几条线、第几间', color:'#C2543F' },
+  { id:7, name:'E 音',   title:'E 音与 B C D', desc:'先认 E 的键盘与谱面位置，再和 B C D 混着认', color:'#5C6B3F' }
 ];
 
 /* 三档难度。options 是选项个数（按题型取值：时值题最多 4 个，谱例最多 3 张，
    第 5 关的指法题最多 3 只），hintAfter 是错几次给提示，
-   bpm 决定「按住」时一拍有多长，count 是一关几题（第 5 关每题三段，取 count - 2）。 */
+   bpm 决定「按住」时一拍有多长，count 是一关几题
+   （第 5 关每题三段取 count - 2；第 7 关每题一次点击取 count + 2）。 */
 const DIFFS = {
   easy:   { key:'easy',   name:'轻松', options:2, hintAfter:1, bpm:52, count:8  },
   normal: { key:'normal', name:'标准', options:3, hintAfter:2, bpm:60, count:8  },
@@ -1012,17 +1030,25 @@ function clefSVG(clef){
 }
 
 /* ==================== 键盘 ====================
-   两组键盘拼一张图：从 C3 开始连续 15 个白键（两个八度多一点），
+   默认从 C3 开始连续 15 个白键（两个八度多一点）；
+   第 7 关第一次认 E 时用局部键盘（C4–E4 三个白键）。
    黑键按「白键序号」定位，用百分比摆放，所以任何宽度都能自适应。
-   白键用 data-midi 记录音高，判题时只比数字，不比 DOM 位置。 */
+   白键用 data-midi 记录音高，判题时只比数字，不比 DOM 位置。
+
+   start 是起始白键序号（0 = C3，7 = C4），count 是白键数。
+   局部键盘和完整键盘共用这一套，黑键宽度按白键宽度算，换范围不会错位。 */
 function buildKeyboard(kb, opts){
   opts = opts || {};
   kb.innerHTML = '';
-  const N = 15, w = 100 / N;
-  let i, oct, deg, midi, el;
+  const start = opts.start || 0;
+  const N = opts.count || 15;
+  const w = 100 / N;
+  const blackW = w * 0.585;   // 黑键约白键宽度的六成；旧版 3.9 / 6.667 就是这个比例
+  let i, k, oct, deg, midi, el;
 
   for(i = 0; i < N; i++){
-    oct = 3 + Math.floor(i / 7); deg = i % 7;
+    k = start + i;
+    oct = 3 + Math.floor(k / 7); deg = k % 7;
     midi = 12 * (oct + 1) + WHITE_OFF[deg];
     el = document.createElement('div');
     el.className = 'w';
@@ -1039,14 +1065,17 @@ function buildKeyboard(kb, opts){
      对应 0,1,3,4,5 这几个白键位置（C# D# F# G# A#），
      2 和 6 之间是 E–F、B–C 的半音关系，没有黑键。 */
   for(i = 0; i < N; i++){
-    deg = i % 7;
+    k = start + i;
+    deg = k % 7;
     if([0,1,3,4,5].indexOf(deg) < 0) continue;
-    midi = 12 * (3 + Math.floor(i / 7) + 1) + WHITE_OFF[deg] + 1;
+    /* 最后一个白键右边已经出了本段键盘，不再画半个黑键。 */
+    if(i === N - 1) continue;
+    midi = 12 * (3 + Math.floor(k / 7) + 1) + WHITE_OFF[deg] + 1;
     el = document.createElement('div');
     el.className = 'b';
     el.dataset.midi = midi;
-    el.style.left = ((i + 1) * w - 1.95) + '%';
-    el.style.width = '3.9%';
+    el.style.left = ((i + 1) * w - blackW / 2) + '%';
+    el.style.width = blackW + '%';
     if(opts.target === midi) el.classList.add('target');
     kb.appendChild(el);
   }
@@ -1061,11 +1090,16 @@ function makeKB(opts){
   buildKeyboard(kb, opts);
   /* 右上角的图例：说明键上的黄点是什么意思。
      图例只是说明，不参与点击，所以放在键盘外面单独一行，
-     免得压住键、也免得和黑键的点击区域打架。 */
-  const legend = document.createElement('div');
-  legend.className = 'kb-legend';
-  legend.innerHTML = '<span><i class="lg-dot"></i>中央 C</span>';
-  wrap.appendChild(legend);
+     免得压住键、也免得和黑键的点击区域打架。
+     键盘范围里没有中央 C 时不显示这一行，免得指着一个不存在的点。 */
+  const start = opts.start || 0;
+  const count = opts.count || 15;
+  if(7 >= start && 7 < start + count){
+    const legend = document.createElement('div');
+    legend.className = 'kb-legend';
+    legend.innerHTML = '<span><i class="lg-dot"></i>中央 C</span>';
+    wrap.appendChild(legend);
+  }
   wrap.appendChild(kb);
   /* 一屏同时出现谱面和键盘时，谱面让一点高度出来（见 CSS）。 */
   const play = $('#play');
@@ -1266,8 +1300,9 @@ function qFindKey(letter){
 }
 
 /* 第 2 关（双向之一）：给谱面，在键盘上点出这个音。
-   和上一关不同，这里必须对上具体音组：D4 不能点成 D5。 */
-function qStaffToKey(noteId, valueId){
+   和上一关不同，这里必须对上具体音组：D4 不能点成 D5。
+   第 7 关还会传 hint：错够次数后补一句这个音在谱表上的位置。 */
+function qStaffToKey(noteId, valueId, hint){
   const note = NOTES[noteId];
   return {
     kind:'s2k', noteId:noteId, valueId:valueId || 'quarter', wrong:0,
@@ -1294,16 +1329,19 @@ function qStaffToKey(noteId, valueId){
       $$('.kb .w, .kb .b', answerEl).forEach(function(k){
         if(Number(k.dataset.midi) === note.midi) k.classList.add('hint');
       });
+      if(hint) setPrompt(hint);
     }
   };
 }
 
 /* 第 2 关（双向之二）：高亮一个键，从几张谱例里挑出对应的那张。
-   options 决定给几张：轻松档 2 张，其余 3 张；干扰项从本单元里抽。 */
-function qKeyToStaff(noteId){
+   options 决定给几张：轻松档 2 张，其余 3 张；干扰项默认从本单元里抽。
+   第 7 关传入局部池（如 D/E 两个音），把比较限制在这两个音之间。 */
+function qKeyToStaff(noteId, pool){
   const note = NOTES[noteId];
+  const ids = pool || NOTE_IDS;
   const n = diff().options >= 3 ? 3 : 2;
-  const others = shuffle(NOTE_IDS.filter(function(x){ return x !== noteId; })).slice(0, n - 1);
+  const others = shuffle(ids.filter(function(x){ return x !== noteId; })).slice(0, n - 1);
   const order = shuffle([noteId].concat(others));
 
   return {
@@ -1984,6 +2022,128 @@ function qStaffSpot(spot, num, clef, intro){
   };
 }
 
+/* ==================== 第 7 关：加入 E 音 ====================
+   这一关只练音高与位置，不碰时值。顺序是固定的教学顺序：
+     ① 局部键盘（C4–E4，两个黑键）找 E
+     ② 完整键盘找 E
+     ③ 键盘上高亮一个键，认 C / D / E
+     ④ 完整键盘上找 C / D / E
+     ⑤ D 与 E 的谱面 ↔ 键盘
+     ⑥ C 与 E 的谱面 ↔ 键盘
+     ⑦ B C D E 混合
+   前半段用「两个黑键」做地标：C 在左边、D 在中间、E 在右边。
+   第 ① 题只给三个白键，孩子先看清地标；第 ② 题才在整排键盘里找。 */
+
+/* 每个音在谱表上的位置，错够次数后说出来。
+   第 7 关的谱面题用它做提示；第 2 关不传提示，保持原来的行为。 */
+const POS_HINT = {
+  B3: 'B 在低音谱号的上加一间',
+  C4: '中央 C 在高音谱号的下加一线',
+  D4: 'D 在高音谱号的谱表下方那一间',
+  E4: 'E 在高音谱号的第一条线上'
+};
+
+/* 键盘上的地标提示：C、D、E 都在两个黑键的附近，B 在中央 C 左边。 */
+function keyHint(noteId){
+  if(noteId === 'B3') return 'B 在中央 C 左边的白键';
+  if(noteId === 'C4') return 'C 是两个黑键左边的白键，也是中央 C';
+  if(noteId === 'D4') return 'D 在两个黑键之间，中央 C 右边第一个白键';
+  if(noteId === 'E4') return 'E 在两个黑键的右边，中央 C 右边第二个白键';
+  return '看两个黑键：左边 C，中间 D，右边 E';
+}
+
+/* 在键盘上找到指定的音，可以限定键盘范围。
+   局部键盘（C4–E4）用来第一次认 E；完整键盘要求点中 E4 本身，
+   点 E3 也算错，因为这一关最后要和谱面上的 E4 对上。
+   第一题的题干和答对提示都把「两个黑键的右边」说出来，作为地标的第一次说明。 */
+function qKeyboardFind(noteId, opts){
+  opts = opts || {};
+  const n = NOTES[noteId];
+  const start = (opts.start == null) ? 0 : opts.start;
+  const count = (opts.count == null) ? 15 : opts.count;
+  const intro = !!opts.intro;
+  return {
+    kind:'kbfind', noteId:noteId, wrong:0,
+    render: function(){
+      /* 第一题（局部键盘）把地标说出来，当一次示范；
+         完整键盘那题只留任务，孩子要自己找两个黑键。 */
+      const task = intro ? '两个黑键的右边是 ' + n.letter + '。找到 ' + n.letter
+                         : '在键盘上找到 ' + n.letter;
+      setPrompt(task, task);
+      stageEl.classList.add('letter');
+      stageEl.innerHTML = '<div class="big-letter">' + n.letter + '</div><div class="down-arrow">↓</div>';
+      const kb = makeKB({
+        labels: S.labels,
+        start: start, count: count,
+        onDown: function(midi, el){
+          if(G.q.answered) return;
+          if(midi === n.midi){
+            el.classList.add('correct');
+            judge(true, intro ? '对！' + n.letter + ' 在两个黑键的右边' : '对！这是 ' + n.label);
+          }else{
+            el.classList.add('wrong');
+            setTimeout(function(){ el.classList.remove('wrong'); }, 420);
+            judge(false);
+          }
+        }
+      });
+      answerEl.appendChild(kb);
+    },
+    reveal: function(){
+      $$('.kb .w, .kb .b', answerEl).forEach(function(k){
+        if(Number(k.dataset.midi) === n.midi) k.classList.add('hint');
+      });
+      setPrompt(keyHint(noteId));
+    }
+  };
+}
+
+/* 键盘上高亮一个键，问它是 C、D 还是 E。
+   选项固定三个，不受难度里的选项数影响：这一关就是要三者都分得清。 */
+function qKeyName(pool){
+  const noteId = pick(pool);
+  const n = NOTES[noteId];
+  const letters = shuffle(pool.map(function(id){ return NOTES[id].letter; }));
+  return {
+    kind:'keyname', noteId:noteId, wrong:0,
+    render: function(){
+      setPrompt('这个键是哪个音？', '这个键是哪个音');
+      const stack = document.createElement('div');
+      stack.className = 'stack';
+      stack.appendChild(makeKB({ labels: S.labels, target: n.midi }));
+      const box = document.createElement('div');
+      box.className = 'opts';
+      letters.forEach(function(letter){
+        const b = document.createElement('button');
+        b.className = 'opt';
+        b.dataset.letter = letter;
+        b.innerHTML = '<span class="num">' + letter + '</span>';
+        b.addEventListener('click', function(){
+          if(G.q.answered) return;
+          if(letter === n.letter){
+            b.classList.add('correct');
+            playMidi(n.midi, 0.9);
+            judge(true, '对！这是 ' + n.label);
+          }else{
+            b.classList.add('wrong');
+            setTimeout(function(){ b.classList.remove('wrong'); }, 500);
+            judge(false);
+          }
+        });
+        box.appendChild(b);
+      });
+      stack.appendChild(box);
+      stageEl.appendChild(stack);
+    },
+    reveal: function(){
+      $$('.opt', stageEl).forEach(function(b){
+        if(b.dataset.letter === n.letter) b.classList.add('correct');
+      });
+      setPrompt(keyHint(noteId));
+    }
+  };
+}
+
 /* ==================== 出题（由易到难） ====================
    一关的题目在进关时一次性生成，中途不再变化，
    所以「第几题」的进度条和星星统计都是确定的。
@@ -2046,6 +2206,39 @@ function spotQuestions(n){
   return qs;
 }
 
+/* 第 7 关的题目：顺序固定，先认 E，再比 D/E、C/E，最后 B C D E 混合。
+   前 8 题是固定阶段；题量 10 时混合 2 题，题量 12 时混合 4 题。
+   10 题的混合保证 B 出现一次，另一个从 C/D/E 里抽；
+   12 题的混合四个音各一次，谱→键、键→谱交替。 */
+function eQuestions(n){
+  const qs = [];
+  const de = shuffle(['D4','E4']);
+  const ce = shuffle(['C4','E4']);
+
+  qs.push(qKeyboardFind('E4', { start:7, count:3, intro:true }));
+  qs.push(qKeyboardFind('E4', { start:0, count:15 }));
+  qs.push(qKeyName(['C4','D4','E4']));
+  qs.push(qKeyboardFind(pick(['C4','D4','E4']), { start:0, count:15 }));
+
+  qs.push(qStaffToKey(de[0], 'quarter', POS_HINT[de[0]]));
+  qs.push(qKeyToStaff(de[1], ['D4','E4']));
+  qs.push(qStaffToKey(ce[0], 'quarter', POS_HINT[ce[0]]));
+  qs.push(qKeyToStaff(ce[1], ['C4','E4']));
+
+  if(n <= 10){
+    const pair = ['B3', pick(['C4','D4','E4'])];
+    if(Math.random() < 0.5) pair.reverse();
+    qs.push(qStaffToKey(pair[0], 'quarter', POS_HINT[pair[0]]));
+    qs.push(qKeyToStaff(pair[1], ['B3','C4','D4','E4']));
+  }else{
+    const mixed = shuffle(['B3','C4','D4','E4']);
+    mixed.forEach(function(id, i){
+      qs.push(i % 2 === 0 ? qStaffToKey(id, 'quarter', POS_HINT[id]) : qKeyToStaff(id, mixed));
+    });
+  }
+  return qs;
+}
+
 /* 每关的题目构成：
      第 1 关  从预置序列里抽，C 和 B 出现得多一点，先把两端的锚点认熟
      第 2 关  一半「谱→键」，一半「键→谱」，交替练双向映射
@@ -2053,10 +2246,12 @@ function spotQuestions(n){
      第 4 关  每三题插一道「哪个是二分音符」的反向题，答对后自己找键、自己数拍
      第 5 关  每题三段：判手 → 判指 → 按住弹够时值
      第 6 关  线与间交替，前半段不画谱号，后半段加高音或低音谱号
-   除第 1、6 关外生成后统一打乱；这两关的顺序本身有教学作用，见下。 */
+     第 7 关  局部键盘找 E → 完整键盘找 E → 认 C/D/E → D/E、C/E 对比 → 混合 B C D E
+   除第 1、6、7 关外生成后统一打乱；这三关的顺序本身有教学作用，见下。 */
 function buildQuestions(level){
   const d = diff();
-  const n = d.count;
+  /* 第 7 关每题只要一次点击，题量比其他关多 2 道，让固定阶段都走到。 */
+  const n = (level === 7) ? d.count + 2 : d.count;
   let qs = [];
 
   if(level === 1){
@@ -2086,13 +2281,15 @@ function buildQuestions(level){
     const ids = shuffle(repeatTo(NOTE_IDS, m));
     const vals = shuffle(repeatTo(['quarter','half','dotted'], m));
     for(let i = 0; i < m; i++) qs.push(qPlayNote(ids[i], vals[i]));
-  }else{
+  }else if(level === 6){
     qs = spotQuestions(n);
+  }else{
+    qs = eQuestions(n);
   }
 
   /* 第 1 关排成「不连着重复同一个音」，第 6 关排成「第一题第 1 线、
-     后半段才加谱号」，两关的顺序都有教学作用，这里不能再洗一次。 */
-  return (level === 1 || level === 6) ? qs : shuffle(qs);
+     后半段才加谱号」，第 7 关排成固定的教学顺序；这三关都不能再洗。 */
+  return (level === 1 || level === 6 || level === 7) ? qs : shuffle(qs);
 }
 
 /* ==================== 流程 ==================== */
