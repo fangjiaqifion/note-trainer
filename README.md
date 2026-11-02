@@ -9,9 +9,16 @@ time in a short spotlight, then folded into the same six skills.
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
-current new note; F4 and G4 are queued. The note set is configuration, not code: adding a
-note is one registry entry plus one queue slot, see [Adding a note](#adding-a-note). The six
-skills stay the same as the set grows; the menu does not get longer.
+current new note; F4 and G4 are queued. Learned notes can be checked or unchecked on the home
+screen, and every skill and the daily session use only the checked notes. The note set is
+configuration, not code: adding a note is one registry entry plus one queue slot, see
+[Adding a note](#adding-a-note). The six skills stay the same as the set grows; the menu does
+not get longer.
+
+Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
+notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
+in `localStorage`; there is no server, no account recovery, and no network request. A parent
+panel exports the log as CSV for analysis or the whole profile as JSON for backup.
 
 ## What it is
 
@@ -33,14 +40,90 @@ two-stage decay with no steady sustain, hammer and damper noise, and a light roo
 generated in code. The fundamental is always the exact equal-tempered frequency, and no
 sample-shifting is involved.
 
-Stars and learning progress live in `localStorage` on the device.
+Stars, checked notes, progress flags and the practice log live in `localStorage`, in a
+separate record for each learner profile.
 
 ## Quick start
 
 1. Open the live URL in Safari on the iPad.
 2. Tap **Share → Add to Home Screen**. It then opens full screen, like an app, and works
    offline.
-3. Tap **今日练习** (Daily practice). The child does not have to choose a skill first.
+3. On first launch, create a learner profile: a name or participant code and a four-digit
+   PIN. If the device already has the old single-profile progress, the first profile adopts
+   it.
+4. Check the notes to practice under **我的音** (My notes). The default is every learned note.
+5. Tap **今日练习** (Daily practice). The child does not have to choose a skill first.
+
+## Learner profiles and data
+
+A profile is a separate `localStorage` record: checked notes, progress flags, stars, settings,
+the current new note, the frozen pre/post battery, and the practice log. The account roster
+holds the names, colours, and salted hashes of the four-digit PINs. The PIN is a local gate
+against opening the wrong profile; it is not encryption, and anyone who can read the device's
+storage can read the data.
+
+When the app starts:
+
+- one profile, not locked: it opens directly;
+- more than one profile, or the last session ended with **锁定** (Lock): the profile picker
+  appears, and switching profiles requires the PIN.
+
+The **家长** (Parent) panel on the home screen shows the current profile, opens the practice
+report, starts a pre- or post-test, exports data, imports a backup, or clears the log.
+
+### Practice log
+
+One row is written when a question is finally answered correctly, not on every tap. A row
+contains:
+
+| Field | Meaning |
+|---|---|
+| `event_seq` | Monotonic counter, survives trimming |
+| `datetime_iso`, `date_local` | UTC timestamp and local date |
+| `session_id` | Groups the questions of one session |
+| `phase` | `pre`, `post`, or empty for practice |
+| `mode` | `skill`, `daily`, `spotlight`, `note`, or `test` |
+| `skill`, `kind` | Skill 1–6 and the question factory |
+| `note`, `letter`, `value`, `clef`, `line_space` | What the item asked |
+| `difficulty` | Difficulty used for that session |
+| `first_try`, `wrong_count` | Whether the first attempt was correct, and how many attempts failed |
+| `response_ms` | Time from the question appearing to the correct answer |
+
+Accuracy is `first_try / questions`; the error rate is its complement. `wrong_count` keeps
+the retries that a single accuracy figure hides. The log is capped at 8000 rows (about two
+years of ten questions a day); export before clearing it. The panel shows the current count.
+
+### Pre/post tests
+
+**前测** freezes a 12-item battery and the difficulty in use at that moment. It covers keyboard
+finding, staff ↔ keyboard, clef, duration, hand/finger, and lines/spaces, using only notes
+that have already been taught. **后测** replays the same items with the same difficulty. Test
+rows carry the battery id and are excluded from the daily accuracy and the adaptive
+difficulty. The report shows overall and per-skill change in percentage points.
+
+The battery needs at least two checked notes with staff positions. If a checked note has no
+finger flag yet, the hand/finger item is replaced by an extra staff ↔ keyboard item, so the
+battery stays at 12.
+
+### Export, backup, import
+
+- **CSV** exports the log, one row per question, with a UTF-8 BOM so Excel opens Chinese
+  correctly. `participant` is the internal profile id; `display_name` is the profile name. For
+  sharing, use participant codes as names, or drop the name column.
+- **JSON** exports the whole current profile. It does not contain the PIN.
+- **导入** replaces the *current* profile with a backup, keeping the current profile's PIN.
+  On a new device, create a placeholder profile first, then import.
+
+## Layout
+
+The keyboard is docked at the bottom of the play screen in every question that uses it. When
+a question also offers choices (the keyboard → staff direction of skill 2), the choices sit
+directly above the keyboard. The staff or the large prompt occupies the space above. The
+keyboard therefore never jumps between the middle and the bottom, and the keys stay at the
+bottom edge where the hand naturally rests.
+
+The home screen keeps the checked-note chips at the top, the daily button below them, and the
+six fixed skill cards below that. The chips are the only part that grows with the note set.
 
 ## The six skills
 
@@ -62,9 +145,10 @@ level into "is it B3?", so the pool is deliberately kept at four spellings.
 
 ## New notes: an eight-step spotlight
 
-A new note is not a new level. It is a short flow that opens three flags on the note:
+A new note is not a new level. It is a short flow that opens three flags on the note.
+The flags unlock a skill only after the note is complete and checked:
 
-| Flag | Meaning | Opens |
+| Flag | Meaning | Unlocks |
 |---|---|---|
 | `key` | Find the note on the keyboard in any octave | Skill 1 |
 | `pos` | Match the staff position, clef and exact octave | Skills 2, 3, 4 |
@@ -83,10 +167,12 @@ The flow has eight steps, taken four at a time, so a note takes two short sessio
 | 6 | Mixed with neighbours: staff → keyboard | — |
 | 7 | Mixed with neighbours: keyboard → staff | — |
 
-After step 3 the note enters skills 1 and 2. After step 7 all three flags are open and the
-note joins every skill that asks for it. The home screen then shows a **下一个音** (Next note)
-button; the parent decides when to start the next note. The game never advances the note set
-on its own.
+After step 3 the key and position flags are open, but the note is not yet in the checked set.
+After step 7 all three flags are open, the note is checked automatically in **我的音**, and it
+joins every skill that asks for it. The two spotlight sessions are therefore the acquisition
+phase: the note does not appear in the daily session or the six skills before it is complete.
+The home screen then shows a **下一个音** (Next note) button; the parent decides when to start
+the next note. The game never advances the note set on its own.
 
 E4 is the current new note. F4 and G4 are queued. A4 is defined in `NOTES` but not queued,
 because it falls outside the right-hand five-finger position and needs a hand-position lesson
@@ -94,20 +180,30 @@ before it can use the same spotlight.
 
 ## Daily practice
 
-One tap on **今日练习** builds a ten-question session:
+One tap on **今日练习** builds a ten-question session from the checked notes only:
 
 | Block | Questions | Source | Purpose |
 |---|---|---|---|
-| Review | 2 (3 when there is no new note) | The least recently seen learned notes | Retention |
-| New note | 4 | The current spotlight steps | Acquisition |
-| Mixed | 4 (7 when there is no new note) | Learned notes, with the new note guaranteed once | Discrimination |
+| Review | 2 | The least recently seen checked notes, staff ↔ keyboard | Retention |
+| Find the key | 2 | Checked notes by letter | Keyboard fluency |
+| Duration | 2 | Checked notes with staff positions | Reading and holding |
+| Hand and finger | 1 | Checked notes with a finger flag | Technique |
+| Staff ↔ keyboard | 3 | Checked notes, error-weighted | Discrimination |
 
-Sessions are kept at ten questions so practice stays near three minutes. The note set can
-grow without making a session longer; older notes rotate in through the review block.
+If no checked note has a finger flag, the hand/finger question becomes a fourth staff ↔
+keyboard question, so the session stays at ten. The blocks after the review are shuffled.
+Older notes rotate in through the review block, so the session length does not grow with the
+note set.
 
-The home screen also has a row of note chips (**我的音**). A learned chip starts a six-question
-review of that note and its neighbours. The current new note pulses; tapping it starts the
-spotlight. Notes that have not been taught are dimmed.
+The daily session does not insert the current new note. To learn it, tap the pulsing chip in
+**我的音**; that starts the four-step spotlight. This keeps the checked set authoritative: if
+only B, C and D are checked, the daily session only asks B, C and D.
+
+The home screen also has a row of note chips (**我的音**). A learned chip is a checkbox: tap it
+to include or exclude that note in the daily session and all six skills. A selected note has
+a filled check; an unselected learned note stays white; the current new note pulses and opens
+the spotlight; notes that have not been taught are dimmed. A single-note review of a note and
+its neighbours is available from the **练** button beside each note in the parent report.
 
 ## Notation conventions
 
@@ -159,6 +255,19 @@ and keeps the same question on screen; after two failed holds the correct key is
 | Easy | 2 / 2 / 2 | 1 mistake | 52 BPM | 8 / 6 |
 | Normal | 4 / 3 / 3 | 2 mistakes | 60 BPM | 8 / 6 |
 | Hard | 4 / 3 / 3 | 3 mistakes | 76 BPM | 10 / 8 |
+| Auto | One of the three above | Follows the level | Follows the level | Follows the level |
+
+Auto is the default. At the end of each practice session it looks at the last 20
+non-test questions. At 85% first-try accuracy or better it moves up one level; at 60% or
+below it moves down one; otherwise it stays. It needs at least 12 questions before the first
+judgement, waits at least eight questions between changes, and does not enter Hard until 30
+questions have been logged. The session's difficulty is fixed when the session starts, so
+questions and tempo do not change mid-session. Each change is recorded with its date, the
+accuracy that triggered it, and the two levels; the report shows the last four.
+
+Question selection also follows the log: within a skill, notes with a lower first-try
+accuracy are weighted up (up to 3×), so weak notes appear more often. The daily review block
+still puts the least recently seen notes first.
 
 The clef skill always has two options, treble or bass. Skill 5 runs two questions fewer
 because each one takes three stages, which keeps a session at about three minutes. The daily
@@ -166,8 +275,8 @@ session and the spotlight always ask ten and four questions respectively; they d
 difficulty count.
 
 Three stars requires all but one first-try answer; two stars all but three; anything lower is
-one star. Stars are stored per skill (1–6) and only ever go up. The daily session and the
-spotlight show stars on the result screen but do not overwrite skill stars.
+one star. Stars are stored per skill (1–6) per profile and only ever go up. The daily session
+and the spotlight show stars on the result screen but do not overwrite skill stars.
 
 Hints are never automatic at the start: after enough mistakes the correct key is highlighted,
 or the answer is shown in the prompt, but the player is never told "that is wrong".
@@ -207,7 +316,7 @@ To add a note:
    learned neighbours.
 
 No other code changes are needed. The six skills read `activeNotes(needs)` and pick up the
-new note as its flags open.
+new note once it is complete and checked.
 
 ## Adding a skill
 
@@ -239,8 +348,11 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 | Note names for staff lines | Idea | Skill 6 asks where line 2 is; the next step is "line 2 is G" |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
 | More left-hand notes | Idea | B3 is the only left-hand note, so skill 5 is right-hand heavy |
-| Progress history for parents | Planned | Flags are stored per note; a dated log would show practice over time |
-| Adaptive question selection | Idea | `staleNotes` rotates review; weights could also follow error history |
+| Progress history for parents | Shipped 2026-11-02 | Per-question log, per-skill and per-note accuracy, 14-day chart |
+| Adaptive question selection | Shipped 2026-11-02 | Error-weighted note pools and auto difficulty |
+| Pre/post testing | Shipped 2026-11-02 | Frozen 12-item battery, same items and difficulty at post |
+| Cloud sync or cross-device accounts | Idea | Would need a backend and a data-protection plan; deliberately absent |
+| Account deletion | Idea | The parent panel can clear logs but cannot remove a profile |
 | English interface | Idea | All strings are inline; would need a small dictionary and a switch |
 | Sound check | Shipped 2026-10-29 | Settings → "试听" |
 | License | Not chosen | See [License](#license) |
@@ -252,6 +364,10 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-02 | Learner profiles with a four-digit local PIN, per-profile progress and a per-question practice log; parent report, CSV/JSON export, backup import, and a frozen pre/post battery |
+| 2026-11-02 | **我的音** chips are checkboxes: all skills and the daily session use only the checked notes; the daily session no longer inserts the current new note automatically |
+| 2026-11-02 | The keyboard is docked at the bottom in every question; in the keyboard → staff direction the answer cards sit directly above it |
+| 2026-11-02 | Auto difficulty and error-weighted question selection; the daily session now mixes find, duration, hand/finger, and staff ↔ keyboard |
 | 2026-11-02 | Six skills on a growing note set: new notes enter through an eight-step spotlight (four steps per session), then join skills 1–5; the home screen adds note chips, a daily-practice button, and a parent-controlled "next note" button |
 | 2026-11-02 | Level 7: a short C4–E4 keyboard introduces E, then the full keyboard; C/D/E naming, D/E and C/E comparisons, and a B C D E mix, with no duration |
 | 2026-11-02 | The home screen lays out seven levels in two columns, with the seventh centered |
@@ -332,7 +448,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v14`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v15`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README
@@ -379,12 +495,26 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   finger, and it does not yet teach a new hand position.
 - B3 is the only left-hand note. Skill 5 is therefore right-hand heavy; the left-hand
   contrast is weaker than it should be once the set grows.
-- Stars are per skill and per device. The daily session and the spotlight do not overwrite
-  skill stars; progress flags are stored separately.
+- Stars, checked notes, progress and the log are per profile but still per device
+  (`localStorage`); clearing website data erases every profile. Export a JSON backup before
+  clearing browser data.
+- The PIN is a local switch guard, not encryption. A four-digit PIN has little strength, and
+  the hash protects only against casual reading. Anyone with the unlocked device and developer
+  tools can read the log.
+- The log is capped at 8000 rows. Older rows are dropped silently when the cap is reached; the
+  panel shows the current count.
+- One JSON backup covers one profile. A device with several profiles needs one export per
+  profile.
+- The test battery is frozen at pre-test. If the child learns new notes before the post-test,
+  those notes are not tested, which is the point of a paired comparison but means the post-test
+  does not describe the full current note set.
+- Test accuracy and practice accuracy are reported separately. Test rows are excluded from the
+  adaptive difficulty and the 14-day practice chart.
+- The report and exports show timestamps in the device's local time and store the UTC time;
+  moving a device between time zones can put one session on two local dates.
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
   device from a broken page.
 - Speech depends on installed system voices: Chinese text uses a Chinese voice, while the
   letters B / C / D / E are spoken by an English voice as letter names. Without the voices
   the page falls back to text only.
 - In landscape the staff scales to fit the height, so it looks narrower than on paper.
-- Stars and progress are per device (`localStorage`); clearing website data erases them.
