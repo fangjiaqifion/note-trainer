@@ -1,7 +1,7 @@
 {
   "name": "识谱小练习",
   "short_name": "识谱",
-  "description": "识谱小练习：音名与键盘位置、五线谱、时值、指法、线与间、E 音",
+  "description": "识谱小练习：音名与键盘位置、五线谱、时值、指法、线与间，按进度加入新音",
   "lang": "zh-CN",
   "start_url": "./index.html",
   "scope": "./",
