@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <title>识谱小练习 · 第一单元 B C D</title>
-<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值与指法。四关、三档难度、可离线，iPad 可用。">
+<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法与线与间。六关、三档难度、可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
      但不需要被搜索引擎收录：noindex 让爬虫不要建索引，
      nofollow 不追踪页面里的链接，noarchive 不留快照。
@@ -20,7 +20,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="识谱小练习">
 <meta property="og:title" content="识谱小练习 · 第一单元 B C D">
-<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法。四关、三档难度、可离线。">
+<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间。六关、三档难度、可离线。">
 <meta property="og:url" content="https://fangjiaqifion.github.io/note-trainer/">
 <meta property="og:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -28,7 +28,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="识谱小练习 · 第一单元 B C D">
-<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法。">
+<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间。">
 <meta name="twitter:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -90,9 +90,9 @@
   .home-head{padding:26px 24px 4px;text-align:center}
   .home-head h1{font-size:32px;margin:0;letter-spacing:3px;font-weight:800}
   .home-head .sub{margin:8px 0 0;color:var(--muted);letter-spacing:8px;font-size:15px;font-weight:600}
-  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,196px);min-height:0;overflow-y:auto}
-  /* 五关：前四关两列，第五关居中，避免最后一格空着、整页看着缺一块 */
-  .level-card:nth-child(5){grid-column:1 / -1;justify-self:center;width:calc(50% - 7px)}
+  /* 六关正好排成两列三行。行高比五关时的 196 略低，
+     iPad 横屏（768 高）也不用滚动，最后一张卡片不会被折到屏幕外。 */
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 20px;align-content:center;grid-auto-rows:minmax(0,178px);min-height:0;overflow-y:auto}
   .level-card{
     display:flex;flex-direction:column;gap:8px;text-align:left;
     background:var(--card);border:2px solid var(--line);border-radius:24px;padding:16px 18px;
@@ -140,6 +140,26 @@
   /* 同一屏既有谱面又有键盘时（第 2、3、4 关），谱面收小一点，
      否则 iPad 竖屏上键盘会被挤到屏幕外面。类由 makeKB 加上。 */
   #play.with-kb .paper .staff{height:30vh}
+
+  /* 第 6 关：线与间的命中提示。平时透明，点中才显示。
+     线用一根加粗的彩线压在谱线上，间用一块淡色铺满两条线之间。
+     答对是绿的，答错闪红，错够次数后的提示是橙色虚线。
+     这些元素都在 SVG 里，颜色统一走 CSS，题目代码只加减类名。 */
+  .staff .hl{opacity:0;transition:opacity .12s;pointer-events:none}
+  .staff .hl.on{opacity:1}
+  .staff .hl.line{stroke:var(--green);stroke-width:.2;stroke-linecap:round}
+  .staff .hl.space{fill:var(--green);fill-opacity:.18}
+  .staff .hl.bad.line{stroke:var(--red)}
+  .staff .hl.bad.space{fill:var(--red)}
+  .staff .hl.hint.line{stroke:var(--orange);stroke-width:.24;stroke-dasharray:.42 .3}
+  .staff .hl.hint.space{fill:var(--orange);fill-opacity:.3}
+  /* 整张谱面都是点按区，别让浏览器把拖动当成滚动 */
+  .staff.lines{touch-action:none}
+  /* 第 6 关这一屏没有键盘，谱表不必按屏高压缩：
+     按纸宽铺满，宽屏上线距更大，窄屏也不会在纸里留一圈空白。 */
+  .paper.lines{width:100%;max-width:880px}
+  .paper .staff.lines{width:100%;height:auto}
+  .spot-cap{font-size:13px;color:var(--muted);font-weight:600}
 
   /* 键盘 */
   .kb-wrap{width:100%;max-width:980px;margin:0 auto}
@@ -238,7 +258,6 @@
 
   @media (max-width:520px){
     .levels{grid-template-columns:1fr;gap:10px;padding:10px 14px;grid-auto-rows:minmax(0,124px);align-content:start}
-    .level-card:nth-child(5){grid-column:auto;justify-self:stretch;width:auto}
     .lv-desc{display:none}
     .home-head h1{font-size:26px}
     /* 手机屏窄，24px 的提示语会折成三四行、盖住谱面 */
@@ -352,11 +371,12 @@
      2. 渲染层  staffSVG（五线谱）、buildKeyboard（键盘）、handSVG（卡通手）
                 只负责把数据画成 SVG / DOM，不判断对错。
      3. 题型层  qFindKey / qStaffToKey / qKeyToStaff / qClef /
-                qBeats / qWhichShape / qPlayNote
+                qBeats / qWhichShape / qPlayNote / qStaffSpot
                 每个工厂返回 { kind, render(), reveal() }，
                 render 才绑定交互，reveal 是错够次数后的提示。
                 「按住」这一段由 holdPad 提供，第 4、5 关共用；
-                qPlayNote 自己分三段（手 → 指 → 按住），前两段不判整题。
+                qPlayNote 自己分三段（手 → 指 → 按住），前两段不判整题；
+                qStaffSpot 直接在谱面上点线或间，训练的是谱面坐标。
      4. 流程层  judge / renderQuestion / buildQuestions / startLevel /
                 finishLevel
                 管对错、连击、换题、结算；渲染层和题型层都不碰这里。
@@ -478,14 +498,17 @@ const VALUES = {
 };
 const VALUE_IDS = ['quarter','half','dotted','whole'];
 
-/* 五关的顺序就是教学顺序：认键 → 谱键互认 → 谱号 → 读谱与拍数 → 手、指、按住。
-   首页卡片、关卡标题、结算文案都从这里取，不要另写一份。 */
+/* 六关的顺序就是教学顺序：认键 → 谱键互认 → 谱号 → 读谱与拍数 →
+   手、指、按住 → 谱面坐标。第六关退回到五线谱本身，先认清五条线与四个间。
+   首页卡片、关卡标题、结算文案都从这里取，不要另写一份。
+   每一关训练什么、不考什么，另见 LEVELS.md。 */
 const LEVELS = [
   { id:1, name:'找键盘', title:'键盘上的位置', desc:'音名对应哪个键', color:'#3C7DD9' },
   { id:2, name:'谱与键', title:'五线谱 ↔ 键盘', desc:'低音谱号与高音谱号', color:'#E08A2E' },
   { id:3, name:'谱号',   title:'用哪个谱号',   desc:'同一个中央 C，有高音、低音两种写法', color:'#2E9C8F' },
   { id:4, name:'时值',   title:'读谱与拍数',   desc:'读谱、找键、弹够时值', color:'#3FA96F' },
-  { id:5, name:'读谱',   title:'手、指与拍数', desc:'先判手和指，再按住弹够时值', color:'#8E5AA8' }
+  { id:5, name:'读谱',   title:'手、指与拍数', desc:'先判手和指，再按住弹够时值', color:'#8E5AA8' },
+  { id:6, name:'线与间', title:'五线谱的线与间', desc:'从下往上数，指出第几条线、第几间', color:'#C2543F' }
 ];
 
 /* 三档难度。options 是选项个数（按题型取值：时值题最多 4 个，谱例最多 3 张，
@@ -851,6 +874,32 @@ const CLEF_TREBLE = 'M 201.2 551.6 C 186.1 555.8 172.6 565.2 160.0 579.4 C 147.4
 const CLEF_BASS = 'M567 -386c0,29,23,52,52,52s52,-23,52,-52s-23,-52,-52,-52s-52,23,-52,52z m0,250c0,29,23,52,52,52s52,-23,52,-52s-23,-52,-52,-52s-52,23,-52,52z m-323,136 c171,0,292,-86,292,-248c0,-263,-264,-415,-517,-521c-2,-2,-5,-3,-8,-3c-6,0,-11,5,-11,11c0,3,1,6,3,8c203,118,415,265,415,494c0,121,-64,237,-174,237c-79,0,-138,-57,-164,-133 c14,8,28,13,43,13c55,0,100,-45,100,-100c0,-58,-44,-107,-100,-107c-60,0,-112,48,-112,107c0,132,103,242,233,242z';
 const INK = '#26252D';
 
+/* 五条线。第 2–5 关的谱面和第 6 关的空白谱表共用这一份，
+   线距、线宽只写一次，改一处两边都跟着变。
+
+   五条线：y 从 0 到 4，一条线一个单位。线宽 0.075 单位，
+   缩到卡片大小时大约 2px，打印和屏幕上都不糊。 */
+function staffLinesMarkup(lineEnd){
+  let g = '';
+  for(let i = 0; i < 5; i++){
+    g += '<line x1="0" y1="' + i + '" x2="' + lineEnd + '" y2="' + i + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
+  }
+  return g;
+}
+
+/* 谱号：把原始 path 缩放平移到谱表左端。
+   低音谱号的 scale 带负号，是因为它的原始 path 是倒着画的。
+   第 3 关的选项图标另用 clefSVG，谱面上用的是这一份。 */
+function clefMarkup(clef){
+  if(clef === 'treble'){
+    return '<g transform="translate(0.45 -1.26) scale(0.0071)"><path d="' + CLEF_TREBLE + '" fill="' + INK + '"/></g>';
+  }
+  if(clef === 'bass'){
+    return '<g transform="translate(0.5 -0.05) scale(0.004016 -0.004016)"><path d="' + CLEF_BASS + '" fill="' + INK + '"/></g>';
+  }
+  return '';
+}
+
 function staffSVG(o){
   o = o || {};
   const noteId = o.noteId || 'C4';
@@ -862,25 +911,14 @@ function staffSVG(o){
   const noteX = o.noteX || (compact ? 6.4 : 8.9);
   const lineEnd = compact ? 11.7 : 14.6;
   const y = n.y;   // 只用配置里的线距坐标，后面不再换算
-  let g = '';
+  let g = staffLinesMarkup(lineEnd);
 
-  /* 五条线：y 从 0 到 4，一条线一个单位。线宽 0.075 单位，
-     缩到卡片大小时大约 2px，打印和屏幕上都不糊。 */
-  for(let i = 0; i < 5; i++){
-    g += '<line x1="0" y1="' + i + '" x2="' + lineEnd + '" y2="' + i + '" stroke="' + INK + '" stroke-width="0.075" stroke-linecap="round"/>';
-  }
-
-  /* 谱号：把 512 单位的原始 path 缩放平移到谱表左端。
-     低音谱号的 scale 带负号，是因为它的原始 path 是倒着画的。
-
-     noClef 用于第 3 关「用哪个谱号」：谱号位置画一个浅色的问号，
+  /* noClef 用于第 3 关「用哪个谱号」：谱号位置画一个浅色的问号，
      等孩子选对了再把谱号补上，所以这一个函数要能画两种状态。 */
   if(o.noClef){
     g += '<text x="1.2" y="2.6" text-anchor="middle" font-family="PingFang SC, Helvetica, Arial" font-size="2.9" font-weight="700" fill="#DCCDB6" stroke="#FFFFFF" stroke-width="0.32" paint-order="stroke" stroke-linejoin="round">?</text>';
-  }else if(clef === 'treble'){
-    g += '<g transform="translate(0.45 -1.26) scale(0.0071)"><path d="' + CLEF_TREBLE + '" fill="' + INK + '"/></g>';
   }else{
-    g += '<g transform="translate(0.5 -0.05) scale(0.004016 -0.004016)"><path d="' + CLEF_BASS + '" fill="' + INK + '"/></g>';
+    g += clefMarkup(clef);
   }
 
   /* 加线：只画音符左右各 1.15 单位的一小段，不是整条线。 */
@@ -927,6 +965,39 @@ function staffSVG(o){
 
 function staffBlock(opts){
   return '<div class="paper">' + staffSVG(opts) + '</div>';
+}
+
+/* 第 6 关专用：只画五条线，不画音符、不加线，谱号可选。
+   坐标与 staffSVG 完全一致，所以这一关看到的谱表和第 2–5 关一样大、
+   谱号摆在同一个位置，孩子换关不用重新认。
+
+   命中提示层也画在这里：每条线一根粗线，每个间一块淡色。
+   它们平时透明（见 CSS 的 .hl），点中后才显形；题目代码只负责加减类名。
+   这样做的好处是判定与显示共用同一套 y 坐标，不需要再算一遍像素位置。 */
+function staffLinesSVG(o){
+  o = o || {};
+  const lineEnd = 14.6;
+  let g = staffLinesMarkup(lineEnd);
+
+  /* 第 n 间在 y = 4-n 与 y = 5-n 两条线之间（n 从 1 起，从下往上）。
+     循环变量 i 是从上往下的格子编号：i=0 是最上面一间，也就是第 4 间。
+     先画间、再画谱号：色块铺满整条谱表，但不会盖住左端的谱号；
+     左右各留 1.05 单位，不在纸边露出半个色块。 */
+  for(let i = 0; i < 4; i++){
+    g += '<rect class="hl space" data-spot="space" data-n="' + (4 - i) + '" x="1.05" y="' + (i + 0.1) +
+         '" width="' + (lineEnd - 2.1) + '" height="0.8" rx="0.1"/>';
+  }
+
+  g += clefMarkup(o.clef);
+
+  /* 线的高亮最后画，才会压住黑线本身，而不是被黑线从中间劈开。
+     y=0 是最上面一条线，也就是第 5 线；y=4 是最下面的一条，第 1 线。 */
+  for(let i = 0; i < 5; i++){
+    g += '<line class="hl line" data-spot="line" data-n="' + (5 - i) + '" x1="0" y1="' + i +
+         '" x2="' + lineEnd + '" y2="' + i + '"/>';
+  }
+
+  return '<svg class="staff lines" viewBox="-0.35 -1.95 15.3 8.6" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
 }
 
 /* 单独的谱号图标，第 3 关的两个选项用。
@@ -1833,6 +1904,87 @@ function qPlayNote(noteId, valueId){
   };
 }
 
+/* ==================== 第 6 关：五线谱的线与间 ====================
+   这一关回到谱面本身：只有五条线，没有音符，问「第 3 线在哪」或
+   「第 2 间在哪」。线、间都从下往上数，第 1 线在最下面，
+   第 1 间在最下面两条线之间。前半段不加谱号；后半段加高音或低音谱号，
+   题干带上谱号名。谱号只改变这些线读成什么音，不改变线、间的编号，
+   所以这一关的谱号是「认得出它」的复习，不是判题条件。
+
+   答题方式是在谱面上直接点。问线时按「离哪条线最近」归到 1–5，
+   问间时按「离哪个间最近」归到 1–4，点偏一点也算对；
+   点中的那条线或那个间会先标出来，孩子能看见游戏把点击理解成了哪里。 */
+function qStaffSpot(spot, num, clef, intro){
+  const isLine = (spot === 'line');
+  const unit = isLine ? '线' : '间';
+  const clefName = (clef === 'treble') ? '高音谱号' : (clef === 'bass' ? '低音谱号' : '');
+  const what = (clefName ? clefName + '的' : '') + '第 ' + num + ' ' + unit;
+  const wrongMsg = isLine ? '从下往上数：最下面一条是第 1 线' : '间在两条线之间，也从下往上数';
+  let svg = null;
+
+  /* y 用谱面自己的坐标：0 在最上面、4 在最下面，所以第 n 线是 y = 5-n，
+     第 n 间在 y = 4-n 与 5-n 之间。问线取最近的线，问间取最近的间。
+
+     整张纸都算点按区：点在谱表上方的留白就归到最上面一条线/间，
+     下方归到最下面一条。孩子点偏到白边上也有反馈，
+     不会因为「点了没反应」以为页面坏了。 */
+  function nearest(y){
+    if(isLine) return Math.max(1, Math.min(5, 5 - Math.round(y)));
+    return Math.max(1, Math.min(4, 4 - Math.floor(y)));
+  }
+  function hlFor(n){
+    return svg ? svg.querySelector('.hl[data-spot="' + spot + '"][data-n="' + n + '"]') : null;
+  }
+
+  return {
+    kind:'spot', spot:spot, n:num, clef:clef, wrong:0,
+    render: function(){
+      /* 第一题把「从下往上数」说一次；之后只问题目本身，
+         否则每题都重复一句，孩子会把注意力放在套话上。 */
+      const head = (clefName ? clefName + '的' : '') + '第 ' + num + ' ' + unit;
+      setPrompt((intro ? '五线谱从下往上数。' : '') + head + '在哪？',
+                (intro ? '五线谱从下往上数，' : '') + head + '在哪');
+      const paper = document.createElement('div');
+      paper.className = 'paper lines';
+      paper.innerHTML = staffLinesSVG({ clef: clef });
+      stageEl.appendChild(paper);
+      svg = paper.querySelector('svg');
+      answerEl.innerHTML = '<div class="spot-cap">在谱面上点一下</div>';
+
+      svg.addEventListener('pointerdown', function(e){
+        if(G.q.answered) return;
+        /* 用 SVG 自己的坐标变换把屏幕点换算回线距，缩放、留白都不用自己算。 */
+        let y;
+        try{
+          const pt = svg.createSVGPoint();
+          pt.x = e.clientX; pt.y = e.clientY;
+          const m = svg.getScreenCTM();
+          if(!m) return;
+          y = pt.matrixTransform(m.inverse()).y;
+        }catch(err){ return; }
+        const picked = nearest(y);
+        e.preventDefault();
+        clickSound();
+        const el = hlFor(picked);
+        if(picked === num){
+          if(el){ el.classList.remove('hint', 'bad'); el.classList.add('on'); }
+          judge(true, '对！' + what);
+        }else{
+          if(el) el.classList.add('on', 'bad');
+          /* 红色只闪一下，别让孩子盯着一整条红线以为那就是答案。 */
+          setTimeout(function(){ if(el) el.classList.remove('on', 'bad'); }, 480);
+          judge(false, wrongMsg);
+        }
+      }, { passive:false });
+    },
+    reveal: function(){
+      const el = hlFor(num);
+      if(el) el.classList.add('on', 'hint');
+      setPrompt('从下往上数，' + what + '在这里', '从下往上数，' + what + '，橙色标出来了');
+    }
+  };
+}
+
 /* ==================== 出题（由易到难） ====================
    一关的题目在进关时一次性生成，中途不再变化，
    所以「第几题」的进度条和星星统计都是确定的。
@@ -1862,13 +2014,47 @@ function findKeyLetters(n){
   return spreadLetters(picked);
 }
 
+/* 第 6 关的题目：线与间交替，前半段不加谱号，后半段加。
+   第一题固定第 1 线，先把「从下往上数」立住；线 1–5、间 1–4
+   在一轮里尽量都出现，后半段的谱号高音、低音轮流。 */
+function spotQuestions(n){
+  const lineTotal = Math.ceil(n / 2);
+  const lines = shuffle([1,2,3,4,5]).slice(0, lineTotal);
+  /* 把第 1 线换到第一题；1 没被抽中时顶掉第一条。
+     这样每题量的第一题都是「第 1 线」，且线不重复。 */
+  if(lines.indexOf(1) >= 0){
+    lines.splice(lines.indexOf(1), 1);
+    lines.unshift(1);
+  }else{
+    lines[0] = 1;
+  }
+  const spaces = repeatTo([1,2,3,4], n - lineTotal);
+  const clefFrom = Math.ceil(n / 2);
+  const bassFirst = Math.random() < 0.5;
+  const clefs = [];
+  for(let i = 0; i < n - clefFrom; i++){
+    clefs.push((((i + (bassFirst ? 1 : 0)) % 2) ? 'bass' : 'treble'));
+  }
+
+  const qs = [];
+  let li = 0, si = 0;
+  for(let i = 0; i < n; i++){
+    const isLine = (i % 2 === 0);
+    const num = isLine ? lines[li++] : spaces[si++];
+    const clef = (i >= clefFrom) ? clefs[i - clefFrom] : null;
+    qs.push(qStaffSpot(isLine ? 'line' : 'space', num, clef, i === 0));
+  }
+  return qs;
+}
+
 /* 每关的题目构成：
      第 1 关  从预置序列里抽，C 和 B 出现得多一点，先把两端的锚点认熟
      第 2 关  一半「谱→键」，一半「键→谱」，交替练双向映射
      第 3 关  谱号题，低音、高音各一半，B 用低音谱号
      第 4 关  每三题插一道「哪个是二分音符」的反向题，答对后自己找键、自己数拍
      第 5 关  每题三段：判手 → 判指 → 按住弹够时值
-   生成后统一打乱。第 5 关第一段只是选左右手，不难，不需要再挑一道轻题开场。 */
+     第 6 关  线与间交替，前半段不画谱号，后半段加高音或低音谱号
+   除第 1、6 关外生成后统一打乱；这两关的顺序本身有教学作用，见下。 */
 function buildQuestions(level){
   const d = diff();
   const n = d.count;
@@ -1892,7 +2078,7 @@ function buildQuestions(level){
       const id = pick(NOTE_IDS);
       qs.push(i % 3 === 2 ? qWhichShape(id, vals[i]) : qBeats(id, vals[i]));
     }
-  }else{
+  }else if(level === 5){
     /* 第 5 关每题要走「手 → 指 → 按住」三段，比别的关费时间，
        所以题目数减 2，一关仍然在三分钟左右。
        时值只用四分、二分、附点二分：全音符没有符杆，
@@ -1901,11 +2087,13 @@ function buildQuestions(level){
     const ids = shuffle(repeatTo(NOTE_IDS, m));
     const vals = shuffle(repeatTo(['quarter','half','dotted'], m));
     for(let i = 0; i < m; i++) qs.push(qPlayNote(ids[i], vals[i]));
+  }else{
+    qs = spotQuestions(n);
   }
 
-  /* 第 1 关已经在生成时排成「不连着重复」的顺序，这里不能再洗一次，
-     否则刚打散的字母又被洗回一长串同样的音。其它关照常打乱。 */
-  return (level === 1) ? qs : shuffle(qs);
+  /* 第 1 关排成「不连着重复同一个音」，第 6 关排成「第一题第 1 线、
+     后半段才加谱号」，两关的顺序都有教学作用，这里不能再洗一次。 */
+  return (level === 1 || level === 6) ? qs : shuffle(qs);
 }
 
 /* ==================== 流程 ==================== */

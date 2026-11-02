@@ -1,14 +1,16 @@
 # Note Trainer
 
 A single-page, offline-capable notation trainer for young piano beginners. It drills one
-chain: note name → key on the keyboard → staff and clef → duration → hand and finger.
+chain: note name → key on the keyboard → staff and clef → duration → hand and finger,
+then returns to the staff itself to name its lines and spaces.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current unit: three notes (B3, middle C, D4) and four durations (quarter, half, dotted half,
 whole). The note set is configuration, not code: adding a note is a three-step edit, see
-[Units: adding notes](#units-adding-notes).
+[Units: adding notes](#units-adding-notes). Levels 1–5 use this note set; level 6 is about
+the staff itself and uses no notes.
 
 ## What it is
 
@@ -38,7 +40,7 @@ Stars and settings live in `localStorage` on the device.
    offline.
 3. Pick a level. Start on Easy the first time.
 
-## The five levels
+## The six levels
 
 | Level | Task | What counts as correct |
 |---|---|---|
@@ -47,6 +49,7 @@ Stars and settings live in `localStorage` on the device.
 | 3 · Which clef | A note is drawn on a staff that has no clef, and the prompt says which note it is ("this is B" / "this is middle C"). Choose the treble or the bass clef | Four spellings: B3 in the space above the bass staff takes the bass clef; middle C on the first ledger line below the treble staff takes the treble clef; middle C on the first ledger line above the bass staff takes the bass clef; D4 in the space below the treble staff takes the treble clef |
 | 4 · Read and hold | Read the note, choose how many beats it lasts, then find the key on the keyboard yourself and hold it for that long | Quarter 1, half 2, dotted half 3, whole 4 for the first step. The key is not highlighted and the beat count is not shown again: finding the key and judging the length are part of the answer |
 | 5 · Hand, finger, hold | Three stages per question: choose the hand, choose the finger, then hold the key for the note's full length | Hand and finger per the table below; holding is judged in both directions |
+| 6 · Lines and spaces | A bare five-line staff. The prompt asks where line 3 or space 2 is; later questions add a treble or bass clef | Tap the line or space itself. Lines and spaces are numbered from the bottom, so line 1 is the bottom line |
 
 **The clef level teaches one reading.** Middle C has two spellings: on the first ledger line
 below the treble staff, and on the first ledger line above the bass staff. The level adds one
@@ -67,6 +70,17 @@ so nothing has to be mimed; the score prints the digit, and the player connects 
 ringed index finger. Only the final hold is judged for stars, and a mistake at any stage still
 costs the first-try star. Whole notes are left out of this level: without a stem there is no
 hand cue.
+
+**Level 6 goes back to the staff.** The screen shows five lines and nothing else: no notes,
+no ledger lines, no key. The question is "where is line 3?" or "where is space 2?", and the
+child taps the staff. Lines and spaces are counted from the bottom: line 1 is the bottom line,
+space 1 is between the two bottom lines. The first question of a session is always line 1 and
+says "count from the bottom" once. The first half of the questions has no clef; the second
+half adds a treble or bass clef and names it in the prompt. The clef does not change which
+line is the third line, so it is there for recognition, not as part of the answer. A tap is
+rounded to the nearest line or space of the kind asked, so a slightly off tap still counts;
+the game marks what it understood before judging. One tap per question, so the level uses the
+full question count and takes about a minute.
 
 ## Holding a note
 
@@ -109,19 +123,20 @@ so the picture never asks the child to copy a hand gesture.
 
 ## Difficulty
 
-| Setting | Options (level 4 beats / level 2 / finger) | Hint after | Tempo | Questions (levels 1–4 / level 5) |
+| Setting | Options (level 4 beats / level 2 / finger) | Hint after | Tempo | Questions (levels 1–4 and 6 / level 5) |
 |---|---|---|---|---|
 | Easy | 2 / 2 / 2 | 1 mistake | 52 BPM | 8 / 6 |
 | Normal | 4 / 3 / 3 | 2 mistakes | 60 BPM | 8 / 6 |
 | Hard | 4 / 3 / 3 | 3 mistakes | 76 BPM | 10 / 8 |
 
 The clef level always has two options, treble or bass. Level 5 runs two questions fewer
-because each one takes three stages, which keeps a session at about three minutes.
+because each one takes three stages, which keeps a session at about three minutes. Level 6
+asks one tap per question and uses the same count as levels 1–4.
 
 Three stars requires all but one first-try answer; two stars all but three; anything lower
 is one star. That is 7/8 and 5/8 on Easy and Normal, 9/10 and 7/10 on Hard, and 5/6 and 3/6
-in level 5, which has fewer questions. Stars only ever go up. Three stars unlocks a "try
-harder" button on the results screen.
+in level 5, which has fewer questions. Level 6 uses the same thresholds as levels 1–4.
+Stars only ever go up. Three stars unlocks a "try harder" button on the results screen.
 
 Hints are never automatic at the start: after enough mistakes the correct key is highlighted,
 or the answer is shown in the prompt, but the player is never told "that is wrong".
@@ -158,10 +173,11 @@ To add a note:
    `y` value (`LEDGER.treble.C4 = 5`).
 3. Add the id to `UNIT.notes`, and update `UNIT.name` / `UNIT.label` for the home screen.
 
-The question generators follow automatically: every level draws from `NOTE_IDS`, so a new
-note appears in all five. The clef level reads each note's `clef` field, so a new note needs
-the right clef set. A second unit (for example treble E4–F4–G4) can be a copy of the folder
-with its own `UNIT`, or merged into one unit.
+The question generators follow automatically: levels 1–5 draw from `NOTE_IDS`, so a new
+note appears in all five of them. Level 6 uses no notes, so it is unaffected. The clef level
+reads each note's `clef` field, so a new note needs the right clef set. A second unit (for
+example treble E4–F4–G4) can be a copy of the folder with its own `UNIT`, or merged into one
+unit.
 
 ## Roadmap
 
@@ -170,6 +186,7 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 | Item | Status | Notes |
 |---|---|---|
 | Unit 2: E4, F4, G4 | Planned | Three `NOTES` entries, plus a `LEDGER` entry only if a ledger line is needed |
+| Note names for staff lines | Idea | Level 6 teaches line and space numbering; naming the pitch of each line needs a larger note set |
 | Eighth notes | Exploring | `VALUES` already drives the drawing, so a new value is mostly data; judging needs a faster tempo |
 | Progress history for parents | Planned | Stars are stored per level only; a dated log would show practice over time |
 | Adaptive question selection | Idea | Currently uniform random; weight toward notes answered slowly or wrongly |
@@ -184,6 +201,9 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-02 | Level 6: a bare five-line staff, tap the line or space asked; the first half has no clef, the second half adds a treble or bass clef |
+| 2026-11-02 | Added `LEVELS.md`, a Chinese record of what each level trains and what it leaves out |
+| 2026-11-02 | The home screen fits six levels in two columns without scrolling on iPad landscape |
 | 2026-10-30 | The piano voice now decays naturally instead of holding a steady tone, with unison strings, stretched partials, hammer and damper noise, and a light room reverb |
 | 2026-10-30 | Keyboard notes use an additive piano voice with exact equal-tempered pitch; still no audio files |
 | 2026-10-30 | The hold count starts at 1 on the press and stops at the note's value: 1-2-3-4 and four clicks for a whole note |
@@ -226,6 +246,7 @@ date rather than semver.
 ```
 note-trainer/
 ├── index.html            the whole game: styles, script, clef paths, question pool
+├── LEVELS.md             level-by-level teaching record (Chinese)
 ├── manifest.webmanifest  PWA manifest for "Add to Home Screen"
 ├── sw.js                 offline cache
 ├── icon.svg, icon-*.png  icons (180 is full-bleed for iOS, 192/512 are masked)
@@ -295,6 +316,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 - The clef level covers the four spellings this unit uses, not the general rule that clefs
   are chosen by register: middle C is legal in both clefs, and one pitch can be written more
   than one way.
+- Level 6 uses the clef as context, not as part of the answer: the third line is the third
+  line in either clef. Naming the pitch of a line comes after the note set grows.
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
   device from a broken page.
 - Speech depends on installed system voices: Chinese text uses a Chinese voice, while the
