@@ -181,6 +181,11 @@
   .staff{width:100%;height:auto;max-width:840px;max-height:42vh;display:block}
   .paper{width:auto;max-width:100%;display:inline-block;background:#fff;border:2px solid var(--line);border-radius:24px;padding:10px 12px;box-shadow:0 10px 26px rgba(150,110,60,.09)}
   .paper .staff{height:38vh;width:auto;max-height:none;max-width:100%}
+  /* 新音导入第 2 步：谱面 + 大写音名。谱面缩小一点，给字母留位置。 */
+  .stage.with-letter{flex-direction:column;justify-content:center;gap:6px}
+  .stage.with-letter .paper{padding:6px 10px;border-radius:18px}
+  #play.with-kb .stage.with-letter .paper .staff{height:22vh}
+  .find-letter{font-size:clamp(38px,7vw,58px);font-weight:900;line-height:1;color:var(--blue);letter-spacing:2px;text-shadow:0 5px 0 #E4EDFA}
   /* 同一屏既有谱面又有键盘时（第 2、3、4 关），谱面收小一点，
      否则 iPad 竖屏上键盘会被挤到屏幕外面。类由 makeKB 加上。 */
   #play.with-kb .paper .staff{height:30vh}
@@ -359,32 +364,44 @@
   .keypad button.sub{background:#EEF5FF;border-color:#C9DCF5;color:var(--blue);font-size:20px}
   .pin-cancel{margin-top:14px;width:100%;text-align:center}
 
-  /* 练习报告：条形图和 14 天小柱状图都用 div，不引入图表库 */
+  /* 练习报告：表格 + 每日矩阵，不引入图表库 */
   .report-meta{font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 8px}
+  #reportModal .report-sheet{width:min(980px,100%)}
+  .report-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 10px}
+  .report-tools .seg{flex:none}
+  .report-sub{font-size:11px;color:#A99C8B;line-height:1.4}
   .report-sec{margin:16px 0 0}
   .report-sec h3{font-size:14px;margin:0 0 8px;color:#6B6156;letter-spacing:1px}
-  .report-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .report-sec h4{font-size:12px;margin:12px 0 5px;color:#8A7A64;font-weight:800}
+  .report-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   .report-card{background:#FFF9F0;border:1.5px solid #F1E3CF;border-radius:14px;padding:9px 11px}
   .report-card .k{font-size:11px;color:var(--muted);font-weight:700}
   .report-card .v{font-size:21px;font-weight:800;margin-top:2px;line-height:1.15}
   .report-card .v small{font-size:11px;font-weight:600;color:var(--muted)}
-  .stat-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
-  .stat-name{width:54px;flex:none;font-weight:700;color:#6B6156;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .stat-bar{flex:1;height:11px;border-radius:6px;background:#F3EADC;overflow:hidden}
-  .stat-bar.empty{background:transparent}
-  .stat-bar i{display:block;height:100%;border-radius:6px;background:var(--green)}
-  .stat-bar i.mid{background:var(--orange)}
-  .stat-bar i.low{background:var(--red)}
-  .stat-val{width:74px;flex:none;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .stat-row .mini-btn{padding:3px 8px;font-size:10px;border-radius:8px;box-shadow:none;border-width:1.5px}
-  .days{display:flex;align-items:flex-end;gap:3px;height:74px;padding:2px 0 0;border-bottom:1.5px solid var(--line)}
-  .day{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:2px}
-  .day i{display:block;width:100%;max-width:18px;border-radius:4px 4px 0 0;background:#E7E0D3;min-height:2px}
-  .day i.has{background:var(--green)}
-  .day i.mid{background:var(--orange)}
-  .day i.low{background:var(--red)}
-  .day-labels{display:flex;gap:3px;margin-top:4px}
-  .day-labels span{flex:1;text-align:center;font-size:8px;color:#B0A493;white-space:nowrap}
+  .report-summary{background:#FFF9F0;border:1.5px solid #F1E3CF;border-radius:14px;padding:10px 12px;margin:8px 0 0;font-size:12.5px;line-height:1.7;color:#5B5146}
+  .report-summary b{color:var(--ink)}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0 0}
+  .report-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+  .report-table th,.report-table td{padding:5px 7px;border-bottom:1px solid #F3EADC;text-align:right;white-space:nowrap}
+  .report-table th:first-child,.report-table td:first-child{text-align:left}
+  .report-table th{color:var(--muted);font-size:10.5px;font-weight:700}
+  .report-table tr.total td{font-weight:800;border-top:1.5px solid var(--line)}
+  .matrix{width:100%;min-width:640px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+  .matrix th,.matrix td{padding:4px 5px;border-bottom:1px solid #F3EADC;text-align:center;white-space:nowrap}
+  .matrix th:first-child,.matrix td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
+  .matrix th{color:var(--muted);font-size:10px;font-weight:700}
+  .matrix tr.total td{font-weight:800;border-top:1.5px solid var(--line)}
+  .m-cell b{display:block;font-size:10.5px;font-weight:800;color:#4A4036}
+  .m-cell span{display:block;font-size:9.5px;color:#6B6156}
+  .m-hi{background:#EAF6EE}
+  .m-mid{background:#FFF4E3}
+  .m-low{background:#FDEAE7}
+  .m-none{color:#C9B99F}
+  .trend-down{color:var(--green);font-weight:800}
+  .trend-up{color:var(--red);font-weight:800}
+  .trend-flat{color:var(--muted)}
+  .flag{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 4px;border-radius:5px;background:#F3EADC;color:#B9A98F;margin-right:2px}
+  .flag.on{background:#E3F2E8;color:#2E7D4F}
   .report-empty{color:var(--muted);font-size:13px;line-height:1.6;padding:8px 0}
   .prepost{width:100%;border-collapse:collapse;font-size:12.5px}
   .prepost th,.prepost td{padding:6px 8px;border-bottom:1px solid #F3EADC;text-align:right}
@@ -393,6 +410,24 @@
   .prepost .up{color:var(--green);font-weight:800}
   .prepost .down{color:var(--red);font-weight:800}
   .report-note{font-size:11px;color:#A99C8B;line-height:1.5;margin-top:8px}
+
+  /* 老师模式：同一套界面，只多出报告和账户入口 */
+  .teacher-only{display:none}
+  body.teacher-mode .teacher-only{display:flex}
+  .who-role{display:none;font-size:9.5px;font-weight:800;color:#fff;background:#8E5AA8;border-radius:6px;padding:1px 5px;letter-spacing:0}
+  body.teacher-mode .who-role{display:inline-block}
+  .teacher-wrap{width:100%;max-width:860px;margin:0 auto;padding:22px 20px calc(26px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0}
+  .teacher-head{text-align:center;margin-top:2vh}
+  .teacher-head h1{font-size:28px;margin:0;letter-spacing:3px;font-weight:800}
+  .teacher-head .sub{color:var(--muted);letter-spacing:2px;font-size:12px;font-weight:600;margin:6px 0 0}
+  .teacher-list{display:flex;flex-direction:column;gap:9px}
+  .teacher-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border:2px solid var(--line);border-radius:18px;background:#fff;box-shadow:var(--shadow)}
+  .teacher-row .who-avatar{width:42px;height:42px;font-size:18px}
+  .teacher-row .t-main{min-width:0;flex:1}
+  .teacher-row .t-name{font-size:16px;font-weight:800;line-height:1.2}
+  .teacher-row .t-meta{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:2px}
+  .teacher-row .t-actions{display:flex;gap:6px;flex:none}
+  .teacher-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}
 
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
   @keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
@@ -423,9 +458,9 @@
     /* 手机屏窄，24px 的提示语会折成三四行、盖住谱面 */
     .toast{font-size:20px;padding:13px 20px;max-width:92vw}
     .seg button{padding:8px 9px;font-size:13px}
-    .report-cards{grid-template-columns:repeat(3,1fr);gap:6px}
-    .stat-name{width:44px}
-    .stat-val{width:64px;font-size:11px}
+    .report-cards{grid-template-columns:repeat(2,1fr);gap:6px}
+    .teacher-row{flex-wrap:wrap}
+    .teacher-row .t-actions{width:100%;justify-content:flex-end}
     .row{flex-wrap:wrap}
     .btn-pair{width:100%;justify-content:flex-end}
     .who-grid{grid-template-columns:1fr 1fr;gap:10px}
@@ -444,6 +479,17 @@
     .chips-tip{display:none}
     .who{position:static;margin:0 auto 2px}
     .gate-head{margin-top:0}
+  }
+  /* 打印：只留打开的那张报告，去掉遮罩和按钮 */
+  @media print{
+    body{background:#fff}
+    body > *:not(.modal.open){display:none !important}
+    .modal.open{position:static;inset:auto;display:block;background:none}
+    .modal.open .sheet{width:100%;max-width:100%;max-height:none;overflow:visible;box-shadow:none;border-radius:0;padding:0}
+    .sheet-foot,.report-tools,.no-print{display:none !important}
+    .table-wrap{overflow:visible}
+    .report-sec{break-inside:avoid}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
 </style>
 </head>
@@ -470,17 +516,17 @@
       </div>
       <div class="who-grid" id="whoGrid"></div>
       <div class="gate-foot">
-        <button class="ghost-btn" id="btnGateNew">＋ 新建练习者</button>
+        <button class="ghost-btn" id="btnGateTeacher">🔒 老师入口</button>
         <button class="ghost-btn" id="btnGateBack" style="display:none">返回练习</button>
       </div>
-      <p class="gate-note">每个人的勾选、进度、星星和答题记录分开保存。<br>4 位密码只在这台设备上校验，用于切换账户。</p>
+      <p class="gate-note">每个人的勾选、进度、星星和答题记录分开保存。<br>账户开通、报告和导出由老师管理；家长和学生只看得到自己的账户。</p>
     </div>
   </section>
 
   <section id="home" class="screen">
     <div class="home-head">
       <!-- 当前练习者。点一下回到选人页，换人要先输密码。 -->
-      <button class="who" id="btnWho"><span class="who-dot">·</span><span id="whoName">练习者</span></button>
+      <button class="who" id="btnWho"><span class="who-dot">·</span><span id="whoName">练习者</span><span class="who-role" id="whoRole">老师</span></button>
       <h1 id="homeTitle">识谱小练习</h1>
       <p class="sub" id="homeSub">每天 3 分钟</p>
     </div>
@@ -502,6 +548,24 @@
       <button class="ghost-btn" id="btnNextNote" style="display:none">下一个音</button>
       <button class="ghost-btn" id="btnParent">👨‍👩‍👧 家长</button>
       <button class="ghost-btn" id="btnSettings">⚙️ 设置</button>
+    </div>
+  </section>
+
+  <!-- 老师总览：只有老师密码能进。账户开通、报告、导出都在这里；
+       家长和学生进入自己的账户时看不到这些入口。 -->
+  <section id="teacher" class="screen">
+    <div class="teacher-wrap">
+      <div class="teacher-head">
+        <h1>学生总览</h1>
+        <p class="sub">老师模式 · 这台设备上的练习者</p>
+      </div>
+      <div class="teacher-list" id="teacherList"></div>
+      <div class="teacher-foot">
+        <button class="ghost-btn" id="btnTeacherNew">＋ 新建学生</button>
+        <button class="ghost-btn" id="btnTeacherExportAll">导出全部 CSV</button>
+        <button class="ghost-btn" id="btnTeacherExit">退出老师</button>
+      </div>
+      <p class="gate-note">报告和账户管理只在这里出现。家长和学生可以勾选今天练哪些音，<br>但看不到练习报告，也不能新建或删除账户。</p>
     </div>
   </section>
 
@@ -560,8 +624,8 @@
       <button class="secondary-btn" id="btnTrySound" style="padding:10px 18px;font-size:15px;border-radius:14px;flex:none">试听</button>
     </div>
     <div class="row">
-      <div><div class="name">账户与记录</div><div class="desc">练习报告、前测后测、导出备份</div></div>
-      <button class="secondary-btn mini" id="btnOpenParentFromSettings">家长面板</button>
+      <div><div class="name">账户与记录</div><div class="desc" id="settingsAccountDesc">切换练习者、锁定设备</div></div>
+      <button class="secondary-btn mini" id="btnOpenParentFromSettings">账户</button>
     </div>
     <div class="sheet-foot">
       <button class="secondary-btn" id="btnReset">清空本账户星星</button>
@@ -592,6 +656,26 @@
   </div>
 </div>
 
+<!-- 老师密码：第一次进老师入口时设置；之后每次进都要输。
+     它只挡误入，不是加密；忘记后没有找回，只能清空本机数据。 -->
+<div class="modal" id="teacherSetupModal">
+  <div class="sheet">
+    <h2>设置老师密码</h2>
+    <p class="hint">老师密码用于新建学生、查看所有练习报告和导出数据。家长和学生进入自己的账户时看不到这些功能。请由老师本人设置并记好；忘记后无法找回。</p>
+    <label class="field"><span>4 位数字密码</span>
+      <input id="teacherPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="new-password" placeholder="4 位数字">
+    </label>
+    <label class="field"><span>再输一次</span>
+      <input id="teacherPin2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="new-password" placeholder="4 位数字">
+    </label>
+    <p class="form-err" id="teacherErr"></p>
+    <div class="sheet-foot">
+      <button class="secondary-btn" id="btnTeacherSetupCancel">取消</button>
+      <button class="primary-btn" id="btnTeacherSetupSave">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 切人密码：九宫格键盘，不用系统键盘，iPad 上不会被顶起来。 -->
 <div class="modal" id="pinModal">
   <div class="sheet pin-sheet">
@@ -608,40 +692,40 @@
   </div>
 </div>
 
-<!-- 家长面板：账户、报告、测验、导出。所有按钮都不改孩子的练习内容，
-     只有「前测/后测」会进入一节课。 -->
+<!-- 账户面板：家长和学生只看到切换与锁定；老师登录后才出现报告、
+     测验和导出。这样同一个按钮不用换位置，权限靠登录状态区分。 -->
 <div class="modal" id="parentModal">
   <div class="sheet">
-    <h2>家长 · 记录与账户</h2>
-    <p class="hint">记录只在这台设备上，没有网络请求。换设备或清理浏览器数据前，先导出 JSON 备份。</p>
+    <h2 id="parentTitle">家长 · 设置与账户</h2>
+    <p class="hint" id="parentHint">这里可以切换练习者或锁定设备。练习报告和账户管理由老师负责。</p>
     <div class="row">
       <div><div class="name">练习者</div><div class="desc" id="parentWho">—</div></div>
       <button class="mini-btn" id="btnSwitchAccount">切换</button>
     </div>
-    <div class="row">
-      <div><div class="name">练习报告</div><div class="desc">一次答对率、每个音、最近 14 天、前测后测</div></div>
+    <div class="row teacher-only">
+      <div><div class="name">练习报告</div><div class="desc">用时、每天每关、每个音、比较对、错误率趋势</div></div>
       <button class="mini-btn" id="btnOpenReport">查看</button>
     </div>
-    <div class="row">
+    <div class="row teacher-only">
       <div><div class="name">前测 / 后测</div><div class="desc" id="testDesc">前测固定一套题；后测用同一套题比较</div></div>
       <div class="btn-pair">
         <button class="mini-btn" id="btnPretest">前测</button>
         <button class="mini-btn" id="btnPosttest">后测</button>
       </div>
     </div>
-    <div class="row">
+    <div class="row teacher-only">
       <div><div class="name">导出</div><div class="desc">CSV 是逐题记录；JSON 是整账户备份</div></div>
       <div class="btn-pair">
         <button class="mini-btn" id="btnExportCsv">CSV</button>
         <button class="mini-btn" id="btnBackup">JSON</button>
       </div>
     </div>
-    <div class="row">
+    <div class="row teacher-only">
       <div><div class="name">导入备份</div><div class="desc">覆盖当前账户的全部记录，用于换设备或恢复</div></div>
       <div class="btn-pair"><button class="mini-btn" id="btnImport">导入</button></div>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
-    <div class="row">
+    <div class="row teacher-only">
       <div><div class="name">清空答题记录</div><div class="desc" id="clearEventsDesc">只清本账户的逐题记录，保留进度、星星和勾选</div></div>
       <div class="btn-pair"><button class="mini-btn danger" id="btnClearEvents">清空</button></div>
     </div>
@@ -652,13 +736,14 @@
   </div>
 </div>
 
-<!-- 练习报告：只有家长会看，用条形图和 14 天小柱状图，不引入图表库。 -->
+<!-- 练习报告：老师查看，也可以在家长面板里由老师打开。 -->
 <div class="modal" id="reportModal">
-  <div class="sheet wide">
+  <div class="sheet wide report-sheet">
     <h2 id="reportTitle">练习报告</h2>
     <p class="report-meta" id="reportMeta"></p>
     <div id="reportBody"></div>
     <div class="sheet-foot">
+      <button class="secondary-btn" id="btnPrintReport">打印 / 存为 PDF</button>
       <button class="primary-btn" id="btnCloseReport">好了</button>
     </div>
   </div>
@@ -696,8 +781,9 @@
      4. 流程层  judge / renderQuestion / buildQuestions / startSession /
                 startLevel / startDaily / startSpotlight / startTest / finishLevel
                 管对错、换题、结算；渲染层和题型层都不碰这里。
-     5. 数据层  账户名册、每账户状态、勾选音集、逐题记录、自动难度、
-                错误率加权、前测后测题组。答题记录只在答对时写一条。
+     5. 数据层  账户名册、老师角色、每账户状态、勾选音集、逐题记录、自动难度、
+                错误率加权、前测后测题组、报告统计。答题记录只在答对时写一条。
+                老师模式只在内存里，不写存档；报告只读记录，不改学生数据。
      6. 外围    localStorage、Web Audio 发声、语音念题、节日装饰、离线缓存
 
    两条贯穿全文件的约定：
@@ -787,10 +873,10 @@ const WHITE_OFF = [0,2,4,5,7,9,11];
      stem      'up' / 'down'，覆盖 hand 给出的符杆方向
      clefHint  第 3 关答错时给的那句提示
 
-   已排进队列的音：B3 → C4 → D4 → E4 → F4 → G4。
-   A4 的数据先写在这里，但**不放进 NOTE_ORDER**：它已经出了右手
-   C 手位，要换手位或穿指，不能直接套「再来一个新音」的模板。
-   等教材教到移手，再把 A4 追加到 NOTE_ORDER，并给它补一个手位课。
+   已排进队列的音：B3 → C4 → D4 → E4 → A4 → F4 → G4。
+   A4 排在 E4 后面，因为教材先教 A，游戏跟着教材走；它出了右手
+   C 手位，暂时按「整只手往右移，5 指落在 A」处理，专门的移手课
+   以后再加。F4、G4 在 A4 之后，仍然落在右手 C 手位里。
    C4B 是中央 C 的低音谱号写法，只给第 3 关用，不在队列里。 */
 const NOTES = {
   B3: { id:'B3', letter:'B', label:'B',      midi:59, clef:'bass',   y:-0.5, hand:'L', finger:2,
@@ -814,19 +900,20 @@ const NOTES = {
         posHint:'E 在高音谱号的第一条线上',
         clefHint:'E 在高音谱号的第一条线上' },
   F4: { id:'F4', letter:'F', label:'F',      midi:65, clef:'treble', y:3.5,  hand:'R', finger:4,
-        stage:5, landmark:'三个黑键的左边',
+        stage:6, landmark:'三个黑键的左边',
         keyHint:'F 在三个黑键左边的白键，E 的右边',
         posHint:'F 在高音谱号的第一间',
         clefHint:'F 在高音谱号的第一间' },
   G4: { id:'G4', letter:'G', label:'G',      midi:67, clef:'treble', y:3.0,  hand:'R', finger:5,
-        stage:6, landmark:'三个黑键的第一、二之间',
+        stage:7, landmark:'三个黑键的第一、二之间',
         keyHint:'G 在三个黑键的第一、二之间，F 的右边',
         posHint:'G 在高音谱号的第二条线上',
         clefHint:'G 在高音谱号的第二条线上' },
-  /* A4 是右手 C 手位之后的第一个音。这里按「整只手往右移，5 指落在 A」
-     处理，先让音本身入队；以后若加手位课，再补专门的移手步骤。 */
+  /* A4 是 E4 之后的下一个新音。教材先教 A，这里跟着教材的次序；
+     它出了右手 C 手位，按「整只手往右移，5 指落在 A」处理，
+     先让音本身入队；以后若加手位课，再补专门的移手步骤。 */
   A4: { id:'A4', letter:'A', label:'A',      midi:69, clef:'treble', y:2.5,  hand:'R', finger:5,
-        stage:7, landmark:'三个黑键的第二、三之间',
+        stage:5, landmark:'三个黑键的第二、三之间',
         keyHint:'A 在三个黑键的第二、三之间，G 的右边',
         posHint:'A 在高音谱号的第二间',
         clefHint:'A 在高音谱号的第二间' },
@@ -840,8 +927,9 @@ const NOTES = {
 };
 
 /* 音符队列。数组顺序就是学习顺序，首页 chips 也按它排。
+   教材的顺序是 B C D E A F G：E 之后先学 A，再回到 F、G。
    加音只改这里和 NOTES；SKILLS 会自动按进度把新音收进对应的练习。 */
-const NOTE_ORDER = ['B3','C4','D4','E4','F4','G4','A4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','A4','F4','G4'];
 /* 一开始就会的三个音，不经过新音导入。 */
 const BASE_NOTES = ['B3','C4','D4'];
 /* 第 3 关的固定音池。它不跟音集扩：F、G、A 都是高音谱号，
@@ -912,7 +1000,7 @@ const SKILLS = [
     desc:'从下往上数，指出第几条线、第几间', color:'#C2543F',
     needs:[], pool:'none', make:makeSpot },
   { id:7, key:'twoNotes', name:'两个音', title:'两个音的高低',
-    desc:'上行、下行、重复；加谱号后哪个更高', color:'#B0577E',
+    desc:'上行、下行、重复；再选出更高或更低的音', color:'#B0577E',
     needs:[], pool:'none', make:makeTwoNotes }
 ];
 
@@ -942,8 +1030,12 @@ const SPOT_STEPS = [
   },
   /* 1 完整键盘，任意八度。复用第 1 关的 qFindKey：它只比字母。 */
   function(noteId){ return qFindKey(NOTES[noteId].letter); },
-  /* 2 完整键盘，具体音高。这里必须点中新音本身，不能再点别的八度。 */
-  function(noteId){ return qKeyboardFind(noteId, { start:0, count:15 }); },
+  /* 2 完整键盘，具体音高。谱面和大写音名同时出现：谱面决定「是这一个
+     八度」，音名是给识字前的脚手架。只给字母、不给谱面时不能要求具体
+     八度，因为没有任何信息能告诉孩子是 F3 还是 F4。 */
+  function(noteId){
+    return qStaffToKey(noteId, 'quarter', NOTES[noteId].posHint, { letter:true });
+  },
   /* 3 谱面 → 键盘。 */
   function(noteId){ return qStaffToKey(noteId, 'quarter', NOTES[noteId].posHint); },
   /* 4 键盘 → 谱面，选项限制在新音和已学邻居之间。 */
@@ -1025,8 +1117,13 @@ const DIFFS = {
 /* ==================== 账户与存档 ====================
    两层存档，都是本机 localStorage，没有服务器：
 
-     nt.accounts.v1      账户名册：名字、4 位密码的哈希、颜色、最后练习时间
+     nt.accounts.v1      账户名册：学生名字、4 位密码哈希、颜色、最后练习时间、
+                         老师密码哈希（ACCOUNTS.teacher）
      nt.state.<id>.v1    每个账户自己的状态：设置、勾选的音、进度、星星、答题记录
+
+   老师是超级用户：老师密码解锁学生总览、建学生、看所有报告、导出全部 CSV。
+   家长和学生只练习、勾选音、切换/锁定自己的账户；报告和账户管理只出现在
+   老师的界面里（body.teacher-mode）。老师模式只存在内存里，不写存档。
 
    旧版单账户存档 bcd-piano-game-v2 只读，第一次建账户时整份迁进来，
    之后不再写它。这样升级不会弄丢孩子已经拿到的星星。
@@ -1055,6 +1152,8 @@ if(!Array.isArray(ACCOUNTS.accounts)) ACCOUNTS.accounts = [];
 
 let CURRENT = null;   // 当前账户（名册里的那一条）
 let S = null;         // 当前账户的状态；未登录时为 null
+let TEACHER_MODE = false;      // 老师总览或老师查看某个学生时为 true
+let newAccountFromTeacher = false;  // 建完账户回老师总览，而不是直接进入
 let saveSoonTimer = null;
 
 /* 新账户的默认设置。难度默认「自动」：先按最近 20 题的一次答对率
@@ -1341,6 +1440,8 @@ function eventSkill(e){
 function practiceEvents(){
   return (S.events || []).filter(function(e){ return e.mode !== 'test'; });
 }
+/* ms 是平均每题用时，sumMs 是这个组的用时总和。
+   报告里的「每天/每关用时」用 sumMs；「平均每题」用 ms。 */
 function statsOf(list, key, val){
   let n = 0, first = 0, wrong = 0, ms = 0;
   list.forEach(function(e){
@@ -1350,7 +1451,7 @@ function statsOf(list, key, val){
     wrong += e.wrong || 0;
     ms += e.ms || 0;
   });
-  return { n:n, first:first, acc: n ? first / n : 0, wrong:wrong, ms: n ? ms / n : 0 };
+  return { n:n, first:first, acc: n ? first / n : 0, wrong:wrong, ms: n ? ms / n : 0, sumMs: ms };
 }
 function noteStats(id, list){
   const rows = (list || practiceEvents()).filter(function(e){
@@ -2122,9 +2223,9 @@ function toast(text, kind){
 const PRAISE = ['对啦','真棒','好听','好厉害','就是这样','很好'];
 function praise(){ return pick(PRAISE); }
 
-function confetti(){
-  if(!decorOn()) return;
-  const bits = ['🍬','⭐','🎃','🦇','✨','🍭'];
+function confetti(force){
+  if(!force && !decorOn()) return;
+  const bits = force ? ['⭐','✨','🎉','💛','🎵'] : ['🍬','⭐','🎃','🦇','✨','🍭'];
   for(let i = 0; i < 12; i++){
     const s = document.createElement('i');
     s.className = 'confetti';
@@ -2193,8 +2294,12 @@ function judge(ok, msg, wait, always){
     G.busy = true;
     if(!q.wrong) G.first++;
     recordAnswer(q);
-    toast('✓ ' + (msg || praise()), 'ok');
-    confetti();
+    /* 第 7 关不给孩子「对！哪个音更高」这一句：答对只爆礼花、
+       音头变绿，然后换下一题。quiet 同时停掉还在念的题干，
+       避免题目念到一半、礼花已经放了还在响。 */
+    if(q.quiet) stopSay();
+    else toast('✓ ' + (msg || praise()), 'ok');
+    confetti(!!q.quiet);
     delay(wait || 1050, function(){
       if(session !== G.session) return;
       G.busy = false;
@@ -2326,14 +2431,27 @@ function qFindKey(letter){
 
 /* 第 2 关（双向之一）：给谱面，在键盘上点出这个音。
    和上一关不同，这里必须对上具体音组：D4 不能点成 D5。
-   新音导入会传 hint：错够次数后补一句这个音在谱表上的位置。 */
-function qStaffToKey(noteId, valueId, hint){
+   新音导入会传 hint：错够次数后补一句这个音在谱表上的位置。
+   opts.letter 只给新音导入第 2 步用：谱面旁边再给一个大写音名，
+   让还没学过谱面的孩子先有个把手；第 3 步撤掉。 */
+function qStaffToKey(noteId, valueId, hint, opts){
+  opts = opts || {};
   const note = NOTES[noteId];
   return {
     kind:'s2k', noteId:noteId, valueId:valueId || 'quarter', wrong:0,
     render: function(){
-      setPrompt('这个音在键盘上哪里？', '这个音在键盘上哪里');
-      stageEl.innerHTML = staffBlock({ noteId:noteId, value: valueId || 'quarter' });
+      if(opts.letter){
+        /* 新音导入第 2 步：把新音画在谱面上，旁边再给一个大写音名。
+           有谱面才能要求「就是这个八度」；大写音名只是脚手架，
+           到第 3 步就撤掉，只留谱面。 */
+        setPrompt('找到 ' + note.letter, '找到 ' + note.letter);
+        stageEl.classList.add('with-letter');
+        stageEl.innerHTML = staffBlock({ noteId:noteId, value: valueId || 'quarter' }) +
+          '<div class="find-letter">' + note.letter + '</div>';
+      }else{
+        setPrompt('这个音在键盘上哪里？', '这个音在键盘上哪里');
+        stageEl.innerHTML = staffBlock({ noteId:noteId, value: valueId || 'quarter' });
+      }
       const kb = makeKB({
         labels: S.labels,
         onDown: function(midi, el){
@@ -3074,7 +3192,7 @@ function qPairDirection(ys, intro){
   const names = { up:'上行', down:'下行', same:'重复音' };
   const name = names[rel];
   return {
-    kind:'pairdir', valueId:'whole', relation:rel, y1:ys[0], y2:ys[1], wrong:0,
+    kind:'pairdir', valueId:'whole', relation:rel, y1:ys[0], y2:ys[1], wrong:0, quiet:true,
     render: function(){
       /* 第一题把三个词各解释一次。屏幕只留问题，长句只念出来：
          孩子不识字，句子写在屏幕上只会挡住谱面。 */
@@ -3122,7 +3240,6 @@ function qWhichHigher(ys, clef, intro, ask){
   const word = (want === 'higher') ? '高' : '低';
   const answerText = (want === 'higher') ? '上面的音更高' : '下面的音更低';
   const wrongText = (want === 'higher') ? '比一比：哪个音在上面？' : '比一比：哪个音在下面？';
-  const clefName = (clef === 'bass') ? '低音谱号' : '高音谱号';
   let svg = null;
 
   function noteEl(i){
@@ -3133,15 +3250,15 @@ function qWhichHigher(ys, clef, intro, ask){
   }
 
   return {
-    kind:'higher', valueId:'whole', ask:want, clef:clef || '',
+    kind:'higher', valueId:'whole', ask:want, clef:clef || '', quiet:true,
     y1:ys[0], y2:ys[1], higher:higher, target:target, wrong:0,
     render: function(){
-      const lead = clef ? clefName + '，' : '';
-      const question = '两个音中的哪一个音更' + word + '？';
-      const screen = lead + question;
-      const spoken = (intro && clef ? '现在加上谱号。' : (intro ? '没有谱号，也能比高低。' : '')) +
-        lead + '两个音中的哪一个音更' + word + '，点它';
-      setPrompt(screen, spoken);
+      /* 不问「高音谱号还是低音谱号」，也不点名谱号：谱号只画在谱表上，
+         题干统一说「选出更高的音」或「选出更低的音」。有谱号时点哪个
+         音就响哪个音，孩子自己把谱号和音高对上。 */
+      const question = '选出更' + word + '的音';
+      const spoken = (intro ? '看这两个音，' : '') + question + '，点它';
+      setPrompt(question, spoken);
       stageEl.innerHTML = staffPairBlock({ ys:ys, clef:clef, hits:true });
       svg = stageEl.querySelector('svg');
       answerEl.innerHTML = '<div class="spot-cap">点一下那个音</div>';
@@ -3632,6 +3749,17 @@ function startNoteImport(noteId){
   startSpotlight();
 }
 
+/* 报告里的「继续学」：已经打开 key/pos 的音从第 4 步接着走，
+   还没打开的从第 0 步开始。不要把一个学到一半的音打回第一步。 */
+function startNoteContinue(noteId){
+  if(!NOTES[noteId] || noteComplete(noteId)) return;
+  const p = S.progress[noteId] || {};
+  S.focus = noteId;
+  S.spot = { note:noteId, step:(p.key && p.pos) ? 4 : 0 };
+  saveStore();
+  startSpotlight();
+}
+
 /* 新音导入：只练当前新音，每次四步。 */
 function startSpotlight(){
   const noteId = currentSpotlight();
@@ -3853,9 +3981,15 @@ function renderWho(){
   }
   const pw = $('#parentWho');
   if(pw){
-    const st = statsOf(practiceEvents());
-    pw.textContent = CURRENT.name + ' · 已记录 ' + st.n + ' 题 · 一次答对 ' +
-      (st.n ? Math.round(st.acc * 100) + '%' : '—');
+    if(TEACHER_MODE){
+      const st = statsOf(practiceEvents());
+      pw.textContent = CURRENT.name + ' · 已记录 ' + st.n + ' 题 · 一次答对 ' +
+        (st.n ? pct(st.acc) : '—');
+    }else{
+      const learned = NOTE_ORDER.filter(noteComplete);
+      pw.textContent = CURRENT.name + ' · 已学 ' + learned.length + ' 个音 · 已勾选 ' +
+        S.selected.length + ' 个音';
+    }
   }
   const td = $('#testDesc');
   if(td){
@@ -4089,7 +4223,7 @@ function renderWhoGrid(){
   if(!grid) return;
   grid.innerHTML = '';
   if(!ACCOUNTS.accounts.length){
-    grid.innerHTML = '<p class="gate-empty">还没有练习者。<br>建一个账户，记录会单独保存。</p>';
+    grid.innerHTML = '<p class="gate-empty">还没有练习者。<br>点「老师入口」建第一个账户。</p>';
   }
   ACCOUNTS.accounts.forEach(function(acc){
     const b = document.createElement('button');
@@ -4102,26 +4236,31 @@ function renderWhoGrid(){
     grid.appendChild(b);
   });
   const sub = $('#gateSub');
-  if(sub) sub.textContent = ACCOUNTS.accounts.length ? '选择练习者' : '新建练习者';
+  if(sub) sub.textContent = ACCOUNTS.accounts.length ? '选择练习者' : '老师入口建账户';
   const back = $('#btnGateBack');
   if(back) back.style.display = CURRENT ? '' : 'none';
 }
 
 function showGate(){
+  TEACHER_MODE = false;
   renderWhoGrid();
+  syncRoleUI();
   showScreen('gate');
 }
 
-function enterAccount(id){
+function enterAccount(id, opts){
+  opts = opts || {};
   const acc = accountById(id);
   if(!acc) return;
   if(CURRENT && CURRENT.id !== id) flushStore();
+  TEACHER_MODE = !!opts.teacher;
   CURRENT = acc;
   S = loadAccountState(id);
   ensureProgress();
   ACCOUNTS.currentId = id;
   ACCOUNTS.locked = false;
-  acc.lastActiveAt = Date.now();
+  /* 老师查看报告不算学生练习，不更新「上次练习」的时间。 */
+  if(!TEACHER_MODE) acc.lastActiveAt = Date.now();
   saveAccounts();
   saveStore();
   closeModal('pinModal');
@@ -4129,7 +4268,9 @@ function enterAccount(id){
   closeModal('parentModal');
   applyDecor();
   syncSettings();
+  syncRoleUI();
   showHome();
+  if(opts.openReport) openReport();
 }
 
 function askPin(acc){
@@ -4147,8 +4288,36 @@ function askPin(acc){
   openModal('pinModal');
 }
 
+function pinWrong(){
+  const h = $('#pinHint');
+  if(h) h.textContent = '密码不对，再试一次';
+  const dots = $('#pinDots');
+  if(dots) dots.classList.add('shake');
+  setTimeout(function(){
+    if(dots) dots.classList.remove('shake');
+    pinBuf = '';
+    updatePinDots();
+  }, 450);
+}
+
 function submitPin(){
   if(pinBusy) return;
+  /* 老师入口用一个特殊 target，不占学生账户的 id。 */
+  if(pinTarget === '__teacher__'){
+    if(!ACCOUNTS.teacher || pinBuf.length !== 4) return;
+    if(verifyPin(pinBuf, ACCOUNTS.teacher)){
+      pinBusy = true;
+      closeModal('pinModal');
+      TEACHER_MODE = true;
+      CURRENT = null;
+      S = null;
+      syncRoleUI();
+      showTeacher();
+    }else{
+      pinWrong();
+    }
+    return;
+  }
   const acc = accountById(pinTarget);
   if(!acc || pinBuf.length !== 4) return;
   if(verifyPin(pinBuf, acc)){
@@ -4156,30 +4325,156 @@ function submitPin(){
     closeModal('pinModal');
     enterAccount(acc.id);
   }else{
-    const h = $('#pinHint');
-    if(h) h.textContent = '密码不对，再试一次';
-    const dots = $('#pinDots');
-    if(dots) dots.classList.add('shake');
-    setTimeout(function(){
-      if(dots) dots.classList.remove('shake');
-      pinBuf = '';
-      updatePinDots();
-    }, 450);
+    pinWrong();
   }
 }
 
-function openNewAccount(){
+function openNewAccount(fromTeacher){
+  newAccountFromTeacher = !!fromTeacher;
   ['accName', 'accPin', 'accPin2'].forEach(function(id){ const el = $('#' + id); if(el) el.value = ''; });
   const err = $('#accErr');
   if(err) err.textContent = '';
   const hint = $('#accHint');
   if(hint){
-    const base = '名字可以直接用研究编号（如 P01）。4 位密码只在这台设备上校验，用于切换账户；忘记后不能找回。';
+    const base = '名字可以直接用研究编号（如 P01）。4 位密码用于学生自己进入账户；忘记后不能找回。';
     hint.textContent = (ACCOUNTS.accounts.length === 0 && !ACCOUNTS.legacyImported && readJSON(STORE_KEY))
       ? '检测到这台设备上的旧进度，第一个账户会继承它。' + base
       : base;
   }
   openModal('accountModal');
+}
+
+/* ==================== 老师角色 ====================
+   老师是这台设备上的超级用户：新建学生、查看所有报告、导出全部数据。
+   家长和学生进入自己的账户时只看到练习界面和勾选；报告、测验、
+   导出都放在老师模式里。老师模式不写进存档，刷新页面后要重新输密码。 */
+
+function syncRoleUI(){
+  document.body.classList.toggle('teacher-mode', TEACHER_MODE);
+  const t = $('#parentTitle');
+  if(t) t.textContent = TEACHER_MODE ? '老师 · 记录与账户' : '家长 · 设置与账户';
+  const h = $('#parentHint');
+  if(h) h.textContent = TEACHER_MODE
+    ? '记录只在这台设备上，没有网络请求。换设备或清理浏览器数据前，先导出 JSON 备份。'
+    : '这里可以切换练习者或锁定设备。练习报告和账户管理由老师负责。';
+  const b = $('#btnParent');
+  if(b) b.textContent = TEACHER_MODE ? '👩‍🏫 老师' : '👨‍👩‍👧 家长';
+  const op = $('#btnOpenParentFromSettings');
+  if(op) op.textContent = TEACHER_MODE ? '老师面板' : '账户';
+  const od = $('#settingsAccountDesc');
+  if(od) od.textContent = TEACHER_MODE ? '练习报告、前测后测、导出备份' : '切换练习者、锁定设备';
+  const wr = $('#whoRole');
+  if(wr) wr.style.display = TEACHER_MODE ? '' : 'none';
+  renderWho();
+}
+
+function openTeacherEntry(){
+  if(!ACCOUNTS.teacher){ openTeacherSetup(); return; }
+  pinTarget = '__teacher__';
+  pinBuf = '';
+  pinBusy = false;
+  const n = $('#pinName'); if(n) n.textContent = '老师';
+  const h = $('#pinHint'); if(h) h.textContent = '输入老师密码';
+  const dots = $('#pinDots'); if(dots) dots.classList.remove('shake');
+  updatePinDots();
+  openModal('pinModal');
+}
+
+function openTeacherSetup(){
+  ['teacherPin', 'teacherPin2'].forEach(function(id){ const el = $('#' + id); if(el) el.value = ''; });
+  const err = $('#teacherErr'); if(err) err.textContent = '';
+  openModal('teacherSetupModal');
+}
+
+function saveTeacherPin(){
+  const p1 = (($('#teacherPin') && $('#teacherPin').value) || '').trim();
+  const p2 = (($('#teacherPin2') && $('#teacherPin2').value) || '').trim();
+  const errEl = $('#teacherErr');
+  function err(t){ if(errEl) errEl.textContent = t; }
+  err('');
+  if(!/^\d{4}$/.test(p1)){ err('密码要 4 位数字'); return; }
+  if(p1 !== p2){ err('两次密码不一样'); return; }
+  const salt = randomSalt();
+  ACCOUNTS.teacher = { salt:salt, hash:pinHash(p1, salt), createdAt:Date.now() };
+  saveAccounts();
+  closeModal('teacherSetupModal');
+  TEACHER_MODE = true;
+  CURRENT = null;
+  S = null;
+  syncRoleUI();
+  showTeacher();
+  toast('老师密码已设置', 'ok');
+}
+
+function showTeacher(){
+  TEACHER_MODE = true;
+  CURRENT = null;
+  S = null;
+  renderTeacherList();
+  syncRoleUI();
+  showScreen('teacher');
+}
+
+function exitTeacher(){
+  TEACHER_MODE = false;
+  CURRENT = null;
+  S = null;
+  closeModal('parentModal');
+  closeModal('reportModal');
+  closeModal('settingsModal');
+  syncRoleUI();
+  showGate();
+}
+
+/* 老师总览的每一行：最近 7 天的练习天数、用时、题数、正确率。
+   直接读每个账户的存档，不切换当前账户，也不改任何学生数据。 */
+function teacherRoster(){
+  const from = rangeStart(7);
+  return ACCOUNTS.accounts.map(function(acc){
+    const st = loadAccountState(acc.id);
+    const list = practiceList(st);
+    const recent = list.filter(function(e){ return e.t >= from; });
+    const daySet = {};
+    recent.forEach(function(e){ daySet[dayKey(new Date(e.t))] = 1; });
+    return { acc:acc, st:st, list:list, recent:recent,
+      days:Object.keys(daySet).length,
+      lastTs:list.length ? list[list.length - 1].t : 0 };
+  }).sort(function(a, b){ return b.lastTs - a.lastTs; });
+}
+
+function renderTeacherList(){
+  const box = $('#teacherList');
+  if(!box) return;
+  const rows = teacherRoster();
+  if(!rows.length){
+    box.innerHTML = '<p class="gate-empty">还没有学生。<br>点下面「新建学生」建第一个账户。</p>';
+    return;
+  }
+  box.innerHTML = '';
+  rows.forEach(function(r){
+    const s = statsOf(r.recent);
+    const meta = r.recent.length
+      ? '最近 7 天：' + r.days + ' 天 · ' + fmtTotal(s) + ' · ' + s.n + ' 题 · 一次答对 ' + pct(s.acc)
+      : '最近 7 天还没练';
+    const el = document.createElement('div');
+    el.className = 'teacher-row';
+    el.innerHTML = '<span class="who-avatar" style="background:' + (r.acc.color || '#3C7DD9') + '">' +
+        esc(r.acc.name.slice(0, 1)) + '</span>' +
+      '<div class="t-main"><div class="t-name">' + esc(r.acc.name) + '</div>' +
+      '<div class="t-meta">' + meta + ' · ' + (r.lastTs ? '上次 ' + fmtDate(r.lastTs) : '还没练过') + '</div></div>' +
+      '<div class="t-actions">' +
+        '<button class="mini-btn" data-report="' + r.acc.id + '">报告</button>' +
+        '<button class="mini-btn" data-enter="' + r.acc.id + '">进入</button>' +
+      '</div>';
+    el.querySelector('[data-report]').addEventListener('click', function(){ openTeacherLearner(r.acc.id, true); });
+    el.querySelector('[data-enter]').addEventListener('click', function(){ openTeacherLearner(r.acc.id, false); });
+    box.appendChild(el);
+  });
+}
+
+function openTeacherLearner(id, openReport){
+  if(!TEACHER_MODE) return;
+  enterAccount(id, { teacher:true, openReport:!!openReport });
 }
 
 function createAccount(){
@@ -4216,15 +4511,24 @@ function createAccount(){
   }
   if(isFirst) ACCOUNTS.legacyImported = true;
   writeJSON(stateKey(acc.id), st);
+  closeModal('accountModal');
+  /* 老师建学生时不自动进入，回到总览；下一次点「进入」或「报告」再加载。 */
+  if(newAccountFromTeacher){
+    newAccountFromTeacher = false;
+    saveAccounts();
+    showTeacher();
+    toast('已新建 ' + acc.name, 'ok');
+    return;
+  }
   ACCOUNTS.currentId = acc.id;
   ACCOUNTS.locked = false;
   saveAccounts();
-  closeModal('accountModal');
   enterAccount(acc.id);
 }
 
 function lockDevice(){
   flushStore();
+  TEACHER_MODE = false;
   ACCOUNTS.locked = true;
   saveAccounts();
   CURRENT = null;
@@ -4254,15 +4558,240 @@ function lastDays(n){
   return out;
 }
 
-function statBar(name, s, extra){
-  const p = s.n ? Math.round(s.acc * 100) : 0;
-  const cls = !s.n ? '' : (s.acc >= 0.8 ? '' : (s.acc >= 0.6 ? 'mid' : 'low'));
-  return '<div class="stat-row">' +
-    '<span class="stat-name">' + esc(name) + '</span>' +
-    '<div class="stat-bar' + (s.n ? '' : ' empty') + '"><i class="' + cls + '" style="width:' +
-      (s.n ? Math.max(2, p) : 0) + '%"></i></div>' +
-    '<span class="stat-val">' + (s.n ? p + '% · ' + s.n : '—') + '</span>' +
-    (extra || '') + '</div>';
+/* 报告只读事件，不改存档：
+   用时 = 每题从出现到答对的时间之和；
+   一次答对率 = 第一次就答对的题 / 总题数；
+   趋势 = 所选时间窗内按时间对半，比较前半和后半的错误率。
+   REPORT_DAYS 为 0 表示全部时间；它只存在内存里，不写进学生存档。 */
+let REPORT_DAYS = 7;
+
+function practiceList(st){
+  return ((st && st.events) || []).filter(function(e){ return e.mode !== 'test'; });
+}
+function rangeStart(days){
+  if(!days) return 0;
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - (days - 1));
+  return d.getTime();
+}
+function rangeName(days){ return days ? '最近 ' + days + ' 天' : '全部时间'; }
+function fmtMin(ms){
+  if(!ms) return '0 秒';
+  if(ms < 60000) return Math.round(ms / 1000) + ' 秒';
+  return Math.round(ms / 60000) + ' 分';
+}
+function fmtShort(ms){
+  if(!ms) return '—';
+  if(ms < 60000) return Math.max(1, Math.round(ms / 1000)) + ' 秒';
+  return Math.round(ms / 60000) + ' 分';
+}
+/* 表格里的总用时：没有题就显示破折号，不显示「0 分」。 */
+function fmtTotal(s){ return s.n ? fmtMin(s.sumMs) : '—'; }
+function fmtAvg(ms){
+  if(!ms) return '—';
+  if(ms < 60000) return (ms / 1000).toFixed(1) + ' 秒';
+  return Math.round(ms / 60000) + ' 分';
+}
+function noteRows(id, list){
+  return list.filter(function(e){
+    return e.note === id || (!e.note && e.letter === NOTES[id].letter);
+  });
+}
+function halfTrend(list){
+  if(list.length < 6) return null;
+  const mid = Math.floor(list.length / 2);
+  const a = statsOf(list.slice(0, mid));
+  const b = statsOf(list.slice(mid));
+  if(a.n < 3 || b.n < 3) return null;
+  return { before:1 - a.acc, after:1 - b.acc, n:list.length, aN:a.n, bN:b.n,
+    change:Math.round(((1 - b.acc) - (1 - a.acc)) * 100) };
+}
+function trendHtml(t){
+  if(!t) return '<span class="trend-flat">样本不足</span>';
+  if(t.change <= -2) return '<span class="trend-down">错误率 ↓ ' + Math.abs(t.change) + ' pt</span>';
+  if(t.change >= 2) return '<span class="trend-up">错误率 ↑ ' + t.change + ' pt</span>';
+  return '<span class="trend-flat">基本持平</span>';
+}
+function staffSpotName(y){
+  const r = Math.round(y);
+  if(Math.abs(y - r) < 0.01) return '第' + (5 - r) + '线';
+  return '第' + (4 - Math.floor(y)) + '间';
+}
+function pairLabel(e){
+  const y1 = Number(e.staffY1), y2 = Number(e.staffY2);
+  if(isNaN(y1) || isNaN(y2)) return '';
+  if(e.clef){
+    const p1 = staffPitch(e.clef, y1);
+    const p2 = staffPitch(e.clef, y2);
+    const lo = p1.midi <= p2.midi ? p1 : p2;
+    const hi = p1.midi <= p2.midi ? p2 : p1;
+    return lo.letter + lo.octave + '–' + hi.letter + hi.octave;
+  }
+  return staffSpotName(Math.max(y1, y2)) + '–' + staffSpotName(Math.min(y1, y2));
+}
+function pairGroups(list){
+  const map = {};
+  list.filter(function(e){ return e.kind === 'higher'; }).forEach(function(e){
+    const label = pairLabel(e);
+    if(!label) return;
+    const key = (e.clef || 'none') + '|' + label;
+    if(!map[key]) map[key] = { label:label, clef:e.clef || '', rows:[] };
+    map[key].rows.push(e);
+  });
+  return Object.keys(map).map(function(k){ return map[k]; });
+}
+/* 摘要里「最需要练」的候选：七关 + 已学音，样本至少 5 题。 */
+function rankItems(list){
+  const out = [];
+  SKILLS.forEach(function(sk){
+    const s = statsOf(list.filter(function(e){ return e.skill === sk.id; }));
+    if(s.n >= 5) out.push({ name:sk.name, acc:s.acc, n:s.n });
+  });
+  NOTE_ORDER.forEach(function(id){
+    if(!noteComplete(id)) return;
+    const s = statsOf(noteRows(id, list));
+    if(s.n >= 5) out.push({ name:id, acc:s.acc, n:s.n });
+  });
+  return out.sort(function(a, b){ return a.acc - b.acc; });
+}
+function matrixCell(rows){
+  const s = statsOf(rows);
+  if(!s.n) return '<td class="m-none">—</td>';
+  const cls = s.acc >= 0.8 ? 'm-hi' : (s.acc >= 0.6 ? 'm-mid' : 'm-low');
+  return '<td class="m-cell ' + cls + '"><b>' + fmtShort(s.sumMs) + '</b><span>' + pct(s.acc) + '</span></td>';
+}
+function dailyMatrix(list){
+  let nDays = REPORT_DAYS;
+  if(!nDays){
+    const first = list.length ? new Date(list[0].t) : new Date();
+    first.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    nDays = Math.min(30, Math.max(1, Math.round((today - first) / 86400000) + 1));
+  }
+  const days = lastDays(nDays);
+  const head = '<tr><th>日期</th>' + SKILLS.map(function(sk){ return '<th>' + sk.name + '</th>'; }).join('') + '<th>合计</th></tr>';
+  let rows = '';
+  const totals = SKILLS.map(function(){ return []; });
+  const allRows = [];
+  days.forEach(function(d){
+    const k = dayKey(d);
+    const dayRows = list.filter(function(e){ return dayKey(new Date(e.t)) === k; });
+    allRows.push.apply(allRows, dayRows);
+    let cells = '';
+    SKILLS.forEach(function(sk, i){
+      const rs = dayRows.filter(function(e){ return e.skill === sk.id; });
+      totals[i].push.apply(totals[i], rs);
+      cells += matrixCell(rs);
+    });
+    rows += '<tr><td>' + pad2(d.getMonth() + 1) + '/' + pad2(d.getDate()) + '</td>' + cells + matrixCell(dayRows) + '</tr>';
+  });
+  let totalCells = '';
+  SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
+  rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
+  return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
+    '<div class="report-note">行是日期，列是七关；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
+}
+function skillTable(list){
+  let rows = '';
+  SKILLS.forEach(function(sk){
+    const rs = list.filter(function(e){ return e.skill === sk.id; });
+    const s = statsOf(rs);
+    rows += '<tr><td>' + sk.id + ' · ' + sk.name + '</td><td>' + s.n + '</td><td>' + fmtTotal(s) +
+      '</td><td>' + fmtAvg(s.ms) + '</td><td>' + (s.n ? pct(s.acc) : '—') + '</td><td>' + s.wrong +
+      '</td><td>' + trendHtml(halfTrend(rs)) + '</td></tr>';
+  });
+  const s = statsOf(list);
+  rows += '<tr class="total"><td>合计</td><td>' + s.n + '</td><td>' + fmtTotal(s) + '</td><td>' + fmtAvg(s.ms) +
+    '</td><td>' + (s.n ? pct(s.acc) : '—') + '</td><td>' + s.wrong + '</td><td>' + trendHtml(halfTrend(list)) + '</td></tr>';
+  return '<div class="table-wrap"><table class="report-table"><thead><tr><th>关卡</th><th>题数</th><th>用时</th><th>平均每题</th><th>一次答对</th><th>错误次数</th><th>错误率趋势</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+function noteTable(list){
+  let rows = '';
+  const spot = currentSpotlight();
+  NOTE_ORDER.forEach(function(id){
+    const p = S.progress[id] || {};
+    const complete = noteComplete(id);
+    /* 学到一半的音也要出现：它正在练，只是还没走完八步。 */
+    const learning = !complete && (p.key || p.pos || p.fin || spot === id);
+    if(!complete && !learning) return;
+    const rs = noteRows(id, list);
+    const s = statsOf(rs);
+    rows += '<tr><td>' + id + (id === 'C4' ? ' 中央 C' : '') +
+      (complete ? '' : ' <span class="trend-flat">学习中</span>') + '</td>' +
+      '<td><span class="flag ' + (p.key ? 'on' : '') + '">键</span><span class="flag ' + (p.pos ? 'on' : '') + '">谱</span><span class="flag ' + (p.fin ? 'on' : '') + '">指</span></td>' +
+      '<td>' + s.n + '</td><td>' + fmtTotal(s) + '</td><td>' + (s.n ? pct(s.acc) : '—') + '</td><td>' + s.wrong +
+      '</td><td>' + trendHtml(halfTrend(rs)) + '</td>' +
+      '<td>' + (complete
+        ? '<button class="mini-btn" data-review="' + id + '">练</button>'
+        : '<button class="mini-btn" data-continue="' + id + '">继续学</button>') + '</td></tr>';
+  });
+  if(!rows) rows = '<tr><td colspan="8">还没有已学或学习中的音。</td></tr>';
+  return '<div class="table-wrap"><table class="report-table"><thead><tr><th>音</th><th>已学</th><th>题数</th><th>用时</th><th>一次答对</th><th>错误次数</th><th>错误率趋势</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div class="report-note">已学：键＝任意八度能找到，谱＝谱面位置与八度对得上，指＝知道手和指法。学到一半的音标「学习中」，可以点「继续学」接着走。</div>';
+}
+function comparisonTable(list){
+  const groups = pairGroups(list);
+  const dirs = list.filter(function(e){ return e.kind === 'pairdir'; });
+  if(!groups.length && !dirs.length){
+    return '<div class="report-empty">这段时间还没有第 7 关的记录。</div>';
+  }
+  function table(gs, withClef){
+    if(!gs.length) return '<div class="report-empty">还没有这一类记录。</div>';
+    let rows = '';
+    gs.slice().sort(function(a, b){ return b.rows.length - a.rows.length; }).forEach(function(g){
+      const s = statsOf(g.rows);
+      rows += '<tr><td>' + g.label + '</td>' +
+        (withClef ? '<td>' + (g.clef === 'treble' ? '高音' : '低音') + '</td>' : '') +
+        '<td>' + s.n + '</td><td>' + (s.n ? pct(s.acc) : '—') + '</td><td>' + s.wrong +
+        '</td><td>' + trendHtml(halfTrend(g.rows)) + '</td></tr>';
+    });
+    return '<div class="table-wrap"><table class="report-table"><thead><tr><th>比较</th>' +
+      (withClef ? '<th>谱号</th>' : '') +
+      '<th>题数</th><th>一次答对</th><th>错误次数</th><th>错误率趋势</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  const names = { up:'上行', down:'下行', same:'重复音' };
+  let dRows = '';
+  ['up','down','same'].forEach(function(rel){
+    const rs = dirs.filter(function(e){ return e.relation === rel; });
+    const s = statsOf(rs);
+    dRows += '<tr><td>' + names[rel] + '</td><td>' + s.n + '</td><td>' + (s.n ? pct(s.acc) : '—') +
+      '</td><td>' + s.wrong + '</td></tr>';
+  });
+  let html = '<h4>有谱号：能落到具体音名</h4>' + table(groups.filter(function(g){ return g.clef; }), true);
+  html += '<h4>无谱号：只比谱面位置</h4>' + table(groups.filter(function(g){ return !g.clef; }), false);
+  html += '<h4>走向判断</h4><div class="table-wrap"><table class="report-table"><thead><tr><th>走向</th><th>题数</th><th>一次答对</th><th>错误次数</th></tr></thead><tbody>' + dRows + '</tbody></table></div>';
+  html += '<div class="report-note">无谱号的题只比两个音在谱面上的上下，没有绝对音名；有谱号的题可以还原成音对。</div>';
+  return html;
+}
+function modeTable(list){
+  const modes = [['skill','技能关'],['daily','今日练习'],['spotlight','新音导入'],['note','单音复习']];
+  let rows = '';
+  modes.forEach(function(m){
+    const rs = list.filter(function(e){ return e.mode === m[0]; });
+    const s = statsOf(rs);
+    rows += '<tr><td>' + m[1] + '</td><td>' + s.n + '</td><td>' + fmtTotal(s) + '</td><td>' + fmtAvg(s.ms) +
+      '</td><td>' + (s.n ? pct(s.acc) : '—') + '</td></tr>';
+  });
+  return '<div class="table-wrap"><table class="report-table"><thead><tr><th>形式</th><th>题数</th><th>用时</th><th>平均每题</th><th>一次答对</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+function bindReportBody(body){
+  $$('[data-days]', body).forEach(function(btn){
+    btn.addEventListener('click', function(){ renderReport(Number(btn.dataset.days)); });
+  });
+  $$('[data-review]', body).forEach(function(btn){
+    btn.addEventListener('click', function(){
+      closeModal('reportModal');
+      startNoteReview(btn.dataset.review);
+    });
+  });
+  $$('[data-continue]', body).forEach(function(btn){
+    btn.addEventListener('click', function(){
+      closeModal('reportModal');
+      startNoteContinue(btn.dataset.continue);
+    });
+  });
 }
 
 function phaseStats(phase, bid){
@@ -4285,65 +4814,87 @@ function prepostRow(name, a, b){
     '</td><td class="' + cls + '">' + dv + '</td></tr>';
 }
 
-function renderReport(){
+function renderReport(days){
   const body = $('#reportBody');
-  if(!body || !CURRENT) return;
+  if(!body || !CURRENT || !S) return;
+  if(days != null) REPORT_DAYS = days;
   const ev = practiceEvents();
-  const st = statsOf(ev);
+  const from = rangeStart(REPORT_DAYS);
+  const list = ev.filter(function(e){ return e.t >= from; });
+  const st = statsOf(list);
   const testN = (S.events || []).filter(function(e){ return e.mode === 'test'; }).length;
-  const since = Date.now() - 14 * 86400000;
-  const recent = ev.filter(function(e){ return e.t >= since; }).length;
+  const rn = rangeName(REPORT_DAYS);
 
   $('#reportTitle').textContent = CURRENT.name + '的练习报告';
   $('#reportMeta').textContent = '账户建立于 ' + fmtDate(CURRENT.createdAt) +
-    ' · 共记录 ' + (st.n + testN) + ' 题（练习 ' + st.n + ' · 测验 ' + testN + '）' +
-    (st.n ? ' · 一次答对 ' + pct(st.acc) : '') +
+    ' · 共记录 ' + ((S.events || []).length) + ' 题（练习 ' + ev.length + ' · 测验 ' + testN + '）' +
     ' · 当前难度 ' + (S.difficulty === 'auto' ? '自动（' + diffName(S.autoLevel) + '）' : diffName(S.difficulty));
 
-  let html = '<div class="report-cards">' +
+  let html = '<div class="report-tools"><div class="seg">' +
+    [7,14,30,0].map(function(d){
+      return '<button data-days="' + d + '" class="' + (REPORT_DAYS === d ? 'on' : '') + '">' +
+        (d ? d + ' 天' : '全部') + '</button>';
+    }).join('') +
+    '</div><span class="report-sub">' + rn + ' · 用时按每题从出现到答对计</span></div>';
+
+  const daySet = {};
+  list.forEach(function(e){ daySet[dayKey(new Date(e.t))] = 1; });
+  const dayCount = Object.keys(daySet).length;
+
+  html += '<div class="report-cards">' +
+    '<div class="report-card"><div class="k">练习天数</div><div class="v">' + dayCount + '<small> 天</small></div></div>' +
+    '<div class="report-card"><div class="k">答题用时</div><div class="v">' + (st.n ? fmtMin(st.sumMs) : '—') + '</div></div>' +
     '<div class="report-card"><div class="k">练习题数</div><div class="v">' + st.n + '</div></div>' +
     '<div class="report-card"><div class="k">一次答对率</div><div class="v">' + (st.n ? pct(st.acc) : '—') + '</div></div>' +
-    '<div class="report-card"><div class="k">最近 14 天</div><div class="v">' + recent + '<small> 题</small></div></div>' +
     '</div>';
 
   if(!st.n){
     html += '<div class="report-empty">' + (testN
-      ? '还没有日常练习记录；下面的前测/后测结果仍然保留。'
-      : '还没有答题记录。做完一次今日练习或任意一关，这里就会长出数据。') + '</div>';
+      ? '这段时间还没有日常练习记录；下面的前测/后测结果仍然保留。'
+      : '这段时间还没有答题记录。做完一次今日练习或任意一关，这里就会长出数据。') + '</div>';
   }else{
-    html += '<div class="report-sec"><h3>各项技能</h3>';
-    SKILLS.forEach(function(sk){ html += statBar(sk.name, statsOf(ev, 'skill', sk.id)); });
-    html += '</div><div class="report-sec"><h3>每个音</h3>';
-    NOTE_ORDER.forEach(function(id){
-      if(!noteComplete(id)) return;
-      html += statBar(NOTES[id].letter, noteStats(id, ev),
-        '<button class="mini-btn" data-review="' + id + '">练</button>');
+    const ranked = rankItems(list);
+    const weak = ranked.filter(function(x){ return x.acc < 0.85; }).slice(0, 2);
+    const strong = ranked.length ? ranked[ranked.length - 1] : null;
+    let summary = rn + '练了 <b>' + dayCount + ' 天</b>，共 <b>' + fmtMin(st.sumMs) + '</b>，<b>' + st.n + '</b> 题，一次答对 <b>' + pct(st.acc) + '</b>。';
+    summary += weak.length
+      ? '最需要练：' + weak.map(function(x){ return x.name + '（' + pct(x.acc) + '，' + x.n + ' 题）'; }).join('、') + '。'
+      : '各项都稳。';
+    if(strong && strong.acc >= 0.9 && st.n >= 8) summary += '最稳：' + strong.name + '（' + pct(strong.acc) + '）。';
+    const tr = halfTrend(list);
+    if(tr && tr.before === 0 && tr.after === 0){
+      summary += '<br>这段时间没有错误，趋势不适用。';
+    }else if(tr){
+      summary += '<br>错误率从 <b>' + pct(tr.before) + '</b> 到 <b>' + pct(tr.after) + '</b>，' +
+        (tr.change <= -2 ? '下降 ' + Math.abs(tr.change) + ' 个百分点' :
+         (tr.change >= 2 ? '上升 ' + tr.change + ' 个百分点' : '基本持平')) +
+        '（前半 ' + tr.aN + ' 题，后半 ' + tr.bN + ' 题）。';
+    }else{
+      summary += '<br>记录还少，暂不判断趋势。';
+    }
+    const learned = NOTE_ORDER.filter(noteComplete);
+    const spot = currentSpotlight();
+    const learning = NOTE_ORDER.filter(function(id){
+      const p = S.progress[id];
+      return !noteComplete(id) && ((p && (p.key || p.pos || p.fin)) || spot === id);
     });
-    html += '</div>';
+    const unlearned = NOTE_ORDER.filter(function(id){
+      return !noteComplete(id) && learning.indexOf(id) < 0;
+    });
+    const letters = function(arr){ return arr.map(function(id){ return NOTES[id].letter; }).join(' '); };
+    let setLine = '已学 <b>' + letters(learned) + '</b>';
+    if(learning.length) setLine += '；学习中 <b>' + letters(learning) + '</b>';
+    setLine += '；勾选 <b>' + letters(S.selected) + '</b>';
+    if(unlearned.length) setLine += '；还没学 ' + letters(unlearned);
+    summary += '<br>' + setLine + '。';
+    html += '<div class="report-summary">' + summary + '</div>';
   }
 
-  /* 14 天：柱高＝当天题数，颜色＝当天一次答对率。 */
-  const days = lastDays(14);
-  const buckets = days.map(function(d){
-    const k = dayKey(d);
-    return { d:d, k:k, list:ev.filter(function(e){ return dayKey(new Date(e.t)) === k; }) };
-  });
-  const maxN = Math.max(1, Math.max.apply(null, buckets.map(function(b){ return b.list.length; })));
-  html += '<div class="report-sec"><h3>最近 14 天</h3><div class="days">';
-  buckets.forEach(function(b){
-    const n = b.list.length;
-    const acc = n ? b.list.filter(function(e){ return e.first; }).length / n : 0;
-    const h = n ? Math.max(6, Math.round(n / maxN * 58)) : 3;
-    const cls = n ? (acc >= 0.8 ? 'has' : (acc >= 0.6 ? 'mid' : 'low')) : '';
-    html += '<div class="day"><i class="' + cls + '" style="height:' + h + 'px" title="' +
-      b.k + ' · ' + n + ' 题' + (n ? ' · 一次答对 ' + pct(acc) : '') + '"></i></div>';
-  });
-  html += '</div><div class="day-labels">';
-  buckets.forEach(function(b, i){
-    html += '<span>' + ((i === 0 || i === 7 || i === 13)
-      ? (pad2(b.d.getMonth() + 1) + '/' + pad2(b.d.getDate())) : '') + '</span>';
-  });
-  html += '</div><div class="report-note">柱子高度＝当天题数，颜色＝一次答对率（绿 ≥80%，橙 60–79%，红 <60%）。</div></div>';
+  html += '<div class="report-sec"><h3>每天练了哪一项</h3>' + dailyMatrix(list) + '</div>';
+  html += '<div class="report-sec"><h3>每关</h3>' + skillTable(list) + '</div>';
+  html += '<div class="report-sec"><h3>每个音</h3>' + noteTable(list) + '</div>';
+  html += '<div class="report-sec"><h3>第 7 关：哪些音作了比较</h3>' + comparisonTable(list) + '</div>';
+  html += '<div class="report-sec"><h3>练习形式</h3>' + modeTable(list) + '</div>';
 
   if(S.battery){
     const b = S.battery;
@@ -4374,14 +4925,13 @@ function renderReport(){
     html += '</div>';
   }
 
-  html += '<p class="report-note">一次答对率＝第一次就答对的题 / 总题数；错误次数含同一题内的重试。前测后测不计入日常正确率和自动难度。数据只在本机，导出 CSV 后可做学习曲线。</p>';
+  html += '<p class="report-note">一次答对率＝第一次就答对的题 / 总题数；错误次数含同一题内的重试；' +
+    '用时按每题从出现到答对计，含重试和按住，不含题间停顿。前测后测不计入日常正确率和自动难度。' +
+    '第 1 关按音名归并，例如 F 的题都算到 F4。数据只在本机，导出 CSV 后可做学习曲线。</p>';
   body.innerHTML = html;
-  $$('[data-review]', body).forEach(function(btn){
-    btn.addEventListener('click', function(){
-      closeModal('reportModal');
-      startNoteReview(btn.dataset.review);
-    });
-  });
+  bindReportBody(body);
+  const sheet = $('#reportModal .sheet');
+  if(sheet) sheet.scrollTop = 0;
 }
 
 function openReport(){
@@ -4408,24 +4958,42 @@ function download(name, text, mime){
   setTimeout(function(){ a.remove(); URL.revokeObjectURL(url); }, 1500);
 }
 
-function exportCsv(){
-  if(!CURRENT) return;
-  const head = ['participant', 'display_name', 'event_seq', 'datetime_iso', 'date_local', 'session_id',
-    'phase', 'mode', 'skill', 'kind', 'note', 'letter', 'value', 'clef', 'line_space',
-    'difficulty', 'first_try', 'wrong_count', 'response_ms', 'battery',
-    'relation', 'staff_y1', 'staff_y2', 'higher', 'ask', 'target'];
-  const rows = [head];
-  S.events.forEach(function(e){
+const CSV_HEAD = ['participant', 'display_name', 'event_seq', 'datetime_iso', 'date_local', 'session_id',
+  'phase', 'mode', 'skill', 'kind', 'note', 'letter', 'value', 'clef', 'line_space',
+  'difficulty', 'first_try', 'wrong_count', 'response_ms', 'battery',
+  'relation', 'staff_y1', 'staff_y2', 'higher', 'ask', 'target'];
+
+function csvEventRows(acc, state){
+  const rows = [];
+  (state.events || []).forEach(function(e){
     const d = new Date(e.t);
-    rows.push([CURRENT.id, CURRENT.name, e.seq, d.toISOString(), dayKey(d), e.sid,
+    rows.push([acc.id, acc.name, e.seq, d.toISOString(), dayKey(d), e.sid,
       e.phase, e.mode, e.skill, e.kind, e.note, e.letter, e.value, e.clef, e.spot,
       e.diff, e.first, e.wrong, e.ms, e.battery,
       e.relation, e.staffY1, e.staffY2, e.higher, e.ask, e.target]);
   });
+  return rows;
+}
+
+function exportCsv(){
+  if(!CURRENT) return;
+  const rows = [CSV_HEAD].concat(csvEventRows(CURRENT, S));
   const text = '\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
   download('note-trainer_' + safeName(CURRENT.name) + '_' + dayKey(new Date()) + '.csv',
     text, 'text/csv;charset=utf-8');
   toast('已导出 ' + S.events.length + ' 条记录', 'ok');
+}
+
+/* 老师专用：这台设备上所有学生的记录合成一张 CSV，带 participant 列。 */
+function exportAllCsv(){
+  if(!ACCOUNTS.accounts.length){ toast('还没有学生', 'bad'); return; }
+  const rows = [CSV_HEAD];
+  ACCOUNTS.accounts.forEach(function(acc){
+    rows.push.apply(rows, csvEventRows(acc, loadAccountState(acc.id)));
+  });
+  const text = '\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
+  download('note-trainer_all_' + dayKey(new Date()) + '.csv', text, 'text/csv;charset=utf-8');
+  toast('已导出 ' + (rows.length - 1) + ' 条记录', 'ok');
 }
 
 function exportBackup(){
@@ -4559,13 +5127,22 @@ function bindAccountUI(){
   $('#btnWho').addEventListener('click', function(){
     if(!CURRENT) return;
     saveStore();
-    showGate();
+    if(TEACHER_MODE) showTeacher();
+    else showGate();
   });
-  $('#btnGateNew').addEventListener('click', openNewAccount);
+  $('#btnGateTeacher').addEventListener('click', openTeacherEntry);
   $('#btnGateBack').addEventListener('click', function(){ if(CURRENT) showHome(); });
-  $('#btnAccCancel').addEventListener('click', function(){ closeModal('accountModal'); });
+  $('#btnAccCancel').addEventListener('click', function(){
+    newAccountFromTeacher = false;
+    closeModal('accountModal');
+  });
   $('#btnAccCreate').addEventListener('click', createAccount);
   $('#btnPinCancel').addEventListener('click', function(){ closeModal('pinModal'); });
+  $('#btnTeacherSetupCancel').addEventListener('click', function(){ closeModal('teacherSetupModal'); });
+  $('#btnTeacherSetupSave').addEventListener('click', saveTeacherPin);
+  $('#btnTeacherNew').addEventListener('click', function(){ openNewAccount(true); });
+  $('#btnTeacherExportAll').addEventListener('click', exportAllCsv);
+  $('#btnTeacherExit').addEventListener('click', exitTeacher);
 
   $('#keypad').addEventListener('click', function(e){
     const b = e.target.closest ? e.target.closest('button') : null;
@@ -4595,6 +5172,12 @@ function bindAccountUI(){
   });
   $('#btnOpenReport').addEventListener('click', openReport);
   $('#btnCloseReport').addEventListener('click', function(){ closeModal('reportModal'); });
+  $('#btnPrintReport').addEventListener('click', function(){
+    /* 打印前把报告滚到顶部，只输出打开的那张报告。 */
+    const sheet = $('#reportModal .sheet');
+    if(sheet) sheet.scrollTop = 0;
+    setTimeout(function(){ window.print(); }, 60);
+  });
   $('#btnPretest').addEventListener('click', function(){ startTest('pre'); });
   $('#btnPosttest').addEventListener('click', function(){ startTest('post'); });
   $('#btnExportCsv').addEventListener('click', exportCsv);
@@ -4607,9 +5190,14 @@ function bindAccountUI(){
   $('#btnClearEvents').addEventListener('click', clearEvents);
   $('#btnLock').addEventListener('click', lockDevice);
 
-  ['accountModal', 'pinModal', 'parentModal', 'reportModal'].forEach(function(id){
+  ['accountModal', 'pinModal', 'parentModal', 'reportModal', 'teacherSetupModal'].forEach(function(id){
     const m = $('#' + id);
-    if(m) m.addEventListener('click', function(e){ if(e.target === this) this.classList.remove('open'); });
+    if(m) m.addEventListener('click', function(e){
+      if(e.target === this){
+        this.classList.remove('open');
+        if(id === 'accountModal') newAccountFromTeacher = false;
+      }
+    });
   });
 
   window.addEventListener('pagehide', flushStore);
@@ -4618,9 +5206,9 @@ function bindAccountUI(){
 
 /* ==================== 启动 ==================== */
 function bootApp(){
+  /* 账户由老师开通：没有学生时停在老师入口，不再直接弹「新建练习者」。 */
   if(!ACCOUNTS.accounts.length){
     showGate();
-    openNewAccount();
     return;
   }
   /* 多人共用时每次启动都选人；锁定过也要重新输密码。

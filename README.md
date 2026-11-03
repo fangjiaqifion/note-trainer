@@ -10,16 +10,21 @@ then folded into the same seven skills.
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
-current new note; F4, G4 and A4 are queued and can be opened directly from their chips.
-Learned notes can be checked or unchecked on the home screen, and skills 1–6 and the daily
-session use only the checked notes. The note set is configuration, not code: adding a note is
-one registry entry plus one queue slot, see [Adding a note](#adding-a-note). The seven skills
-stay the same as the set grows; the menu does not get longer.
+current new note, followed by A4, F4 and G4. The order follows the student's method book:
+after E the book moves to A, then back to F and G. Learned notes can be checked or unchecked
+on the home screen, and skills 1–6 and the daily session use only the checked notes. The note
+set is configuration, not code: adding a note is one registry entry plus one queue slot, see
+[Adding a note](#adding-a-note). The seven skills stay the same as the set grows; the menu
+does not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
 notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
-in `localStorage`; there is no server, no account recovery, and no network request. A parent
-panel exports the log as CSV for analysis or the whole profile as JSON for backup.
+in `localStorage`; there is no server, no account recovery, and no network request.
+
+The teacher is the only superuser. A separate teacher PIN unlocks the student roster: the
+teacher creates learner profiles, opens every learner's report on this device, and exports all
+learners' logs. Parents and students share one limited role: they practice, check notes, change
+settings, switch or lock their own profile, and cannot open reports or manage accounts.
 
 ## What it is
 
@@ -49,19 +54,22 @@ separate record for each learner profile.
 1. Open the live URL in Safari on the iPad.
 2. Tap **Share → Add to Home Screen**. It then opens full screen, like an app, and works
    offline.
-3. On first launch, create a learner profile: a name or participant code and a four-digit
-   PIN. If the device already has the old single-profile progress, the first profile adopts
-   it.
-4. Check the notes to practice under **我的音** (My notes). The default is every learned note.
-5. Tap **今日练习** (Daily practice). The child does not have to choose a skill first.
+3. On first launch the gate has no learners. Tap **老师入口** (Teacher entry), set a teacher
+   PIN, then tap **新建学生** (New student) to create the first learner profile: a name or
+   participant code and a four-digit learner PIN. If the device already has the old
+   single-profile progress, the first profile adopts it.
+4. The learner opens their card, enters their PIN, checks the notes to practice under
+   **我的音** (My notes), and taps **今日练习** (Daily practice).
+5. The teacher opens **老师入口**, enters the teacher PIN, and sees the roster with each
+   learner's last seven days.
 
-## Learner profiles and data
+## Learner profiles, the teacher role, and data
 
 A profile is a separate `localStorage` record: checked notes, progress flags, stars, settings,
 the current new note, the frozen pre/post battery, and the practice log. The account roster
-holds the names, colours, and salted hashes of the four-digit PINs. The PIN is a local gate
-against opening the wrong profile; it is not encryption, and anyone who can read the device's
-storage can read the data.
+holds the names, colours, and salted hashes of the learner PINs, plus the teacher PIN hash.
+The PINs are local gates against opening the wrong profile; they are not encryption, and
+anyone who can read the device's storage can read the data.
 
 When the app starts:
 
@@ -69,8 +77,21 @@ When the app starts:
 - more than one profile, or the last session ended with **锁定** (Lock): the profile picker
   appears, and switching profiles requires the PIN.
 
-The **家长** (Parent) panel on the home screen shows the current profile, opens the practice
-report, starts a pre- or post-test, exports data, imports a backup, or clears the log.
+The **老师入口** (Teacher entry) is on the profile picker. The first time, it asks the teacher
+to set a four-digit teacher PIN; after that it asks for it. The teacher console lists every
+learner on this device with the last seven days: practice days, time on questions, questions,
+and first-try accuracy. **报告** opens that learner's report; **进入** opens the learner's home
+with teacher mode on, so the teacher can also run a pre/post test or clear the log. **导出全部
+CSV** writes one combined file with a `participant` column. **退出老师** returns to the picker.
+
+Teacher mode is not stored. A refresh returns to the normal profile picker, and the teacher
+must enter the PIN again. Entering a learner for a report does not update the learner's
+`lastActiveAt`, so viewing data does not look like practice.
+
+A normal profile's account panel has only **切换** (Switch) and **锁定** (Lock). The report,
+pre/post tests, CSV/JSON export, backup import and log clearing are hidden unless the teacher
+is in teacher mode. The checked notes and the settings (sound, speech, key labels, difficulty,
+decor) remain available to the learner.
 
 ### Practice log
 
@@ -94,7 +115,42 @@ contains:
 
 Accuracy is `first_try / questions`; the error rate is its complement. `wrong_count` keeps
 the retries that a single accuracy figure hides. The log is capped at 8000 rows (about two
-years of ten questions a day); export before clearing it. The panel shows the current count.
+years of ten questions a day); export before clearing it. The teacher panel shows the current
+count.
+
+### Practice report
+
+The report is teacher-only. It has a range switch (last 7, 14, 30 days, or all time) and is
+built from the practice log; no schema change is needed.
+
+The header summarizes the range: practice days, time on questions, questions, first-try
+accuracy, the two weakest items, the strongest item, the error-rate trend, and the note set
+(learned, learning, not yet learned, checked). Time is the sum of `response_ms`, so it
+includes retries and holds but excludes the gaps between questions. Accuracy is
+`first_try / questions`; the error count is the sum of `wrong_count`. The trend splits the
+range chronologically in half and compares the first-try error rate of the two halves; each
+half needs at least three questions, otherwise it says the sample is too small.
+
+Then:
+
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the seven skills plus a
+  total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
+  above, orange from 60% to 79%, red below 60%.
+- **每关** (per skill): questions, total time, average time per question, first-try accuracy,
+  error count, and the error-rate trend.
+- **每个音** (per note): learned and learning notes, the three progress flags, questions, time,
+  accuracy, errors, trend, and a **练** (review) or **继续学** (continue learning) button.
+  Notes still in the eight-step spotlight appear as learning, so the new note is visible
+  before it is complete.
+- **第 7 关：哪些音作了比较** (skill 7 comparisons): pairs with a clef resolve to actual note
+  names (e.g., C4–E4); pairs without a clef are staff positions only (e.g., first space to
+  second line). Direction questions are listed separately.
+- **练习形式** (session type): skill card, daily practice, spotlight, and single-note review,
+  with questions, time, and accuracy.
+- Pre/post tests and the adaptive-difficulty history follow.
+
+**打印 / 存为 PDF** prints only the open report: the buttons, range switch, and the rest of the
+page are hidden by a print stylesheet.
 
 ### Pre/post tests
 
@@ -103,7 +159,8 @@ finding, staff ↔ keyboard, clef, duration, hand/finger, and lines/spaces, usin
 that have already been taught. **后测** replays the same items with the same difficulty. Test
 rows carry the battery id and are excluded from the daily accuracy and the adaptive
 difficulty. The report shows overall and per-skill change in percentage points. Skill 7 is not
-yet part of the fixed battery; its practice rows still appear in the per-skill report.
+yet part of the fixed battery; its practice rows still appear in the per-skill report. The
+pre/post buttons are teacher-only.
 
 The battery needs at least two checked notes with staff positions. If a checked note has no
 finger flag yet, the hand/finger item is replaced by an extra staff ↔ keyboard item, so the
@@ -111,9 +168,13 @@ battery stays at 12.
 
 ### Export, backup, import
 
-- **CSV** exports the log, one row per question, with a UTF-8 BOM so Excel opens Chinese
-  correctly. `participant` is the internal profile id; `display_name` is the profile name. For
-  sharing, use participant codes as names, or drop the name column.
+These are teacher-only. A normal learner profile does not show them.
+
+- **CSV** exports the current learner's log, one row per question, with a UTF-8 BOM so Excel
+  opens Chinese correctly. `participant` is the internal profile id; `display_name` is the
+  profile name. For sharing, use participant codes as names, or drop the name column.
+- **导出全部 CSV** (teacher console) combines every learner on the device into one file with
+  the same columns and a `participant` value per learner.
 - **JSON** exports the whole current profile. It does not contain the PIN.
 - **导入** replaces the *current* profile with a backup, keeping the current profile's PIN.
   On a new device, create a placeholder profile first, then import.
@@ -147,7 +208,7 @@ skill automatically once that flag is open.
 | 4 | 时值 · Read and hold | Read the note, choose the beat count, then find the key and hold it | `key` + `pos` |
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
-| 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef | none |
+| 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
 does not grow with the note set. F, G and A are all treble notes; adding them would turn the
@@ -157,10 +218,13 @@ Skill 7 is the bridge from staff geometry to pitch. It always shows two whole no
 stems, so the only cue is vertical position. The first three questions, with no clef, ask for
 the direction of the two notes; the answer choices are straight lines with an arrowhead, not
 two noteheads, so the child reads the motion rather than comparing the notes. The next
-questions ask which of the two notes is higher or lower, answered by tapping one of them; the
-two wordings alternate. The last group adds a clef, one clef per question, and asks the same
-higher/lower question; tapping a note now also plays its pitch, so the clef is audible as well
-as visible. The skill uses no note pool and starts without any learned notes.
+questions ask **选出更高的音** (choose the higher note) or **选出更低的音** (choose the lower
+note), answered by tapping one of them; the two wordings alternate. The last group adds a clef,
+one clef per question, but the prompt still says only "choose the higher note" or "choose the
+lower note"; the clef is drawn, never named. Tapping a note now also plays its pitch, so the
+clef is audible as well as visible. A correct answer in skill 7 shows confetti and turns the
+note green but gives no "correct" toast and no speech; the question's audio is stopped. The
+skill uses no note pool and starts without any learned notes.
 
 ## New notes: an eight-step spotlight
 
@@ -179,8 +243,8 @@ The flow has eight steps, taken four at a time, so a note takes two short sessio
 |---|---|---|
 | 0 | Local keyboard showing the new note's black-key group (C4–E4 for the two-black group, F4–B4 for the three-black group); the landmark is named once | `key` (partial) |
 | 1 | Full keyboard, any octave: only the letter counts | `key` |
-| 2 | Full keyboard, exact pitch: the new note itself | `key` |
-| 3 | Staff → keyboard, with a position hint after mistakes | `pos` |
+| 2 | Staff + letter → keyboard: the staff fixes the octave, the letter is a scaffold | `key` |
+| 3 | Staff → keyboard, with the letter removed | `pos` |
 | 4 | Keyboard → staff, options limited to the new note and its learned neighbours | `pos` |
 | 5 | Hand, finger, then hold a quarter note | `fin` |
 | 6 | Mixed with neighbours: staff → keyboard | — |
@@ -190,14 +254,15 @@ After step 3 the key and position flags are open, but the note is not yet in the
 After step 7 all three flags are open, the note is checked automatically in **我的音**, and it
 joins every skill that asks for it. The two spotlight sessions are therefore the acquisition
 phase: the note does not appear in the daily session or skills 1–6 before it is complete.
-The home screen then shows a **下一个音** (Next note) button; the parent decides when to start
-the next note. The game never advances the note set on its own.
+The home screen then shows a **下一个音** (Next note) button; the teacher or parent decides
+when to start the next note. The game never advances the note set on its own.
 
-E4 is the current new note. F4, G4 and A4 are queued. A4 falls outside the right-hand
-five-finger position; for now it is introduced with the same spotlight and a "move the whole
-hand right, fifth finger on A" convention. A dedicated hand-shift lesson is still future work.
-Any unlearned chip can be tapped to start that note's spotlight, so a parent can choose F, G
-or A without waiting for the **下一个音** button.
+E4 is the current new note, followed by A4, F4 and G4. The order follows the method book: after
+E the book moves to A, then back to F and G. A4 falls outside the right-hand five-finger
+position; for now it is introduced with the same spotlight and a "move the whole hand right,
+fifth finger on A" convention. A dedicated hand-shift lesson is still future work. Any
+unlearned chip can be tapped to start that note's spotlight, so a teacher or parent can choose
+A, F or G without waiting for the **下一个音** button.
 
 ## Daily practice
 
@@ -226,7 +291,9 @@ to include or exclude that note in the daily session and skills 1–6. A selecte
 a filled check; an unselected learned note stays white; the current new note pulses and opens
 the spotlight; any other unlearned note is dimmed but still opens its spotlight when tapped.
 A single-note review of a note and its neighbours is available from the **练** button beside
-each note in the parent report.
+each note in the teacher report. The report also shows notes still in the spotlight as
+**学习中** (learning), with a **继续学** (continue learning) button that resumes at step 4
+instead of restarting the note.
 
 ## Notation conventions
 
@@ -367,18 +434,20 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 
 | Item | Status | Notes |
 |---|---|---|
-| F4 and G4 | Shipped 2026-11-03 | Enter after E through the same spotlight; the chips can also be opened directly |
-| A4 | Shipped 2026-11-03 | Queued with finger 5; the note, staff position and keyboard landmark are complete |
+| F4 and G4 | Shipped 2026-11-03 | Enter after A4 through the same spotlight; the chips can also be opened directly |
+| A4 | Shipped 2026-11-03 | The first new note after E4, matching the method book; finger 5 with a whole-hand shift |
+| Teacher role and permissions | Shipped 2026-11-03 | Teacher PIN, student roster, all reports, combined CSV; parents and students keep practice, note checks and settings |
 | Hand-shift lesson for A4 | Idea | The current convention is "move the whole hand right, fifth finger on A"; a dedicated lesson is still needed |
 | Note names for staff lines | Idea | Skill 6 asks where line 2 is; the next step is "line 2 is G" |
 | Skill 7 in daily and pre/post | Idea | Two-note comparison is not in the daily mix or the 12-item battery yet |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
 | More left-hand notes | Idea | B3 is the only left-hand note, so skill 5 is right-hand heavy |
-| Progress history for parents | Shipped 2026-11-02 | Per-question log, per-skill and per-note accuracy, 14-day chart |
+| Progress history for teachers | Shipped 2026-11-03 | Time, daily-by-skill matrix, per-skill and per-note tables, comparison pairs, error-rate trend, print/PDF |
 | Adaptive question selection | Shipped 2026-11-02 | Error-weighted note pools and auto difficulty |
 | Pre/post testing | Shipped 2026-11-02 | Frozen 12-item battery, same items and difficulty at post |
 | Cloud sync or cross-device accounts | Idea | Would need a backend and a data-protection plan; deliberately absent |
-| Account deletion | Idea | The parent panel can clear logs but cannot remove a profile |
+| Account deletion | Idea | The teacher console can clear logs but cannot remove a profile |
+| Teacher PIN change or recovery | Idea | The PIN can be set once; there is no change screen and no recovery |
 | English interface | Idea | All strings are inline; would need a small dictionary and a switch |
 | Sound check | Shipped 2026-10-29 | Settings → "试听" |
 | License | Not chosen | See [License](#license) |
@@ -390,6 +459,11 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-03 | Teacher role: a separate teacher PIN opens a student roster, creates learner profiles, opens every learner's report on the device, and exports all learners' CSV. Normal profiles keep only practice, note checks, settings, switch and lock |
+| 2026-11-03 | New practice report: range switch (7/14/30/all), time on questions, daily-by-skill matrix, per-skill and per-note tables, skill-7 comparison pairs, error-rate trend, learning notes, and print/PDF |
+| 2026-11-03 | Level 7 prompts now say only "choose the higher note" / "choose the lower note", even when a clef is drawn; a correct answer shows confetti and no toast or speech |
+| 2026-11-03 | The spotlight's second step shows the note on the staff next to its letter, so requiring the exact octave is justified; step 3 removes the letter |
+| 2026-11-03 | Note order follows the method book: E4, then A4, then F4 and G4. The next-note button points to A after E |
 | 2026-11-03 | Level 7 asks for the **direction** of the two notes and uses line-and-arrow choices; the higher/lower questions alternate "which is higher" and "which is lower". The note set now runs through A4; any unlearned chip opens its spotlight |
 | 2026-11-02 | Level 7 **两个音**: two whole notes with no clef, first up/down/repeat, then tap the higher note; the last group adds one clef per question and plays the tapped pitch |
 | 2026-11-02 | Learner profiles with a four-digit local PIN, per-profile progress and a per-question practice log; parent report, CSV/JSON export, backup import, and a frozen pre/post battery |
@@ -517,8 +591,9 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   more than one way.
 - Skill 6 uses the clef as a distractor: the second half shows one but never names it, and
   the answer is the same in either clef. The other lines and spaces come later.
-- A4 is queued with finger 5, but the shift itself is not taught. The current convention is
-  "move the whole hand right"; a dedicated hand-position step is still missing.
+- A4 is introduced before F4 and G4 with finger 5, but the shift itself is not taught. The
+  current convention is "move the whole hand right"; a dedicated hand-position step is still
+  missing.
 - F4 is 4 and G4 is 5 in the right-hand C position. The game does not check the actual
   finger, and it does not yet teach a new hand position.
 - B3 is the only left-hand note. Skill 5 is therefore right-hand heavy; the left-hand
@@ -526,18 +601,27 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 - Stars, checked notes, progress and the log are per profile but still per device
   (`localStorage`); clearing website data erases every profile. Export a JSON backup before
   clearing browser data.
+- The teacher roster reads only the profiles on this device. There is no cloud sync and no
+  cross-device merge; a teacher with several devices has to collect CSV files or JSON backups.
+- The teacher PIN has no recovery and no change screen. Forgetting it leaves the learner data
+  readable only by clearing site data or by using developer tools.
+- The report's time figure is the sum of per-question response times. It includes retries and
+  holds but excludes the gaps between questions; a question left on screen while the child
+  walks away will inflate its time. The trend is descriptive and does not test significance.
+- Per-note counts merge skill 1's letter-only questions into the note with that letter, so an
+  F tapped in any octave counts toward F4. The report says so under the per-note table.
 - The PIN is a local switch guard, not encryption. A four-digit PIN has little strength, and
   the hash protects only against casual reading. Anyone with the unlocked device and developer
   tools can read the log.
 - The log is capped at 8000 rows. Older rows are dropped silently when the cap is reached; the
-  panel shows the current count.
+  teacher panel shows the current count.
 - One JSON backup covers one profile. A device with several profiles needs one export per
-  profile.
+  profile; the teacher console's CSV export covers all profiles at once.
 - The test battery is frozen at pre-test. If the child learns new notes before the post-test,
   those notes are not tested, which is the point of a paired comparison but means the post-test
   does not describe the full current note set.
 - Test accuracy and practice accuracy are reported separately. Test rows are excluded from the
-  adaptive difficulty and the 14-day practice chart.
+  adaptive difficulty and the practice report's daily matrix and trend.
 - The report and exports show timestamps in the device's local time and store the UTC time;
   moving a device between time zones can put one session on two local dates.
 - On iOS, the side switch mutes Web Audio as well. Use Settings → "试听" to tell a muted
