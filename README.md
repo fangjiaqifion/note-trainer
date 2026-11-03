@@ -10,11 +10,11 @@ then folded into the same seven skills.
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
-current new note; F4 and G4 are queued. Learned notes can be checked or unchecked on the home
-screen, and skills 1–6 and the daily session use only the checked notes. The note set is
-configuration, not code: adding a note is one registry entry plus one queue slot, see
-[Adding a note](#adding-a-note). The seven skills stay the same as the set grows; the menu does
-not get longer.
+current new note; F4, G4 and A4 are queued and can be opened directly from their chips.
+Learned notes can be checked or unchecked on the home screen, and skills 1–6 and the daily
+session use only the checked notes. The note set is configuration, not code: adding a note is
+one registry entry plus one queue slot, see [Adding a note](#adding-a-note). The seven skills
+stay the same as the set grows; the menu does not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
 notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
@@ -87,6 +87,7 @@ contains:
 | `skill`, `kind` | Skill 1–7 and the question factory |
 | `note`, `letter`, `value`, `clef`, `line_space` | What the item asked |
 | `relation`, `staff_y1`, `staff_y2`, `higher` | Skill 7 geometry: up/down/same, the two staff positions, and which note was higher (empty for other skills) |
+| `ask`, `target` | Skill 7 higher/lower questions: which wording was asked, and which note was the correct answer |
 | `difficulty` | Difficulty used for that session |
 | `first_try`, `wrong_count` | Whether the first attempt was correct, and how many attempts failed |
 | `response_ms` | Time from the question appearing to the correct answer |
@@ -146,18 +147,20 @@ skill automatically once that flag is open.
 | 4 | 时值 · Read and hold | Read the note, choose the beat count, then find the key and hold it | `key` + `pos` |
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
-| 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher note, first without and then with a clef | none |
+| 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
 does not grow with the note set. F, G and A are all treble notes; adding them would turn the
 level into "is it B3?", so the pool is deliberately kept at four spellings.
 
 Skill 7 is the bridge from staff geometry to pitch. It always shows two whole notes with no
-stems, so the only cue is vertical position. The first three questions, with no clef, ask
-whether the second note goes up, down, or stays the same. The next questions ask which note is
-higher, answered by tapping one of the two notes. The last group adds a clef, one clef per
-question, and asks the same question; tapping a note now also plays its pitch, so the clef is
-audible as well as visible. The skill uses no note pool and starts without any learned notes.
+stems, so the only cue is vertical position. The first three questions, with no clef, ask for
+the direction of the two notes; the answer choices are straight lines with an arrowhead, not
+two noteheads, so the child reads the motion rather than comparing the notes. The next
+questions ask which of the two notes is higher or lower, answered by tapping one of them; the
+two wordings alternate. The last group adds a clef, one clef per question, and asks the same
+higher/lower question; tapping a note now also plays its pitch, so the clef is audible as well
+as visible. The skill uses no note pool and starts without any learned notes.
 
 ## New notes: an eight-step spotlight
 
@@ -190,9 +193,11 @@ phase: the note does not appear in the daily session or skills 1–6 before it i
 The home screen then shows a **下一个音** (Next note) button; the parent decides when to start
 the next note. The game never advances the note set on its own.
 
-E4 is the current new note. F4 and G4 are queued. A4 is defined in `NOTES` but not queued,
-because it falls outside the right-hand five-finger position and needs a hand-position lesson
-before it can use the same spotlight.
+E4 is the current new note. F4, G4 and A4 are queued. A4 falls outside the right-hand
+five-finger position; for now it is introduced with the same spotlight and a "move the whole
+hand right, fifth finger on A" convention. A dedicated hand-shift lesson is still future work.
+Any unlearned chip can be tapped to start that note's spotlight, so a parent can choose F, G
+or A without waiting for the **下一个音** button.
 
 ## Daily practice
 
@@ -211,15 +216,17 @@ keyboard question, so the session stays at ten. The blocks after the review are 
 Older notes rotate in through the review block, so the session length does not grow with the
 note set.
 
-The daily session does not insert the current new note. To learn it, tap the pulsing chip in
-**我的音**; that starts the four-step spotlight. This keeps the checked set authoritative: if
+The daily session does not insert the current new note. To learn it, tap its chip in
+**我的音** (the current new note pulses, and any other unlearned chip opens its own
+spotlight); that starts the four-step spotlight. This keeps the checked set authoritative: if
 only B, C and D are checked, the daily session only asks B, C and D.
 
 The home screen also has a row of note chips (**我的音**). A learned chip is a checkbox: tap it
 to include or exclude that note in the daily session and skills 1–6. A selected note has
 a filled check; an unselected learned note stays white; the current new note pulses and opens
-the spotlight; notes that have not been taught are dimmed. A single-note review of a note and
-its neighbours is available from the **练** button beside each note in the parent report.
+the spotlight; any other unlearned note is dimmed but still opens its spotlight when tapped.
+A single-note review of a note and its neighbours is available from the **练** button beside
+each note in the parent report.
 
 ## Notation conventions
 
@@ -231,7 +238,7 @@ its neighbours is available from the **练** button beside each note in the pare
 | E4 | Treble | First line (bottom line) | Right | 3 |
 | F4 | Treble | First space | Right | 4 |
 | G4 | Treble | Second line | Right | 5 |
-| A4 | Treble | Second space | Right | not fixed yet |
+| A4 | Treble | Second space | Right | 5 |
 
 The stem direction *is* the hand: right hand up, left hand down. The fingering digit sits
 outside the staff, on the far side from the note. This matches printed music, so nothing has
@@ -309,7 +316,7 @@ const NOTES = {
         posHint:'E 在高音谱号的第一条线上',
         clefHint:'E 在高音谱号的第一条线上' }
 };
-const NOTE_ORDER = ['B3','C4','D4','E4','F4','G4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','F4','G4','A4'];
 const BASE_NOTES = ['B3','C4','D4'];
 ```
 
@@ -360,8 +367,9 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 
 | Item | Status | Notes |
 |---|---|---|
-| F4 and G4 | Queued | Data is in `NOTES`; they enter after E, through the same spotlight |
-| A4 and hand position | Idea | A4 is outside the C five-finger position; needs a hand-shift lesson |
+| F4 and G4 | Shipped 2026-11-03 | Enter after E through the same spotlight; the chips can also be opened directly |
+| A4 | Shipped 2026-11-03 | Queued with finger 5; the note, staff position and keyboard landmark are complete |
+| Hand-shift lesson for A4 | Idea | The current convention is "move the whole hand right, fifth finger on A"; a dedicated lesson is still needed |
 | Note names for staff lines | Idea | Skill 6 asks where line 2 is; the next step is "line 2 is G" |
 | Skill 7 in daily and pre/post | Idea | Two-note comparison is not in the daily mix or the 12-item battery yet |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
@@ -382,6 +390,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-03 | Level 7 asks for the **direction** of the two notes and uses line-and-arrow choices; the higher/lower questions alternate "which is higher" and "which is lower". The note set now runs through A4; any unlearned chip opens its spotlight |
 | 2026-11-02 | Level 7 **两个音**: two whole notes with no clef, first up/down/repeat, then tap the higher note; the last group adds one clef per question and plays the tapped pitch |
 | 2026-11-02 | Learner profiles with a four-digit local PIN, per-profile progress and a per-question practice log; parent report, CSV/JSON export, backup import, and a frozen pre/post battery |
 | 2026-11-02 | **我的音** chips are checkboxes: all skills and the daily session use only the checked notes; the daily session no longer inserts the current new note automatically |
@@ -508,8 +517,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   more than one way.
 - Skill 6 uses the clef as a distractor: the second half shows one but never names it, and
   the answer is the same in either clef. The other lines and spaces come later.
-- A4 is defined but not queued. Its fingering is left at 0 because it needs a hand shift,
-  and the spotlight has no hand-position step yet.
+- A4 is queued with finger 5, but the shift itself is not taught. The current convention is
+  "move the whole hand right"; a dedicated hand-position step is still missing.
 - F4 is 4 and G4 is 5 in the right-hand C position. The game does not check the actual
   finger, and it does not yet teach a new hand position.
 - B3 is the only left-hand note. Skill 5 is therefore right-hand heavy; the left-hand

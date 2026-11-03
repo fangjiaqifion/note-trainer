@@ -96,7 +96,7 @@
   .who:active{transform:scale(.96)}
 
   /* 「我的音」：一排可勾选的音符。勾上的进入今日练习和技能关；
-     当前新音单独脉动，点进去是导入；还没学的灰掉。
+     当前新音单独脉动，点进去是导入；还没学的灰掉，但点一下也能开始学。
      这一排是首页唯一会随音集长大的区域；下面七张技能卡永远不变，
      所以加音不会把菜单撑长。 */
   .chips-wrap{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px 2px;flex-wrap:wrap}
@@ -109,7 +109,7 @@
   .chip.learned{color:#9A8C79;border-color:var(--line);background:#fff;box-shadow:0 3px 0 #EFE6D6}
   .chip.sel{color:#fff;border-color:#3C7DD9;background:#3C7DD9;box-shadow:0 3px 0 #2F66B5}
   .chip.focus{color:#fff;border-color:#5C6B3F;background:#5C6B3F;box-shadow:0 3px 0 #46522F;animation:pulse 1.4s infinite}
-  .chip.locked{opacity:.5;background:#FBF5E9}
+  .chip.locked{opacity:.66;background:#FBF5E9}
   /* 右下角的小方框：空框＝没勾，白底勾＝今天练这个。
      方框只是反馈，整块 chip 都是点按区，孩子不用瞄准小格子。 */
   .chip .box{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:6px;border:2px solid #D8C8AE;background:#FFFDF9;display:grid;place-items:center;font-size:11px;line-height:1;color:transparent;font-weight:900;box-shadow:0 1px 3px rgba(120,90,50,.12)}
@@ -117,6 +117,8 @@
   .chip.sel .box::after{content:"✓"}
   .chip.locked .box{display:none}
   .chip .chip-new{position:absolute;top:-7px;right:-6px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;border:1.5px solid #fff;letter-spacing:0}
+  /* 还没学、也不是当前新音的 chip：右上角一个加号，提示点一下可以开始学。 */
+  .chip .chip-add{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#C9B99F;color:#fff;font-size:13px;line-height:1;font-weight:900;display:grid;place-items:center;border:1.5px solid #fff}
   .chip.focus .box{display:none}
 
   /* 今日练习：孩子只需要按这一个按钮。技能卡留给想专项练的时候。 */
@@ -261,8 +263,9 @@
   .opt.clef .unit{font-size:13px;font-weight:700;color:#6B6156}
   .opt.hand svg,.opt.finger svg{width:clamp(72px,11.5vw,96px);height:auto;display:block;margin-bottom:2px}
   .opt.hand .unit,.opt.finger .unit{font-size:13px;font-weight:700;color:#6B6156}
-  /* 第 7 关的方向选项：图标就是两个音头的高低关系，
-     孩子不识字也能先比图案；下面的字给家长看。 */
+  /* 第 7 关的方向选项：图标是一条带箭头的直线，
+     上行向右上，下行向右下，重复音是水平线。
+     孩子不识字也能先看走向；下面的字给家长看。 */
   .opt.dir{width:clamp(84px,24vw,118px);height:clamp(96px,12.5vw,122px);gap:3px}
   .opt.dir svg{width:clamp(58px,8vw,72px);height:auto;display:block}
   .opt.dir .unit{font-size:13px;font-weight:700;color:#6B6156}
@@ -820,9 +823,9 @@ const NOTES = {
         keyHint:'G 在三个黑键的第一、二之间，F 的右边',
         posHint:'G 在高音谱号的第二条线上',
         clefHint:'G 在高音谱号的第二条线上' },
-  /* A4 只登记数据，不排队。finger 先留 0，等手位课决定用 5 指移手
-     还是 1 指穿指，再把 finger 和 NOTE_ORDER 一起补上。 */
-  A4: { id:'A4', letter:'A', label:'A',      midi:69, clef:'treble', y:2.5,  hand:'R', finger:0,
+  /* A4 是右手 C 手位之后的第一个音。这里按「整只手往右移，5 指落在 A」
+     处理，先让音本身入队；以后若加手位课，再补专门的移手步骤。 */
+  A4: { id:'A4', letter:'A', label:'A',      midi:69, clef:'treble', y:2.5,  hand:'R', finger:5,
         stage:7, landmark:'三个黑键的第二、三之间',
         keyHint:'A 在三个黑键的第二、三之间，G 的右边',
         posHint:'A 在高音谱号的第二间',
@@ -838,7 +841,7 @@ const NOTES = {
 
 /* 音符队列。数组顺序就是学习顺序，首页 chips 也按它排。
    加音只改这里和 NOTES；SKILLS 会自动按进度把新音收进对应的练习。 */
-const NOTE_ORDER = ['B3','C4','D4','E4','F4','G4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','F4','G4','A4'];
 /* 一开始就会的三个音，不经过新音导入。 */
 const BASE_NOTES = ['B3','C4','D4'];
 /* 第 3 关的固定音池。它不跟音集扩：F、G、A 都是高音谱号，
@@ -985,15 +988,27 @@ function localKeyboardRange(noteId){
 }
 
 /* 新音的对比组：它自己和已经学过的左右邻居。
-   还没学的邻居先不放进来，免得在导入阶段考到没教过的音。 */
+   还没学的邻居先不放进来，免得在导入阶段考到没教过的音。
+   孩子若直接点开一个还没轮到的音，左右邻居可能都还没学：
+   这时取最近的已学音做对比；再没有就用基础音 C4，保证选项至少两个。 */
 function spotlightPool(noteId){
   const i = NOTE_ORDER.indexOf(noteId);
-  const learned = activeNotes(['key','pos']);
+  const learned = NOTE_ORDER.filter(function(id){
+    const p = S.progress[id];
+    return !!(p && p.key && p.pos);
+  });
   const out = [noteId];
   [i - 1, i + 1].forEach(function(j){
     const id = NOTE_ORDER[j];
     if(id && learned.indexOf(id) >= 0 && out.indexOf(id) < 0) out.push(id);
   });
+  if(out.length < 2){
+    const nearest = learned.filter(function(id){ return id !== noteId; }).sort(function(a, b){
+      return Math.abs(NOTE_ORDER.indexOf(a) - i) - Math.abs(NOTE_ORDER.indexOf(b) - i);
+    })[0];
+    if(nearest && out.indexOf(nearest) < 0) out.push(nearest);
+  }
+  if(out.length < 2 && out.indexOf('C4') < 0) out.push('C4');
   return out;
 }
 
@@ -1908,15 +1923,32 @@ function staffPairBlock(o){
   return '<div class="paper pair">' + staffPairSVG(o) + '</div>';
 }
 
-/* 方向选项的小图：两个空心音头，第二个比第一个高、低或一样高。
-   和谱面上的全音符同一个形状，放大缩小都不走样。 */
+/* 方向选项的小图：一条直线加箭头，表示第一个音到第二个音的走向。
+   上行是向右上的箭头，下行是向右下的箭头，重复音是两端都有箭头的水平线。
+   不用两个音头，是因为孩子会去比对音头的高低，而不是看「走向」本身。 */
+function arrowHead(tipX, tipY, ux, uy){
+  const px = -uy, py = ux, w = 4.6, back = 9;
+  const bx = tipX - back * ux, by = tipY - back * uy;
+  const p2x = bx + w * px, p2y = by + w * py;
+  const p3x = bx - w * px, p3y = by - w * py;
+  const f = function(n){ return Math.round(n * 10) / 10; };
+  return '<path d="M ' + f(tipX) + ' ' + f(tipY) +
+    ' L ' + f(p2x) + ' ' + f(p2y) +
+    ' L ' + f(p3x) + ' ' + f(p3y) + ' Z" fill="' + INK + '"/>';
+}
+
 function pairIcon(rel){
-  const ys = (rel === 'up') ? [29, 13] : (rel === 'down' ? [13, 29] : [21, 21]);
-  let g = '';
-  [0, 1].forEach(function(i){
-    const x = i ? 43 : 17;
-    g += '<ellipse cx="' + x + '" cy="' + ys[i] + '" rx="8.4" ry="4.8" transform="rotate(-18 ' + x + ' ' + ys[i] + ')" fill="none" stroke="' + INK + '" stroke-width="2.4"/>';
-  });
+  const y1 = (rel === 'up') ? 32 : (rel === 'down' ? 10 : 21);
+  const y2 = (rel === 'up') ? 10 : (rel === 'down' ? 32 : 21);
+  const x1 = (rel === 'same') ? 12 : 10;
+  const x2 = (rel === 'same') ? 48 : 50;
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  let g = '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+    '" stroke="' + INK + '" stroke-width="3.6" stroke-linecap="round"/>';
+  g += arrowHead(x2, y2, ux, uy);
+  if(rel === 'same') g += arrowHead(x1, y1, -ux, -uy);
   return '<svg class="diricon" viewBox="0 0 60 42" aria-hidden="true">' + g + '</svg>';
 }
 
@@ -2203,11 +2235,14 @@ function recordAnswer(q){
     clef: q.clef || (n ? n.clef : ''),
     spot: q.spot ? q.spot + String(q.n || '') : '',
     /* 第 7 关的几何量。其他题型没有这几项，导出成空列；
-       有了它们才能回看「上行/下行/重复」和谱面位置难在哪。 */
+       有了它们才能回看「上行/下行/重复」和谱面位置难在哪。
+       ask 记录问的是更高还是更低，target 记录这一问的正确答案是哪一个音。 */
     relation: q.relation || '',
     staffY1: (q.y1 == null ? '' : q.y1),
     staffY2: (q.y2 == null ? '' : q.y2),
     higher: (q.higher == null ? '' : q.higher),
+    ask: q.ask || '',
+    target: (q.target == null ? '' : q.target),
     diff: G.diffKey || currentDiffKey(),
     first: q.wrong ? 0 : 1,
     wrong: q.wrong || 0,
@@ -3043,9 +3078,9 @@ function qPairDirection(ys, intro){
     render: function(){
       /* 第一题把三个词各解释一次。屏幕只留问题，长句只念出来：
          孩子不识字，句子写在屏幕上只会挡住谱面。 */
-      setPrompt('这两个音怎么走？',
-        intro ? '看这两个音。第二个音比第一个音高，是上行；比第一个音低，是下行；一样高，是重复音。这两个音怎么走'
-              : '这两个音怎么走');
+      setPrompt('这两个音的走向？',
+        intro ? '看这两个音。第二个音比第一个音高，是上行；比第一个音低，是下行；一样高，是重复音。这两个音的走向'
+              : '这两个音的走向');
       stageEl.innerHTML = staffPairBlock({ ys:ys });
       const box = document.createElement('div');
       box.className = 'opts';
@@ -3079,8 +3114,14 @@ function qPairDirection(ys, intro){
   };
 }
 
-function qWhichHigher(ys, clef, intro){
+function qWhichHigher(ys, clef, intro, ask){
   const higher = ys[1] < ys[0] ? 1 : 0;
+  const lower = 1 - higher;
+  const want = (ask === 'lower') ? 'lower' : 'higher';
+  const target = (want === 'higher') ? higher : lower;
+  const word = (want === 'higher') ? '高' : '低';
+  const answerText = (want === 'higher') ? '上面的音更高' : '下面的音更低';
+  const wrongText = (want === 'higher') ? '比一比：哪个音在上面？' : '比一比：哪个音在下面？';
   const clefName = (clef === 'bass') ? '低音谱号' : '高音谱号';
   let svg = null;
 
@@ -3092,11 +3133,14 @@ function qWhichHigher(ys, clef, intro){
   }
 
   return {
-    kind:'higher', valueId:'whole', clef:clef || '', y1:ys[0], y2:ys[1], higher:higher, wrong:0,
+    kind:'higher', valueId:'whole', ask:want, clef:clef || '',
+    y1:ys[0], y2:ys[1], higher:higher, target:target, wrong:0,
     render: function(){
       const lead = clef ? clefName + '，' : '';
-      const screen = lead + '哪个音更高？点它。';
-      const spoken = (intro && clef ? '现在加上谱号。' : (intro ? '没有谱号，也能看谁在上面。' : '')) + screen;
+      const question = '两个音中的哪一个音更' + word + '？';
+      const screen = lead + question;
+      const spoken = (intro && clef ? '现在加上谱号。' : (intro ? '没有谱号，也能比高低。' : '')) +
+        lead + '两个音中的哪一个音更' + word + '，点它';
       setPrompt(screen, spoken);
       stageEl.innerHTML = staffPairBlock({ ys:ys, clef:clef, hits:true });
       svg = stageEl.querySelector('svg');
@@ -3113,21 +3157,21 @@ function qWhichHigher(ys, clef, intro){
         const i = Number(hit.dataset.i);
         const el = noteEl(i);
         if(clef) playMidi(pitchOf(i), 0.7);
-        if(i === higher){
+        if(i === target){
           if(el){ el.classList.remove('hint', 'wrong'); el.classList.add('correct'); }
-          judge(true, '对！上面的音更高');
+          judge(true, '对！' + answerText);
         }else{
           if(el) el.classList.add('wrong');
           setTimeout(function(){ if(el) el.classList.remove('wrong'); }, 480);
-          judge(false, '比一比：哪个音在上面？');
+          judge(false, wrongText);
         }
       }, { passive:false });
     },
     reveal: function(){
-      const el = noteEl(higher);
+      const el = noteEl(target);
       if(el){ el.classList.remove('wrong'); el.classList.add('hint'); }
-      setPrompt('上面的音更高', false);
-      /* 提示时把两个音按从低到高弹一遍，孩子能听到「上面」确实更响（更高）。 */
+      setPrompt(answerText, false);
+      /* 提示时把两个音按从低到高弹一遍，孩子能听到高低关系。 */
       if(clef){
         const lo = staffPitch(clef, Math.max(ys[0], ys[1])).midi;
         const hi = staffPitch(clef, Math.min(ys[0], ys[1])).midi;
@@ -3387,7 +3431,8 @@ function makeSpot(ids, n){
 
 /* 第 7 关出题。题量按难度来（轻松/标准 8，挑战 10）：
    前 3 题是方向判断，三种关系各一题；剩下的题对半分给「不加谱号」
-   和「加谱号」的哪一边更高。加谱号的一组放在最后，难度是往上走的。
+   和「加谱号」的高低判断。高低判断里「哪个更高」和「哪个更低」交替，
+   避免孩子只记住「点上面那个」。加谱号的一组放在最后，难度是往上走的。
    音高位置从 0 到 4（五条线以内），不借用音集，也不出加线。 */
 function randHalf(min, max){
   const steps = Math.max(0, Math.round((max - min) * 2));
@@ -3406,18 +3451,6 @@ function pairFor(rel, maxD){
   return (rel === 'up') ? [base + d, base] : [base, base + d];
 }
 
-/* 上行、下行交替出现，避免孩子学会「右边那个总是更高」。
-   第一个方向随机，后面每个方向都跟上一次相反。 */
-function alternateDirs(n){
-  const out = [];
-  let dir = Math.random() < 0.5 ? 'up' : 'down';
-  for(let i = 0; i < n; i++){
-    out.push(dir);
-    dir = (dir === 'up') ? 'down' : 'up';
-  }
-  return out;
-}
-
 /* 第三组每次只出现一种谱号。两种谱号交替，孩子不会靠「上次是高音谱号」
    猜；题目数量是奇数时，多出来的那一题随机落在某种谱号上。 */
 function alternateClefs(n){
@@ -3430,6 +3463,34 @@ function alternateClefs(n){
   return out;
 }
 
+/* 「哪个更高」和「哪个更低」交替出现。第一个随机，后面每个都跟上一次相反。
+   题量是奇数时，多出来的那一题随机落在某一种问法上。 */
+function alternateAsks(n){
+  const out = [];
+  let ask = Math.random() < 0.5 ? 'higher' : 'lower';
+  for(let i = 0; i < n; i++){
+    out.push(ask);
+    ask = (ask === 'higher') ? 'lower' : 'higher';
+  }
+  return out;
+}
+
+/* 高低题的两组参数：上下行对半打乱，问法严格交替。
+   两者拼起来，正确的一侧不能整组都落在同一边；如果碰巧整组同侧，
+   翻掉第一题的上下行。这样孩子不能靠「总点左边」或「总点右边」过关。 */
+function higherSpecs(n){
+  const dirs = shuffle(repeatTo(['up', 'down'], n));
+  const asks = alternateAsks(n);
+  const specs = dirs.map(function(rel, i){ return { rel:rel, ask:asks[i] }; });
+  const sides = specs.map(function(s){
+    return ((s.rel === 'up') === (s.ask === 'higher')) ? 1 : 0;
+  });
+  if(n > 1 && sides.every(function(x){ return x === sides[0]; })){
+    specs[0].rel = (specs[0].rel === 'up') ? 'down' : 'up';
+  }
+  return specs;
+}
+
 function makeTwoNotes(ids, n){
   const total = Math.max(5, n || 8);
   const qs = shuffle(['up', 'down', 'same']).map(function(rel, i){
@@ -3438,12 +3499,12 @@ function makeTwoNotes(ids, n){
   const rest = total - 3;
   const bN = Math.max(1, Math.floor(rest / 2));
   const cN = Math.max(1, rest - bN);
-  alternateDirs(bN).forEach(function(rel, i){
-    qs.push(qWhichHigher(pairFor(rel, 2.5), null, i === 0));
+  higherSpecs(bN).forEach(function(s, i){
+    qs.push(qWhichHigher(pairFor(s.rel, 2.5), null, i === 0, s.ask));
   });
   const clefs = alternateClefs(cN);
-  alternateDirs(cN).forEach(function(rel, i){
-    qs.push(qWhichHigher(pairFor(rel, 3), clefs[i], i === 0));
+  higherSpecs(cN).forEach(function(s, i){
+    qs.push(qWhichHigher(pairFor(s.rel, 3), clefs[i], i === 0, s.ask));
   });
   return qs;
 }
@@ -3475,7 +3536,7 @@ function spotlightQuestions(noteId, from, count){
 
 /* 今日练习：只练勾选的音，10 题。
    2 题复习（最久没练的音）+ 2 题找键 + 2 题时值 + 1 题手/指/按住 +
-   3 题谱 ↔ 键。新音不自动塞进这节课：它由「我的音」里脉动的 chip
+   3 题谱 ↔ 键。新音不自动塞进这节课：它由「我的音」里那个音的 chip
    进入，家长想让孩子学新音时再点。
    没有学过指法的音时，把那一题换成谱 ↔ 键，题量仍是 10。 */
 function buildDailySession(){
@@ -3558,6 +3619,17 @@ function startDaily(){
   G.level = 0;
   G.spotNote = null; G.spotFrom = 0; G.spotCount = 0;
   startSession('今日练习', buildDailySession);
+}
+
+/* 直接点一个还没学的音：把它设为当前新音，从第一步开始导入。
+   首页上 F、G、A 的灰 chip 因此不再是死按钮；家长点谁就学谁，
+   「下一个音」按钮仍然保留，作为按顺序学的引导。 */
+function startNoteImport(noteId){
+  if(!NOTES[noteId] || noteComplete(noteId)) return;
+  S.focus = noteId;
+  S.spot = { note:noteId, step:0 };
+  saveStore();
+  startSpotlight();
 }
 
 /* 新音导入：只练当前新音，每次四步。 */
@@ -3740,7 +3812,8 @@ function showHome(){
 /* 「我的音」：每个音一个 chip。
    已学：点一下勾选 / 取消，决定今日练习和技能关练哪几个音；
    当前新音：脉动，点进去是新音导入；
-   还没学：灰掉，点了只提示，不会开始练习。 */
+   还没学：也可以点，直接把这个音设为当前新音并开始导入。
+   这样 F、G、A 不必等「下一个音」按钮出现才学得到；家长点谁就学谁。 */
 function renderChips(){
   const box = $('#noteChips');
   if(!box) return;
@@ -3753,15 +3826,16 @@ function renderChips(){
     const b = document.createElement('button');
     b.className = 'chip ' + (done ? (sel ? 'sel' : 'learned') : (focus ? 'focus' : 'locked'));
     b.dataset.note = id;
-    b.setAttribute('aria-label', n.label + (done ? (sel ? '，已勾选' : '，未勾选') : '，还没学'));
+    b.setAttribute('aria-label', n.label + (done ? (sel ? '，已勾选' : '，未勾选') : '，还没学，点一下开始学'));
     if(done) b.setAttribute('aria-pressed', sel ? 'true' : 'false');
     b.innerHTML = '<span class="chip-letter">' + n.letter + '</span>' +
                   (done ? '<span class="box"></span>' : '') +
-                  (focus ? '<span class="chip-new">新</span>' : '');
+                  (focus ? '<span class="chip-new">新</span>' : (done ? '' : '<span class="chip-add">+</span>'));
+    if(!done) b.title = '点一下开始学 ' + n.letter;
     b.addEventListener('click', function(){
       if(done) toggleSelectedNote(id);
       else if(focus) startSpotlight();
-      else toast('这个音还没学', 'bad');
+      else startNoteImport(id);
     });
     box.appendChild(b);
   });
@@ -4339,14 +4413,14 @@ function exportCsv(){
   const head = ['participant', 'display_name', 'event_seq', 'datetime_iso', 'date_local', 'session_id',
     'phase', 'mode', 'skill', 'kind', 'note', 'letter', 'value', 'clef', 'line_space',
     'difficulty', 'first_try', 'wrong_count', 'response_ms', 'battery',
-    'relation', 'staff_y1', 'staff_y2', 'higher'];
+    'relation', 'staff_y1', 'staff_y2', 'higher', 'ask', 'target'];
   const rows = [head];
   S.events.forEach(function(e){
     const d = new Date(e.t);
     rows.push([CURRENT.id, CURRENT.name, e.seq, d.toISOString(), dayKey(d), e.sid,
       e.phase, e.mode, e.skill, e.kind, e.note, e.letter, e.value, e.clef, e.spot,
       e.diff, e.first, e.wrong, e.ms, e.battery,
-      e.relation, e.staffY1, e.staffY2, e.higher]);
+      e.relation, e.staffY1, e.staffY2, e.higher, e.ask, e.target]);
   });
   const text = '\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
   download('note-trainer_' + safeName(CURRENT.name) + '_' + dayKey(new Date()) + '.csv',
