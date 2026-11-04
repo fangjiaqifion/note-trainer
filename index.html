@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="0b38711202">
+<meta name="app-build" content="f81186d7a2">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -1249,11 +1249,13 @@ const DIFFS = {
    密码只挡住「换到别人的账户」，不是加密：同一台设备上能打开
    localStorage 的人仍然可以读到数据。研究数据请定期导出 CSV，
    并用编号（P01）代替真实姓名。 */
-const STORE_KEY = 'bcd-piano-game-v2';       // 旧版单账户存档，只用于迁移
-const ACCOUNTS_KEY = 'nt.accounts.v1';
-const STATE_PREFIX = 'nt.state.';
+const SYNC_TEST = ['127.0.0.1','localhost'].includes(location.hostname) && new URLSearchParams(location.search).get('sync_test') === '1';
+const STORE_KEY = SYNC_TEST ? 'nt.sync-test.legacy' : 'bcd-piano-game-v2';       // 旧版单账户存档，只用于迁移
+const ACCOUNTS_KEY = SYNC_TEST ? 'nt.sync-test.accounts.v1' : 'nt.accounts.v1';
+const STATE_PREFIX = SYNC_TEST ? 'nt.sync-test.state.' : 'nt.state.';
 const SCHEMA_VERSION = 3;
-const EVENT_LIMIT = 8000;                    // 约 2 年每日 10 题；超过就删最旧的
+// 保留全部记录；存储满时提示导出，不静默裁剪研究记录。
+
 
 function readJSON(key){
   try { return JSON.parse(localStorage.getItem(key)); } catch(e){ return null; }
@@ -1345,7 +1347,10 @@ function warnStorage(){
 function saveStore(){
   if(!CURRENT || !S) return;
   S.updatedAt = Date.now();
-  if(writeJSON(stateKey(CURRENT.id), S)) storageWarned = false;
+  if(writeJSON(stateKey(CURRENT.id), S)){
+    storageWarned = false;
+    if(SYNC_TEST) window.dispatchEvent(new Event('nt-test-saved'));
+  }
   else warnStorage();
 }
 /* 答题记录每写一条就整份序列化一次，在 iPad 上会卡。
@@ -1683,7 +1688,7 @@ function audioCtx(){
     if(!Ctor) return null;
     AC = new Ctor();
   }
-  if(AC.state === 'suspended') AC.resume();
+  if(AC.state === 'suspended') AC.resume().catch(function(){ /* 启动检测提供重试。 */ });
   return AC;
 }
 /* ==================== 钢琴音色 ====================
@@ -2529,14 +2534,15 @@ function recordAnswer(q){
     wrong: q.wrong || 0,
     ms: Math.max(0, Math.round(performance.now() - (q._shownAt || performance.now())))
   };
+  if(SYNC_TEST) e.id = crypto.randomUUID();
   S.events.push(e);
-  if(S.events.length > EVENT_LIMIT) S.events.splice(0, S.events.length - EVENT_LIMIT);
   /* 新音导入每答对一题就记住走到第几步。中途按返回时，
      下次从下一题接着走，而不是从第 1 题重来。 */
   if(G.mode === 'spotlight' && G.spotNote){
     advanceSpotlight((G.spotFrom || 0) + G.i + 1);
   }
-  saveStoreSoon();
+  // 答题先完整落盘，测试同步只读取落盘成功的数据。
+  saveStore();
 }
 
 /* 换题：先停掉上一题的按住与长音，再清空舞台、答案区、状态，
@@ -4600,8 +4606,7 @@ function renderWho(){
   }
   const ce = $('#clearEventsDesc');
   if(ce){
-    ce.textContent = '当前 ' + S.events.length + ' 条（上限 ' + EVENT_LIMIT +
-      '）；只清记录，保留进度、星星和勾选';
+    ce.textContent = '当前 ' + S.events.length + ' 条；只清记录，保留进度、星星和勾选';
   }
 }
 
@@ -5906,7 +5911,60 @@ if(expectedBuild && expectedBuild !== actualBuild){
 }
 bindAccountUI();
 renderBuildTag();
-bootApp();
+if(!SYNC_TEST) bootApp();
+function bootSyncTest(){
+  const panel = document.createElement('div');
+  panel.style.cssText = 'position:fixed;z-index:10000;bottom:4px;left:4px;right:4px;background:#fffbe9;border:2px solid #c79431;border-radius:12px;padding:8px;font-size:13px;max-height:35vh;overflow:auto';
+  panel.innerHTML = '<b>隔离测试模式 · 只使用新建测试档案</b> <button id="syncNew">新建测试档案</button> <button id="syncSwitch">切换测试档案</button> <button id="syncCheck">启动检测 / 重试</button> <button id="syncVerify">核对服务器</button> <button id="syncLose">测试回执丢失一次</button> <button id="syncBackup">备份测试档案</button><div id="syncStatus" role="status">尚未检测；本机练习可用</div><div id="audioStatus"></div>';
+  document.body.appendChild(panel);
+  $('#syncNew').onclick = function(){
+    flushStore(); G.session++; stopAllTones(); document.body.classList.remove('in-play');
+    const acc={id:'test-'+crypto.randomUUID(),name:'TEST-'+(ACCOUNTS.accounts.length+1),color:ACCOUNT_COLORS[0],createdAt:Date.now()};
+    const st=newState();
+    if(!writeJSON(stateKey(acc.id),st)){ warnStorage();return; }
+    ACCOUNTS.accounts.push(acc);saveAccounts();enterAccount(acc.id);
+  };
+  $('#syncSwitch').onclick = function(){
+    G.session++; stopAllTones(); document.body.classList.remove('in-play');
+    const i=ACCOUNTS.accounts.findIndex(function(a){ return CURRENT && a.id===CURRENT.id; });
+    if(ACCOUNTS.accounts.length) enterAccount(ACCOUNTS.accounts[(i+1)%ACCOUNTS.accounts.length].id);
+  };
+  let syncModule;
+  const ready = import('./sync_test.mjs').then(function(m){
+    syncModule = m.createGameSync({storage:localStorage, report:function(text){ $('#syncStatus').textContent = text; }});
+    return syncModule;
+  }).catch(function(){ $('#syncStatus').textContent = '同步组件加载失败；可离线练习，刷新后重试'; return null; });
+  $('#syncCheck').onclick = function(){
+    // 同一个用户手势里唤醒音频，同时启动网络检查，互不阻塞。
+    const begun = performance.now();
+    const c = audioCtx();
+    $('#audioStatus').textContent = '琴声引擎检测中…';
+    let timeout;
+    Promise.race([c ? c.resume() : Promise.reject(new Error()), new Promise(function(_,reject){ timeout=setTimeout(reject,4000); })]).then(function(){
+      if(c.state !== 'running') throw new Error();
+      roomReverb(c); loadVoices();
+      $('#audioStatus').textContent = '琴声引擎就绪 ' + Math.round(performance.now()-begun) + ' ms；中文语音' + (zhVoice?'已找到':'未就绪') + '，英文语音' + (enVoice?'已找到':'未就绪') + '。请用设置中的试听确认实际出声。';
+    }).catch(function(){ $('#audioStatus').textContent = '音频未就绪，请重试；仍可关闭声音练习。'; }).finally(function(){ clearTimeout(timeout); });
+    ready.then(function(m){ if(m) m.check(); });
+  };
+  $('#syncLose').onclick = function(){ ready.then(function(m){ if(m) m.simulateResponseLoss(); }); };
+  $('#syncVerify').onclick = function(){ ready.then(function(m){ if(m) m.verify(); }); };
+  $('#syncBackup').onclick = function(){
+    flushStore();
+    const data={v:1, accounts:ACCOUNTS, states:{}};
+    ACCOUNTS.accounts.forEach(function(a){ data.states[a.id]=readJSON(stateKey(a.id)); });
+    download('note-trainer_test_backup.json', JSON.stringify(data), 'application/json');
+  };
+}
+
+if(SYNC_TEST){
+  if(!navigator.locks) document.body.textContent='此浏览器不支持安全的测试同步锁，请换浏览器；正常练习不受影响。';
+  else navigator.locks.request('nt.sync-test.game',{ifAvailable:true},async function(lock){
+    if(!lock){ document.body.textContent='隔离测试已在另一个标签页打开，请回到原标签页，避免同时覆盖档案。'; return; }
+    bootApp();bootSyncTest();
+    await new Promise(function(){}); // Hold one game writer until the tab closes/reloads.
+  });
+}
 if(releaseParams.has('verify')){
   document.title = 'note-trainer-ready:' + actualBuild + ':' + releaseParams.get('verify');
   try{

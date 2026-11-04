@@ -119,9 +119,9 @@ contains:
 | `response_ms` | Time from the question appearing to the correct answer |
 
 Accuracy is `first_try / questions`; the error rate is its complement. `wrong_count` keeps
-the retries that a single accuracy figure hides. The log is capped at 8000 rows (about two
-years of ten questions a day); export before clearing it. The teacher panel shows the current
-count.
+the retries that a single accuracy figure hides. Each completed answer is saved immediately.
+The log retains older records rather than trimming them at 8000 rows. Export backups regularly;
+if browser storage fills up, the app asks you to export. The teacher panel shows the current count.
 
 ### Practice report
 
@@ -510,6 +510,7 @@ date rather than semver.
 | 2026-11-04 | Question generators space out adjacent notes: skill 3 balances B/C/D and never shows C twice in a row (C4 and C4B count as C), and skills 2, 4, 5, 8 and 9 and the daily mix use a shared `spaceOut` pass |
 | 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
+| 2026-11-05 | Completed answers save immediately; older records are retained beyond 8000 rows. A separate local test mode checks game-generated answers against Supabase and reports startup audio/network timing |
 | 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
 | 2026-11-04 | Skill 8 asks only for the position: **这个音在（高/低）谱号的（上/下）加（数字）（线/间）** with four dropdowns. The note-name dropdown is gone because students do not yet know the pitch outside the staff |
 | 2026-11-04 | The play screen keeps the question and answer together directly below the prompt; the keyboard is no longer pinned to the bottom edge. The new-note keyboard step marks an octave already found and asks for another A instead of silently requiring A3 |
@@ -750,8 +751,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 - The PIN is a local switch guard, not encryption. A four-digit PIN has little strength, and
   the hash protects only against casual reading. Anyone with the unlocked device and developer
   tools can read the log.
-- The log is capped at 8000 rows. Older rows are dropped silently when the cap is reached; the
-  teacher panel shows the current count.
+- The log is limited by browser storage capacity. Export regularly; a full browser store can
+  prevent new saves. Cloud sync is an isolated loopback test feature and is not enabled for learners.
 - One JSON backup covers one profile. A device with several profiles needs one export per
   profile; the teacher console's CSV export covers all profiles at once.
 - The test battery is frozen at pre-test. If the child learns new notes before the post-test,

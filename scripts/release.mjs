@@ -110,7 +110,7 @@ async function stampBuild(){
   const index = await readFile(indexPath, 'utf8');
   const stripped = index.replace(/[ \t]*<meta name="app-build" content="[^"]*">\s*\n?/, '');
   const parts = [Buffer.from(stripped, 'utf8')];
-  for(const name of ['manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'clear-cache.html', 'sw.js']){
+  for(const name of ['sync_test.mjs','experiments/supabase_sync/transport.mjs','manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'clear-cache.html', 'sw.js']){
     const bytes = await readFile(join(ROOT, name));
     parts.push(name === 'sw.js' ? Buffer.from(bytes.toString().replace(/const CACHE = 'note-trainer-[^']*';/, "const CACHE = 'note-trainer-BUILD';")) : bytes);
   }

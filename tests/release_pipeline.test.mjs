@@ -1,8 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,writeFile,rm,readFile} from 'node:fs/promises';
+import {mkdtemp,writeFile,rm,readFile,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,dirname} from 'node:path';
 import {createServer} from 'node:http';
 import {fileURLToPath} from 'node:url';
 import {ASSETS,writeIntegrity,verifyRelease,validateManifest} from '../scripts/release_integrity.mjs';
@@ -21,9 +21,9 @@ test('完整性核验拦截混合部署、旧构建、错误页与缺失清单',
     res.end(old && file==='release.json' ? JSON.stringify({...manifest,build:'0000000000'}) : bytes);
   });
   try{
-    for(const file of ASSETS) await writeFile(join(root,file),file==='index.html'
+    for(const file of ASSETS){ await mkdir(dirname(join(root,file)),{recursive:true}); await writeFile(join(root,file),file==='index.html'
       ? '<meta name="app-build" content="'+build+'">'
-      : file==='sw.js' ? "const CACHE = 'note-trainer-"+build+"';" : 'fixture '+file);
+      : file==='sw.js' ? "const CACHE = 'note-trainer-"+build+"';" : 'fixture '+file); }
     var manifest=await writeIntegrity(root,build);
     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
     const base='http://127.0.0.1:'+server.address().port+'/';

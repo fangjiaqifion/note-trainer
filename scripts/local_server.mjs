@@ -10,7 +10,7 @@ const port = Number(process.argv[2] || 8765);
 const serverSignature = createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex');
 const receipts = new Map();
 const mime = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
-  '.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'};
+  '.mjs':'text/javascript; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'};
 const server = createServer(async (req,res) => {
   res.setHeader('Cache-Control','no-store, max-age=0');
   res.setHeader('Pragma','no-cache');
@@ -18,6 +18,18 @@ const server = createServer(async (req,res) => {
   try{
     const url = new URL(req.url,'http://localhost');
     const path = decodeURIComponent(url.pathname);
+    if(path === '/__sync_test/config'){
+      const loopback=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+      const host=req.headers.host || '';
+      if(!loopback || !/^(127\.0\.0\.1|localhost):[0-9]+$/.test(host) || (req.headers.origin && req.headers.origin !== 'http://'+host)){
+        res.writeHead(403);res.end('loopback only');return;
+      }
+      const text=await readFile(resolve(root,'secrets/api_keys.md'),'utf8');
+      const key=text.match(/^SUPABASE_PUBLISHABLE_KEY=(\S+)\s*$/m)?.[1];
+      if(!key?.startsWith('sb_publishable_')) throw new Error('no test key');
+      res.writeHead(200,{'Content-Type':'application/json'});
+      res.end(JSON.stringify({url:'https://pokrwqirkjcjlworttvk.supabase.co',publishableKey:key}));return;
+    }
     if(path.startsWith('/__release/')){
       if(!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)){
         res.writeHead(403);res.end('loopback only');return;
@@ -53,6 +65,7 @@ const server = createServer(async (req,res) => {
       }
       res.writeHead(404);res.end('{}');return;
     }
+    if(path.startsWith('/secrets/')) throw new Error('private path');
     if(path.split('/').some(part => part.startsWith('.') && part !== '')) throw new Error('private path');
     const target = await realpath(resolve(root,'.' + (path === '/' ? '/index.html' : path)));
     if(!target.startsWith(root + sep)) throw new Error('outside root');

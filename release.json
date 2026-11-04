@@ -1,11 +1,13 @@
 {
   "schema": 1,
-  "build": "0b38711202",
+  "build": "f81186d7a2",
   "files": {
-    "index.html": "926e9ffd5dc8e7b7f924e93624f928ba57dda2928266100204bfb789ab4a96cc",
-    "sw.js": "cf5fc4f6dad10b6438c0cd06a64c1ad782e48746241c6a2299a4822b22c19e8c",
-    "clear-cache.html": "aa8809bfb8aeebf1baf1ecd66c106bd27a723dfc4335891ce15e5f23823d1ffa",
+    "index.html": "5e374beded43f4a037935a7bd1fc5989eac9b68a88c3d67b4a6207d240a29886",
+    "sw.js": "11f28e7d5321fc4a74973ab7aa44618032934b645d11420e2bac09fab8a1128b",
+    "clear-cache.html": "bfcced0d88f655520803ae83ef941e2e0dcff6fb356ae8c36f44040cb27aa116",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
+    "sync_test.mjs": "a867e565553a3f2a1b0ce8c6648bb45e43573bf7a2a13c2efed27ba0c7ec7ae3",
+    "experiments/supabase_sync/transport.mjs": "7f043e4d854f0b297c2b412f09a6cc33c970007ee13ac92e0d834b4babe2df64",
     "icon.svg": "9e1dfd6d6b77e7b761478ff88275a5a353c9a4def43886c6f9de4f50806586e4",
     "icon-180.png": "71e841e512a2b14879931b23afb6c7f07a9f90bb74033c911f997a107073df01",
     "icon-192.png": "0550789495af0da0879dc89849585ee336922597e4abee3fa33e3520133c80ce",

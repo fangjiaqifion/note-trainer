@@ -6,7 +6,7 @@ export function createTransport({url, publishableKey, storage, sessionKey, fetch
   async function request(path, body, token) {
     const headers = {'content-type':'application/json', apikey:publishableKey};
     if (token) headers.authorization = 'Bearer ' + token;
-    const response = await fetchImpl(endpoint + path, {method:'POST', headers, body:JSON.stringify(body)});
+    const response = await fetchImpl(endpoint + path, {method:'POST', headers, body:JSON.stringify(body), signal:AbortSignal.timeout(8000)});
     if (!response.ok) throw new Error('Supabase request failed (' + response.status + ')');
     return response.json();
   }
