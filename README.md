@@ -584,6 +584,20 @@ The script prints two addresses: `http://127.0.0.1:8765/index.html` for this Mac
 `http://<Mac LAN IP>:8765/index.html` for the iPad on the same Wi-Fi. Closing the lid or the
 terminal stops it.
 
+### Clean local test link
+
+For a local test, start a fresh port instead of reusing an old one:
+
+```bash
+bash serve.sh 8773
+```
+
+A new port is a new browser origin. Chrome and Safari then start with no cookies, no
+`localStorage`, and no service worker cache for the test, without touching the rest of the
+browser profile. Give both the loopback and LAN links, and tell the tester which port is new.
+The app itself does not use cookies; profiles, checked notes and the practice log are in
+`localStorage`, and the offline cache is a service worker.
+
 Opening `index.html` directly also renders, but the service worker will not register from
 `file://`, so offline mode is only available over http(s).
 
@@ -597,7 +611,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v16`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v23`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README
