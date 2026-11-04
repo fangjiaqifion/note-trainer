@@ -258,6 +258,33 @@ async function answerOne(page){
   }, prev, { timeout: 6000 });
 }
 
+async function ledgerCheck(page){
+  const info = await page.evaluate(function(){
+    const d = window.__dbg;
+    const qs = d.buildQuestions(8);
+    const q = qs[0];
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelector('#play').classList.add('active');
+    const stage = document.querySelector('#stage');
+    const answer = document.querySelector('#answer');
+    stage.className = 'stage';
+    answer.className = 'answer';
+    stage.innerHTML = '';
+    answer.innerHTML = '';
+    d.G.q = q;
+    q.answered = true;
+    q.render();
+    const sel = document.querySelector('.ledger-sentence select[data-key="num"]');
+    return {
+      count: qs.length,
+      numbers: sel ? Array.from(sel.options).map(function(o){ return o.value; }).filter(Boolean) : []
+    };
+  });
+  assert.equal(info.count, 6, 'skill 8 must have six questions');
+  assert.deepEqual(info.numbers, ['1', '2', '3', '4', '5', '6', '7', '8'],
+    'skill 8 number choices must always be 1-8');
+}
+
 async function spotlightCheck(page){
   await page.evaluate(function(){
     const d = window.__dbg;
@@ -352,6 +379,9 @@ async function main(){
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
+
+    await ledgerCheck(page);
+    console.log('PASS level 8: 6 questions, numbers 1-8');
 
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');

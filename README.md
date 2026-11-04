@@ -227,7 +227,7 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four dropdowns: treble/bass, above/below, number, line/space (the note name is not asked) | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four dropdowns: treble/bass, above/below, number 1–8, line/space (the note name is not asked); six questions per session | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighbouring, third, ledger-count and mirror pairs) | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
@@ -497,6 +497,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
 | 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
 | 2026-11-04 | Skill 8 asks only for the position: **这个音在（高/低）谱号的（上/下）加（数字）（线/间）** with four dropdowns. The note-name dropdown is gone because students do not yet know the pitch outside the staff |
@@ -630,7 +631,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v25`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v26`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README

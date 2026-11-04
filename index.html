@@ -1107,7 +1107,8 @@ const SKILLS = [
     needs:[], pool:'none', make:makeTwoNotes },
   { id:8, key:'ledger', name:'加线加间', title:'谱表外的加线加间',
     desc:'补全音名、谱号、上下加和第几线间', color:'#4C8C6A',
-    needs:[], pool:'none', make:makeLedger },
+    needs:[], pool:'none', make:makeLedger,
+    count:function(){ return 6; } },
   { id:9, key:'contrast', name:'易混音', title:'容易混的音',
     desc:'相邻、加线、同一音的不同写法，点出目标音', color:'#6C63B5',
     needs:[], pool:'none', make:makeContrast }
@@ -3812,7 +3813,7 @@ function makeTwoNotes(ids, n){
    先判断上加还是下加，再数第几线或第几间。谱号画在谱表上，
    题干点名，答案只答方向和数量；完整说法在答对/提示时给出。 */
 
-const CN_NUM = ['一','二','三','四','五','六'];
+const CN_NUM = ['一','二','三','四','五','六','七','八'];
 function cnNum(n){ return CN_NUM[n - 1] || String(n); }
 
 /* 谱面位置的说法。y 的坐标和 staffSVG 一致：
@@ -3918,7 +3919,11 @@ function qLedgerName(spot){
       row.appendChild(text('谱号的'));
       select('dir', '上加或下加', [['up','上'],['down','下']]);
       row.appendChild(text('加'));
-      select('num', '第几条', [[1,'一'],[2,'二'],[3,'三']]);
+      /* 数字固定一到八：孩子不能靠「只有三个选项」反推答案在第几线。
+         正确位置最多到三，但选项始终给满。 */
+      const numOptions = [];
+      for(let n = 1; n <= 8; n++) numOptions.push([n, cnNum(n)]);
+      select('num', '第几条', numOptions);
       select('kind', '线或间', [['line','线'],['space','间']]);
       answerEl.appendChild(row);
 
