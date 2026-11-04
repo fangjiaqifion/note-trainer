@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "build": "f81186d7a2",
+  "build": "34156b64c6",
   "files": {
-    "index.html": "5e374beded43f4a037935a7bd1fc5989eac9b68a88c3d67b4a6207d240a29886",
-    "sw.js": "11f28e7d5321fc4a74973ab7aa44618032934b645d11420e2bac09fab8a1128b",
+    "index.html": "082b8248f49ef1ebd6d4bcfc91760d9679252209fea6f972e12eae799ce654a2",
+    "sw.js": "59976635217e331cb6752688a1e20ec03a5880d2354ae32fbce6beaa53b9ee8c",
     "clear-cache.html": "bfcced0d88f655520803ae83ef941e2e0dcff6fb356ae8c36f44040cb27aa116",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
-    "sync_test.mjs": "a867e565553a3f2a1b0ce8c6648bb45e43573bf7a2a13c2efed27ba0c7ec7ae3",
-    "experiments/supabase_sync/transport.mjs": "7f043e4d854f0b297c2b412f09a6cc33c970007ee13ac92e0d834b4babe2df64",
+    "sync_test.mjs": "c7039b0a0779fb7edd461d505aa92b79f71956d3698279a36f9675d3b932a805",
+    "experiments/supabase_sync/transport.mjs": "6ac64861ca21ddec04b06938434f81ea355300488b0d4140ed48ccd0107e6cb9",
     "icon.svg": "9e1dfd6d6b77e7b761478ff88275a5a353c9a4def43886c6f9de4f50806586e4",
     "icon-180.png": "71e841e512a2b14879931b23afb6c7f07a9f90bb74033c911f997a107073df01",
     "icon-192.png": "0550789495af0da0879dc89849585ee336922597e4abee3fa33e3520133c80ce",

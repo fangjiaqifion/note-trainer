@@ -510,6 +510,7 @@ date rather than semver.
 | 2026-11-04 | Question generators space out adjacent notes: skill 3 balances B/C/D and never shows C twice in a row (C4 and C4B count as C), and skills 2, 4, 5, 8 and 9 and the daily mix use a shared `spaceOut` pass |
 | 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
+| 2026-11-05 | Isolated sync tests batch saved answers on a bounded ten-second window, back off on temporary failures, pause on identity/configuration errors, and support remote test pages without publishing a database key |
 | 2026-11-05 | Completed answers save immediately; older records are retained beyond 8000 rows. A separate local test mode checks game-generated answers against Supabase and reports startup audio/network timing |
 | 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
 | 2026-11-04 | Skill 8 asks only for the position: **这个音在（高/低）谱号的（上/下）加（数字）（线/间）** with four dropdowns. The note-name dropdown is gone because students do not yet know the pitch outside the staff |
@@ -752,7 +753,7 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   the hash protects only against casual reading. Anyone with the unlocked device and developer
   tools can read the log.
 - The log is limited by browser storage capacity. Export regularly; a full browser store can
-  prevent new saves. Cloud sync is an isolated loopback test feature and is not enabled for learners.
+  prevent new saves. Cloud sync is an explicitly enabled isolated test feature and is not enabled for learners.
 - One JSON backup covers one profile. A device with several profiles needs one export per
   profile; the teacher console's CSV export covers all profiles at once.
 - The test battery is frozen at pre-test. If the child learns new notes before the post-test,

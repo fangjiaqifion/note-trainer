@@ -12,6 +12,8 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
+const REMOTE_BASE=process.env.NT_REMOTE_TEST_BASE;
+if(REMOTE_BASE && REMOTE_BASE !== 'https://fangjiaqifion.github.io/note-trainer/') throw new Error('Unexpected remote test destination');
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -523,6 +525,7 @@ async function reportCheck(page){
    先种一个本游戏的旧缓存和一个别家缓存，清完只掉本游戏的缓存，
    localStorage 必须保留。 */
 async function cacheResetCheck(browser, port){
+  const base=REMOTE_BASE || 'http://127.0.0.1:'+port+'/';
   const context = await browser.newContext({
     viewport: { width: 820, height: 1180 },
     serviceWorkers: 'allow'
@@ -530,14 +533,14 @@ async function cacheResetCheck(browser, port){
   await seedLocalStorage(context);
   const page = await context.newPage();
   try{
-    await page.goto('http://127.0.0.1:' + port + '/manifest.webmanifest');
+    await page.goto(base + 'manifest.webmanifest');
     await page.evaluate(async function(){
       const other = await caches.open('other-app-cache');
       await other.put('./other', new Response('keep'));
       const sibling = await caches.open('note-trainer-sibling@' + location.origin + '/another-game/');
       await sibling.put('./sibling', new Response('keep sibling'));
     });
-    await page.goto('http://127.0.0.1:' + port + '/index.html');
+    await page.goto(base + 'index.html');
     await page.waitForSelector('#home.active');
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
     const before = await page.evaluate(async function(){
@@ -557,7 +560,7 @@ async function cacheResetCheck(browser, port){
     assert.ok(before.caches.includes('other-app-cache'), 'worker activation must preserve unrelated caches');
     assert.ok(before.caches.some(k => k.includes('sibling@')), 'worker activation must preserve sibling scope');
 
-    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&next=%2Findex.html');
+    await page.goto(base + 'clear-cache.html?stay=1&next=%2Findex.html');
     await page.waitForFunction(function(){
       return document.querySelector('h1').textContent === '缓存已清理';
     }, null, { timeout: 8000 });
@@ -579,7 +582,7 @@ async function cacheResetCheck(browser, port){
     assert.equal(await page.title(), 'note-trainer-cache:ok:', 'successful reset must send a completion receipt');
 
     // SW 开启时的真实升级/离线路径，不能把清理页缓存成游戏首页。
-    await page.goto('http://127.0.0.1:' + port + '/index.html');
+    await page.goto(base + 'index.html');
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
     await context.setOffline(true);
     await page.reload();
@@ -588,16 +591,16 @@ async function cacheResetCheck(browser, port){
     await context.setOffline(false);
 
     const build = await page.locator('meta[name="app-build"]').getAttribute('content');
-    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?launch=1&token=auto&build=' + build);
+    await page.goto(base + 'clear-cache.html?launch=1&token=auto&build=' + build);
     await page.waitForFunction(expected => document.title === 'note-trainer-ready:' + expected + ':auto', build);
     assert.equal(new URL(page.url()).searchParams.get('build'), build, 'reset must open the verified build');
 
     await page.route('**/manifest.webmanifest', route => route.fulfill({status:500,body:'test failure'}));
-    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&token=failure');
+    await page.goto(base + 'clear-cache.html?stay=1&token=failure');
     await page.waitForFunction(() => document.documentElement.dataset.cacheStatus === 'failed');
     assert.equal(await page.title(), 'note-trainer-cache:failed:failure', 'HTTP errors must not report a successful reset');
 
-    await page.goto('http://127.0.0.1:' + port + '/index.html?build=0000000000&verify=old-page');
+    await page.goto(base + 'index.html?build=0000000000&verify=old-page');
     assert.equal(await page.title(), 'note-trainer-load:failed:old-page', 'an old page must not claim the requested build');
     assert.match(await page.locator('body').innerText(), /版本尚未更新/);
 
@@ -607,7 +610,7 @@ async function cacheResetCheck(browser, port){
         value:() => new Promise(() => {})
       });
     });
-    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&token=hang');
+    await page.goto(base + 'clear-cache.html?stay=1&token=hang');
     await page.waitForFunction(() => document.documentElement.dataset.cacheStatus === 'failed', null, {timeout:12000});
     assert.equal(await page.title(),'note-trainer-cache:failed:hang');
     assert.match(await page.locator('body').innerText(),/service-worker 超时/);
@@ -619,6 +622,8 @@ async function cacheResetCheck(browser, port){
 async function main(){
   const server = await startServer();
   const port = server.address().port;
+  const base=REMOTE_BASE || 'http://127.0.0.1:'+port+'/';
+  console.log('Test destination: '+base);
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   const context = await browser.newContext({
     viewport: { width: 820, height: 1180 },
@@ -631,7 +636,7 @@ async function main(){
 
   try{
     await seedLocalStorage(context);
-    await page.goto('http://127.0.0.1:' + port + '/index.html');
+    await page.goto(base + 'index.html');
     await page.waitForSelector('#home.active');
 
     const cards = await page.evaluate(function(){
