@@ -188,14 +188,15 @@ These are teacher-only. A normal learner profile does not show them.
 ## Layout
 
 The play screen reads top to bottom: prompt, question, answer, empty space. The question
-stage no longer absorbs the leftover height, so the keyboard is not pushed to the bottom edge.
+stage no longer absorbs the leftover height, so the answer is not pushed to the bottom edge.
 The stage and the answer area follow the prompt immediately and stay top-aligned; the extra
-space stays below them. When a question also offers choices (the keyboard → staff direction of
-skill 2), the choices sit directly above the keyboard inside the answer area. The relative
-order is always question, then choices or keyboard, then empty space; the keyboard never
-jumps between the middle and the bottom edge. On very short landscape screens (max-height
-520px, such as a phone on its side) the prompt, large letter and key height shrink together so
-the whole keyboard stays visible.
+space stays below them. The keyboard is placed by its role: in the staff → keyboard direction
+it is the answer and sits below the staff; in keyboard → staff it is the question and sits
+above the staff choices. The order is always question first, then options, then empty space.
+
+On very short landscape screens (max-height 520px, such as a phone on its side) the play screen
+becomes two columns: question on the left, answer on the right. The staff is sized from the
+column width instead of a fixed `vh`, so neither the staff nor the keyboard is clipped.
 
 The local keyboard in the first spotlight step shows only one black-key group. It keeps the
 same key width as the full keyboard: its container is 3/15 (or 4/15) of the keyboard width and
@@ -457,9 +458,9 @@ Add one entry to `SKILLS` and one `make` function:
 objects with the same `{ kind, render(), reveal() }` interface as the existing factories.
 `buildQuestions` is a registry lookup now, not a chain of `if`/`else`, so adding a skill does
 not touch the note data or the other skills. `id` is also the display number and the star key;
-it must stay unique, and adding an eighth card changes the home grid.
+it must stay unique, and adding a tenth card changes the home grid.
 
-`SKILLS` also drives the home screen. The menu length is fixed at seven; new skills would be
+`SKILLS` also drives the home screen. The menu length is fixed at nine; new skills would be
 added only when the interface has room for them.
 
 ## Roadmap
@@ -496,6 +497,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
 | 2026-11-04 | Skill 8 asks only for the position: **这个音在（高/低）谱号的（上/下）加（数字）（线/间）** with four dropdowns. The note-name dropdown is gone because students do not yet know the pitch outside the staff |
 | 2026-11-04 | The play screen keeps the question and answer together directly below the prompt; the keyboard is no longer pinned to the bottom edge. The new-note keyboard step marks an octave already found and asks for another A instead of silently requiring A3 |
 | 2026-11-04 | New-note lesson rebalanced to 3 find-keyboard, 2 staff↔keyboard, 2 clef, 2 duration, 2 hand/finger, and 3 mixed items; finishing still opens all three flags and checks the note |
@@ -611,7 +613,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v23`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v24`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README

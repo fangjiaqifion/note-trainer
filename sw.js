@@ -1,6 +1,6 @@
 /* 识谱小练习 · 我的音 — 离线缓存
    改过 index.html 或图标之后要把版本号 +1，否则老的缓存会一直留着。 */
-const CACHE = 'note-trainer-v23';
+const CACHE = 'note-trainer-v24';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
