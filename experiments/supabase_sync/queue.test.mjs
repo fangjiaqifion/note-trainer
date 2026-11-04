@@ -65,3 +65,16 @@ test('storage failure or conflicting IDs do not claim success', () => {
   const broken = createQueue({storage: {getItem: () => null, setItem: () => {throw Error('full');}}, key:'x', send: async () => []});
   assert.throws(() => broken.enqueue(event('b')), /full/);
 });
+
+test('a sync uploads no more than the server batch limit', async () => {
+  const disk = storage(), batches = [];
+  const queue = createQueue({storage:disk, key:'test', send: async batch => {
+    batches.push(batch.length);
+    return batch.map(row => row.id);
+  }});
+  for(let i=0;i<51;i++) queue.enqueue(event(String(i)));
+  assert.equal(await queue.sync(), 50);
+  assert.equal(queue.list().length, 1);
+  assert.equal(await queue.sync(), 1);
+  assert.deepEqual(batches, [50,1]);
+});

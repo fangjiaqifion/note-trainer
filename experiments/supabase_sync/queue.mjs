@@ -1,5 +1,5 @@
 // Experimental only: no access to game accounts or real student records.
-export function createQueue({storage, key, send}) {
+export function createQueue({storage, key, send, batchSize = 50}) {
   let pending = null;
   function load() {
     const raw = storage.getItem(key);
@@ -23,7 +23,7 @@ export function createQueue({storage, key, send}) {
   async function sync() {
     if (pending) return pending;
     pending = (async () => {
-      const batch = load();
+      const batch = load().slice(0, batchSize);
       if (!batch.length) return 0;
       // Acknowledgements must identify exactly the persisted event IDs.
       const ack = await send(batch);
