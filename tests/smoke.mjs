@@ -320,6 +320,110 @@ async function repeatCheck(page){
   assert.deepEqual(problems, [], 'adjacent repeats: ' + problems.join(' | '));
 }
 
+/* 不同勾选组合下的出题多样性。旧测试只跑默认的「全部已学音」，
+   所以第三关在「只勾 D、E」时退化成八题全是 D，测试照样通过。
+   这里逐个换勾选音集，要求：有至少两个音时不能只剩一个；
+   第三关勾过的音名都要出现，并且高音、低音谱号都要出现；
+   第八关一节课里不能出现两道同一个位置。 */
+async function selectionVarietyCheck(page){
+  const result = await page.evaluate(function(){
+    const d = window.__dbg;
+    const oldSel = d.S.selected.slice();
+    const oldProgress = JSON.parse(JSON.stringify(d.S.progress));
+    const problems = [];
+    const cases = [
+      { name:'D+E', sel:['D4', 'E4'] },
+      { name:'E only', sel:['E4'] },
+      { name:'B only', sel:['B3'] },
+      { name:'C only', sel:['C4'] },
+      { name:'D+E+A3', sel:['D4', 'E4', 'A3'] },
+      { name:'all', sel:d.NOTE_ORDER.slice() }
+    ];
+    const skills = [1, 2, 3, 4, 5, 8, 9];
+
+    function keyOf(q, skill){
+      if(skill === 1) return q.letter;
+      if(skill === 3) return d.NOTES[q.noteId].letter;
+      if(skill === 8) return q.clef + '|' + q.spot;
+      return q.noteId;
+    }
+
+    cases.forEach(function(c){
+      d.S.progress = JSON.parse(JSON.stringify(oldProgress));
+      d.S.selected = c.sel.slice();
+      c.sel.forEach(function(id){ d.S.progress[id] = { key:1, pos:1, fin:1 }; });
+
+      skills.forEach(function(skill){
+        const active = d.activeNotes(d.SKILLS[skill - 1].needs);
+        if(skill === 9 && active.length < 2) return;
+        for(let k = 0; k < 30; k++){
+          const qs = d.buildQuestions(skill);
+          if(!qs.length){
+            problems.push(c.name + ' skill ' + skill + ' empty');
+            break;
+          }
+          const keys = qs.map(function(q){ return keyOf(q, skill); });
+          const distinct = {};
+          keys.forEach(function(x){ distinct[x] = 1; });
+          const distinctCount = Object.keys(distinct).length;
+          /* 只勾一个音时，整节课只出这个音是正常的；
+             有第二个音可出却还是同一个音，才是退化。 */
+          if(distinctCount >= 2){
+            for(let i = 1; i < keys.length; i++){
+              if(keys[i] && keys[i] === keys[i - 1]){
+                problems.push(c.name + ' skill ' + skill + ' adjacent ' + keys[i] + ': ' + keys.join(' '));
+                break;
+              }
+            }
+          }
+          if(active.length >= 2 && distinctCount < 2){
+            problems.push(c.name + ' skill ' + skill + ' collapsed to one item: ' + keys.join(' '));
+          }
+          if(skill === 3){
+            c.sel.forEach(function(id){
+              const letter = d.NOTES[id].letter;
+              if(keys.indexOf(letter) < 0){
+                problems.push(c.name + ' skill 3 missing selected ' + letter + ': ' + keys.join(' '));
+              }
+            });
+            const clefs = {};
+            qs.forEach(function(q){ clefs[d.NOTES[q.noteId].clef] = 1; });
+            if(Object.keys(clefs).length < 2){
+              problems.push(c.name + ' skill 3 only one clef: ' + keys.join(' '));
+            }
+          }
+          if(skill === 8){
+            const seen = {};
+            qs.forEach(function(q){
+              const spot = q.clef + '|' + q.spot;
+              if(seen[spot]) problems.push(c.name + ' skill 8 duplicate ' + spot);
+              seen[spot] = 1;
+            });
+          }
+        }
+      });
+
+      for(let k = 0; k < 20; k++){
+        const qs = d.buildDailySession();
+        const distinct = {};
+        qs.forEach(function(q){ if(q.noteId) distinct[q.noteId] = 1; });
+        if(Object.keys(distinct).length < 2) continue;
+        for(let i = 1; i < qs.length; i++){
+          if(qs[i].noteId && qs[i].noteId === qs[i - 1].noteId){
+            problems.push(c.name + ' daily adjacent ' + qs[i].noteId);
+            break;
+          }
+        }
+      }
+    });
+
+    d.S.selected = oldSel;
+    d.S.progress = oldProgress;
+    return { problems: problems.slice(0, 12) };
+  });
+  assert.deepEqual(result.problems, [], 'selection variety: ' + result.problems.join(' | '));
+}
+
 async function ledgerCheck(page){
   const info = await page.evaluate(function(){
     const d = window.__dbg;
@@ -412,6 +516,57 @@ async function reportCheck(page){
   assert.equal(report.headers.length, 11, 'matrix must have date + 9 skills + total');
 }
 
+/* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
+   先种一个本游戏的旧缓存和一个别家缓存，清完只掉本游戏的缓存，
+   localStorage 必须保留。 */
+async function cacheResetCheck(browser, port){
+  const context = await browser.newContext({
+    viewport: { width: 820, height: 1180 },
+    serviceWorkers: 'allow'
+  });
+  await seedLocalStorage(context);
+  const page = await context.newPage();
+  try{
+    await page.goto('http://127.0.0.1:' + port + '/index.html');
+    await page.waitForSelector('#home.active');
+    const before = await page.evaluate(async function(){
+      await navigator.serviceWorker.ready;
+      const c = await caches.open('note-trainer-old-test');
+      await c.put('./index.html', new Response('old', { headers: { 'content-type': 'text/html' } }));
+      const other = await caches.open('other-app-cache');
+      await other.put('./other', new Response('keep'));
+      localStorage.setItem('nt.cache-test.keep', 'yes');
+      return {
+        sw: (await navigator.serviceWorker.getRegistrations()).length,
+        caches: await caches.keys()
+      };
+    });
+    assert.ok(before.sw >= 1, 'the game should register a service worker');
+    assert.ok(before.caches.some(function(k){ return k.indexOf('note-trainer-') === 0; }));
+
+    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&next=%2Findex.html');
+    await page.waitForFunction(function(){
+      return document.querySelector('h1').textContent === '缓存已清理';
+    }, null, { timeout: 8000 });
+
+    const after = await page.evaluate(async function(){
+      return {
+        sw: (await navigator.serviceWorker.getRegistrations()).length,
+        caches: await caches.keys(),
+        keep: localStorage.getItem('nt.cache-test.keep')
+      };
+    });
+    assert.equal(after.sw, 0, 'clear-cache must unregister the game service worker');
+    assert.ok(!after.caches.some(function(k){ return k.indexOf('note-trainer-') === 0; }),
+      'clear-cache must delete note-trainer caches');
+    assert.ok(after.caches.indexOf('other-app-cache') >= 0,
+      'clear-cache must leave other apps on the same origin alone');
+    assert.equal(after.keep, 'yes', 'clear-cache must keep localStorage');
+  }finally{
+    await context.close();
+  }
+}
+
 async function main(){
   const server = await startServer();
   const port = server.address().port;
@@ -448,6 +603,9 @@ async function main(){
     await repeatCheck(page);
     console.log('PASS repeats: no adjacent same note in skills 2, 4, 5, 8, 9 and daily');
 
+    await selectionVarietyCheck(page);
+    console.log('PASS selection: every checked set keeps variety in skills 1-9 and daily');
+
     await ledgerCheck(page);
     console.log('PASS level 8: 6 questions, numbers 1-8');
 
@@ -456,6 +614,9 @@ async function main(){
 
     await reportCheck(page);
     console.log('PASS report: nine-skill matrix');
+
+    await cacheResetCheck(browser, port);
+    console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');
 
     assert.deepEqual(errors, [], 'console errors: ' + errors.join(' | '));
     console.log('PASS console: no errors');

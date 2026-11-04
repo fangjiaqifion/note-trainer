@@ -116,9 +116,9 @@ C4B 不在队列里，只给谱号关用。
 - 当前新音（未学完）不是勾选框，点它进入 14 题的新音第一课。
 - 其他还没学的音也点得动：点一下把它设为当前新音，从第一步开始导入。
 
-各关的音池因此变成「勾选 ∩ 已学 ∩ 该关需要的标记」。谱号关先用固定四种写法，按勾选
-过滤；一个都不剩时退回勾选里学过谱位的音，免得出没勾的音。第 7 关不用音池，
-只有第 1–6 关受勾选影响。
+各关的音池因此变成「勾选 ∩ 已学 ∩ 该关需要的标记」。第 3 关也以勾选音为主；
+如果勾选的音全在同一谱号，会补一个相反谱号的已学音做对比，否则这一关的答案只有
+一个，题目再换也是重复。第 7 关不用音池，只有第 1–6 关受勾选影响。
 
 ### 自动难度
 
@@ -139,7 +139,7 @@ C4B 不在队列里，只给谱号关用。
 |---|---|---|---|---|---|
 | 1 | findKey | 给音名找键，任意八度 | key | 勾选 ∩ 已学音 | 8 / 8 / 10 |
 | 2 | staffKey | 谱 ↔ 键双向，必须对上八度 | key + pos | 勾选 ∩ 已学音 | 8 / 8 / 10 |
-| 3 | clef | 这个音该用高音还是低音谱号 | pos | 固定四种写法，按勾选过滤 | 8 / 8 / 10 |
+| 3 | clef | 这个音该用高音还是低音谱号 | pos | 勾选音；全在同一谱号时补一个对比音 | 8 / 8 / 10 |
 | 4 | beats | 读时值、找键、按住 | key + pos | 勾选 ∩ 已学音 | 8 / 8 / 10 |
 | 5 | play | 判手 → 判指 → 按住 | key + pos + fin | 勾选 ∩ 已学音 | 6 / 6 / 8 |
 | 6 | spot | 点出第几条线、第几间 | 不用音 | 无 | 8 / 8 / 10 |
@@ -161,11 +161,13 @@ D4 不能点成 D5；键 → 谱的选项从勾选音里抽三张（轻松档两
 补一张干扰项。谱例统一画四分音符，不考时值。键 → 谱的键盘是题干，放在上方；谱例是选项，
 放在下方，和谱 → 键共用「题目在上、回答在下」的同一条阅读顺序。
 
-**第 3 关 · 谱号。** 谱表不画谱号，题干给音名，二选一。四种写法固定：B3 低音、
-C4 高音、C4 低音、D4 高音。音池**不跟音集扩**：F、G、A 都是高音谱号，扩进去只会
-退化成「是不是 B3」。勾选里只剩别的音时，退回勾选里学过谱位的音。答对后把谱号补进
-谱表。出题先按音名均分（B、C、D 各约三分之一），再放回写法：C4 和 C4B 都算 C，
-不会连着出现；每次重新洗牌。
+**第 3 关 · 谱号。** 谱表不画谱号，题干给音名，二选一。音池是勾选里学过谱位的音；
+勾了 C4 会自动带上它的低音写法 C4B。如果勾选的音全在同一谱号（例如只勾 D、E，两个都是
+高音谱号），再补一个相反谱号的已学音做对比，取音高上最近的一个。没有对比音，这一关
+每题都只有一个可能答案，题目再换也是重复。答对后把谱号补进谱表。出题先按音名均分，
+再放回写法：C4 和 C4B 都算 C，不会连着出现；`spaceOut` 保证相邻两题不是同一个音名。
+只勾一个音时，这一关会有一半左右是补进来的对比音，这是为了让「高音还是低音」
+始终是一个真问题。
 
 **第 4 关 · 时值。** 每三题插一道「哪个是二分音符」的反向题。答对拍数后不亮键、
 不排拍子格，孩子自己在键盘上找音并按住。时长窗口是早 0.3 拍、晚 0.62 拍。
@@ -357,7 +359,7 @@ B C D」不会被还没学完的新音打断。第 11–13 步用 `spotlightPool
 1. 首页九张卡、chips、今日练习、设置都能显示，控制台无报错。
 2. 第 1 关：8/8 或 10/10，一次答对能进下一题，结算正常；只出勾选的字母。
 3. 第 2 关：谱 → 键和键 → 谱两个方向都能答对，谱例不串音；键 → 谱时键盘作为题干在上、谱例选项在下；只勾一个音时仍有至少两张谱例。
-4. 第 3 关：四种谱号写法都能出，答对后谱号补上；相邻两题的音名不重复，C4 和 C4B 不连着出；勾选音不在固定池里时不报错。
+4. 第 3 关：勾 D、E 时八题里 D 和 E 都要出现，不能整节只剩 D；勾 C4 时 C4 和 C4B 都能出；勾选音全在同一谱号时补一个相反谱号的对比音，高音、低音两种答案都要出现；答对后谱号补上；相邻两题的音名不重复，C4 和 C4B 不连着出。
 5. 第 4 关：拍数选对后能按住，时长窗口正常，结算正常。
 6. 第 5 关：手 → 指 → 按住三段都能推进；改了 `G.session` 的顺序以后不再卡第一段。
 7. 第 6 关：线、间都能点中；点第四间的中间不会再被判成第五线；点错时提示说清点到了第几间或第几线；谱号只作干扰。
@@ -384,13 +386,14 @@ B C D」不会被还没学完的新音打断。第 11–13 步用 `spotlightPool
 
 | 内容 | 位置 |
 |---|---|
-| 音符注册表 | `NOTES`、`NOTE_ORDER`、`BASE_NOTES`、`CLEF_POOL` |
+| 音符注册表 | `NOTES`、`NOTE_ORDER`、`BASE_NOTES` |
 | 技能注册表 | `SKILLS` |
 | 新音步骤 | `SPOT_STEPS`、`spotlightQuestions` |
 | 账户与存档 | `ACCOUNTS`、`CURRENT`、`S`、`TEACHER_MODE`、`newState`、`enterAccount`、`createAccount` |
 | 老师角色 | `syncRoleUI`、`openTeacherEntry`、`saveTeacherPin`、`showTeacher`、`teacherRoster`、`renderTeacherList`、`openTeacherLearner`、`exitTeacher` |
 | 进度与勾选音集 | `blankProgress`、`ensureProgress`、`ensureSelection`、`selectedNotes`、`activeNotes`、`noteComplete` |
-| 出题 | `makeFindKey` / `makeStaffKey` / `makeClef` / `makeBeats` / `makePlay` / `makeSpot` / `makeTwoNotes` / `makeLedger` / `makeContrast`、`buildQuestions`、`weightedRepeatTo` |
+| 出题 | `makeFindKey` / `makeStaffKey` / `makeClef` / `makeBeats` / `makePlay` / `makeSpot` / `makeTwoNotes` / `makeLedger` / `makeContrast`、`buildQuestions`、`weightedRepeatTo`、`spaceOut` |
+| 第 3 关音池 | `clefPool`、`makeClef` |
 | 谱面 | `staffPairSVG`、`staffPairBlock`、`ledgerBlock`、`pairIcon`、`staffPitch`、`qPairDirection`、`qWhichHigher`、`alternateAsks`、`higherSpecs` |
 | 第 8 关 | `ledgerSpots`、`qLedgerName`、`staffSpotLabel`、`positionLabel` |
 | 第 9 关 | `CONTRAST_POS`、`CONTRAST_PARTNERS`、`contrastPairFor`、`contrastPool`、`qContrast`、`makeContrast`、`makeContrastFor` |

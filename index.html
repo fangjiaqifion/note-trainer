@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="识谱">
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
+<!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
+<meta name="app-build" content="e0f6cd3163">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -350,6 +352,7 @@
   .seg button.on{background:var(--blue);color:#fff}
   .sheet-foot{display:flex;gap:10px;margin-top:16px}
   .sheet-foot button{flex:1;padding:14px;border-radius:16px;font-weight:700;font-size:16px}
+  .build-tag{margin:12px 0 0;text-align:center;font-size:11px;color:var(--muted);opacity:.7}
 
   /* ---------- 账户与家长面板 ---------- */
   .sheet.wide{width:min(760px,100%)}
@@ -709,6 +712,8 @@
       <button class="secondary-btn" id="btnReset">清空本账户星星</button>
       <button class="primary-btn" id="btnCloseSettings">好了</button>
     </div>
+    <!-- 测试时先看这一行：构建号对不上就是缓存或部署没更新。 -->
+    <p class="build-tag" id="buildTag">构建 dev</p>
   </div>
 </div>
 
@@ -883,41 +888,6 @@ function shuffle(a){
   for(let i = a.length - 1; i > 0; i--){ const j = randInt(i + 1); const t = a[i]; a[i] = a[j]; a[j] = t; }
   return a;
 }
-/* 把一串字母重排成「不连着出现同一个」的顺序。
-   先洗牌，再把重复处和别处交换；修完还有重复就重新洗一次再修。
-   第 1 关只有 B、C、D，纯洗牌经常连出三个 C，
-   孩子会觉得「怎么又是这个」。 */
-function spreadLetters(list){
-  function hasRun(a, i){
-    return (i > 0 && a[i] === a[i-1]) || (i + 1 < a.length && a[i] === a[i+1]);
-  }
-  function hasAnyRun(a){
-    for(let i = 1; i < a.length; i++){ if(a[i] === a[i-1]) return true; }
-    return false;
-  }
-  /* 把每一处重复和另一个不同的字母对调，要求对调后两处附近都不重复。 */
-  function repair(a){
-    for(let pass = 0; pass < 8; pass++){
-      let moved = false;
-      for(let i = 1; i < a.length; i++){
-        if(a[i] !== a[i-1]) continue;
-        for(let j = 0; j < a.length; j++){
-          if(j === i || j === i - 1 || a[j] === a[i-1]) continue;
-          const t = a[i]; a[i] = a[j]; a[j] = t;
-          if(!hasRun(a, i) && !hasRun(a, j)){ moved = true; break; }
-          const u = a[i]; a[i] = a[j]; a[j] = u;
-        }
-      }
-      if(!moved) break;
-    }
-    return a;
-  }
-  let a = repair(shuffle(list));
-  /* 少数牌型一次修不干净，换一个洗牌结果再修；修不好就返回当前这个。 */
-  for(let t = 0; t < 20 && hasAnyRun(a); t++){ a = repair(shuffle(list)); }
-  return a;
-}
-
 /* 把题目重排成「相邻两题不是同一个音」。
    keyOf 返回判重用的键：技能 2、4、5 用 noteId，技能 8 用谱号 + 位置，
    技能 9 用目标音。prevKey 用来和上一块（如今日练习的复习块）衔接。
@@ -1064,9 +1034,6 @@ function noteForReport(letter){
 }
 /* 一开始就会的三个音，不经过新音导入。 */
 const BASE_NOTES = ['B3','C4','D4'];
-/* 第 3 关的固定音池。它不跟音集扩：F、G、A 都是高音谱号，
-   扩进去只会让题目退化成「是不是 B3」。 */
-const CLEF_POOL = ['B3','C4','C4B','D4'];
 
 /* 每个音名在第 1 关的权重。C、B 是两个锚点，出现得多一点；
    其余音平均。找不到的音名按 1 计。 */
@@ -1120,7 +1087,7 @@ const SKILLS = [
     needs:['key','pos'], pool:'active', make:makeStaffKey },
   { id:3, key:'clef',     name:'谱号',   title:'用哪个谱号',
     desc:'同一个中央 C，有高音、低音两种写法', color:'#2E9C8F',
-    needs:['pos'], pool:'fixed', ids:CLEF_POOL, make:makeClef },
+    needs:['pos'], pool:'active', make:makeClef },
   { id:4, key:'beats',    name:'时值',   title:'读谱与拍数',
     desc:'读谱、找键、弹够时值', color:'#3FA96F',
     needs:['key','pos'], pool:'active', make:makeBeats },
@@ -3638,7 +3605,9 @@ function repeatTo(arr, n){
 /* 第 1 关的字母序列：从按权重摆好的字母里随机抽 n 个。
    权重来自 LETTER_WEIGHT，C、B 两个锚点出现得多一点。
    两个约束：池子里的字母尽量都出现；相邻两题不重复同一个音。
-   纯随机洗牌时常连出三个 C，孩子会觉得「怎么又是这个」。 */
+   纯随机洗牌时常连出三个 C，孩子会觉得「怎么又是这个」。
+   spaceOut 用回溯，能排开就一定排开；旧版这里是启发式修补，
+   极端牌型修不好时会悄悄留下连着的字母。 */
 function findKeyLetters(n, letters){
   letters = (letters && letters.length) ? letters : ['B','C','D'];
   const base = [];
@@ -3657,7 +3626,7 @@ function findKeyLetters(n, letters){
     picked.forEach(function(x, i){ if(count[x] > best){ best = count[x]; idx = i; } });
     if(idx >= 0 && best > 1) picked[idx] = need;
   });
-  return spreadLetters(picked);
+  return spaceOut(picked, function(x){ return x; });
 }
 
 /* 第 6 关的题目：线与间交替，前半段不加谱号，后半段加。
@@ -3732,29 +3701,59 @@ function makeStaffKey(ids, n){
   return spaceOut(qs, function(q){ return q.noteId; });
 }
 
-/* 谱号关：优先用固定四种写法，但只取勾选里的音；
-   C4B 是中央 C 的低音写法，勾了 C 就一起出现。
-   勾选里一个固定写法都没有时（例如只勾了 E），退回勾选音的谱号，
-   总比出一批没勾的音好。 */
-function makeClef(ids, n){
-  const learned = selectedNotes(['pos']);
-  let pool = ids.filter(function(id){
-    return id === 'C4B' ? learned.indexOf('C4') >= 0 : learned.indexOf(id) >= 0;
+/* 第 3 关的音池。以勾选的音为主，勾了 C4 就自动带出它的低音写法 C4B。
+   如果勾选的音全在同一谱号，补一个相反谱号的已学音做对比：
+   没有对比音，这一关每题都只有一个可能答案，换多少题都是重复。
+   对比音取音高上最近的一个，孩子只要横向挪一点。
+
+   旧版这里是「固定四种写法 ∩ 勾选」：勾 D、E 时只剩 D4，
+   八题全是 D，正是用户反复看到的问题。 */
+function clefPool(ids){
+  const pool = [];
+  if(!ids || !ids.length) return pool;
+  function add(id){
+    if(NOTES[id] && pool.indexOf(id) < 0) pool.push(id);
+  }
+  ids.forEach(function(id){
+    add(id);
+    if(id === 'C4') add('C4B');
   });
-  if(!pool.length) pool = learned.slice();
+  const has = { treble:false, bass:false };
+  pool.forEach(function(id){ has[NOTES[id].clef] = true; });
+  if(!has.treble || !has.bass){
+    const missing = has.treble ? 'bass' : 'treble';
+    const cand = NOTE_ORDER.filter(function(id){
+      const p = S.progress[id];
+      return p && p.pos && NOTES[id].clef === missing;
+    });
+    /* 真正的低音谱号音优先；一个都没有时才退回中央 C 的低音写法。 */
+    if(!cand.length && missing === 'bass' && S.progress.C4 && S.progress.C4.pos){
+      cand.push('C4B');
+    }
+    const midi = pool.length ? NOTES[pool[0]].midi : 60;
+    cand.sort(function(a, b){
+      return Math.abs(NOTES[a].midi - midi) - Math.abs(NOTES[b].midi - midi);
+    });
+    if(cand.length) add(cand[0]);
+  }
+  return pool;
+}
+
+/* 谱号关：先按音名均分，再放回具体写法。C4 和 C4B 都显示成「中央 C」，
+   按 id 均分会让 C 占掉一半题目；按字母排，每个音名约 1/k。
+   spaceOut 保证相邻两题不是同一个音名（C4 和 C4B 也算同一个），
+   同一个字母出现多次时，C 的两种写法交替出现。 */
+function makeClef(ids, n){
+  const pool = clefPool(ids);
   if(!pool.length) return [];
 
-  /* 先按字母均分，再放回具体写法。C4 和 C4B 都显示成「中央 C」，
-     如果按 id 循环，C 会占掉一半题目；按字母排，B、C、D 各约三分之一，
-     C 的两种写法在出现时交替，既都练到，又不会连着出。
-     只要池子里有两个以上音名，同一个音名就不会连续出现。 */
   const byLetter = {};
   pool.forEach(function(id){
     const letter = NOTES[id].letter;
     (byLetter[letter] = byLetter[letter] || []).push(id);
   });
-  const letters = spreadLetters(repeatTo(Object.keys(byLetter), n));
   Object.keys(byLetter).forEach(function(letter){ byLetter[letter] = shuffle(byLetter[letter]); });
+  const letters = spaceOut(repeatTo(Object.keys(byLetter), n), function(x){ return x; });
   const cursor = {};
   return letters.map(function(letter){
     const list = byLetter[letter] || pool;
@@ -4030,14 +4029,26 @@ function qLedgerName(spot){
 function makeLedger(ids, n){
   const pool = ledgerSpots();
   const picked = [];
+  function sameSpot(a, b){
+    return a.clef === b.clef && a.y === b.y;
+  }
+  function take(cand){
+    const free = cand.filter(function(s){
+      return !picked.some(function(p){ return sameSpot(p, s); });
+    });
+    if(free.length) picked.push(pick(free));
+  }
   /* 先保证高音/低音、上加/下加四种组合各出一题。 */
   [['treble','up'],['treble','down'],['bass','up'],['bass','down']].forEach(function(c){
-    const cand = pool.filter(function(s){
+    take(pool.filter(function(s){
       return s.clef === c[0] && ((c[1] === 'up') ? s.y < 0 : s.y > 4);
-    });
-    if(cand.length) picked.push(pick(cand));
+    }));
   });
-  while(picked.length < n) picked.push(pick(pool));
+  /* 剩余名额从还没出现过的位置里补：一关里不重复同一句话。
+     旧版从整个池子里随机补，六题里可能出现两道一模一样的题。 */
+  shuffle(pool).forEach(function(s){
+    if(picked.length < n && !picked.some(function(p){ return sameSpot(p, s); })) picked.push(s);
+  });
   return spaceOut(picked.slice(0, n).map(qLedgerName), function(q){
     return q.clef + '|' + q.spot;
   });
@@ -5917,14 +5928,28 @@ window.__dbg = {
   voice: function(){ return [zhVoice && zhVoice.name, enVoice && enVoice.name]; }
 };
 
+/* 构建号：发布脚本写进 meta，设置页和控制台都能看到。
+   测试前先对一下这个号，就能分清「代码不对」还是「浏览器还在旧缓存」。 */
+function renderBuildTag(){
+  const meta = document.querySelector('meta[name="app-build"]');
+  const build = meta ? meta.getAttribute('content') : 'dev';
+  const el = $('#buildTag');
+  if(el) el.textContent = '构建 ' + build;
+  console.log('note-trainer build:', build);
+}
+
 bindAccountUI();
+renderBuildTag();
 bootApp();
 
 /* 离线缓存只在安全上下文里注册：https 或本机调试。
-   直接双击打开 file:// 时浏览器不支持，注册会静默失败，属正常。 */
+   直接双击打开 file:// 时浏览器不支持，注册会静默失败，属正常。
+   updateViaCache:'none' 让浏览器每次都重新取 sw.js，不再等 HTTP 缓存过期。 */
 if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./sw.js').catch(function(){});
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+      .then(function(reg){ return reg.update(); })
+      .catch(function(){});
   });
 }
 })();
