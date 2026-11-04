@@ -31,6 +31,7 @@
 7. 未推送：必须交付本地 `index.html?build=<构建号>`，并核对页面设置里的构建号。
    已获明确推送授权时才运行 `npm run release -- --push`，确认远程构建一致后交付远程链接。
    Pages 超时应报发布未验证，不把旧远程链接当成新版本交付。
+   最终答复分别说明本地提交、远程推送、部署文件验证、浏览器加载验证是否完成；commit 不等于 push。
 8. `npm run pages:refresh` 默认只读；`--execute` 才重建远程已有 main。它不是 CDN purge，也不是推送。
    不删除 GitHub Actions 缓存冒充清理 Pages；不改 Pages 发布设置。远端新清单/清理页须经授权部署一次后生效。
 9. 发布前先提交功能改动；`--push` 只自动提交 index.html、sw.js、release.json，拒绝夹带其他工作。

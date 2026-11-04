@@ -38,7 +38,7 @@ three minutes a day.
   images, never by typing.
 - Every question is read aloud by the system voice, so no reading is required.
 - Feedback is immediate and positive; a wrong answer is "try again", never "wrong".
-- The whole game is one `index.html` with no build step, no dependencies, and no network
+- The game is one `index.html` with no compilation or runtime dependencies, and no network
   requests. It runs from a static host, and after the first visit it runs offline.
 
 Sound is synthesized at runtime with the Web Audio API; there are no audio files to download.
@@ -230,11 +230,10 @@ skill automatically once that flag is open.
 | 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four dropdowns: treble/bass, above/below, number 1–8, line/space (the note name is not asked); six questions per session | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighbouring, third, ledger-count and mirror pairs) | none |
 
-The clef skill builds its pool from the checked notes. C4 brings both spellings (treble and
-bass). If every checked note uses the same clef, the pool adds one learned note from the other
-clef, nearest in pitch, as a contrast. Without that contrast note the level has only one
-possible answer, and a "random" set of questions is just the same note repeated. This is why
-checking D and E produces D, E and a bass note rather than eight D questions.
+The clef skill uses only the checked notes. C4 brings both spellings (treble and bass) of the
+same pitch. Checking D and E mixes D and E without adding an unchecked bass note. Their
+correct clef can be the same while the questions still vary. Note names are balanced and
+spaced apart when possible; one checked note necessarily repeats.
 
 Skill 7 is the bridge from staff geometry to pitch. It always shows two whole notes with no
 stems, so the only cue is vertical position. The first three questions, with no clef, ask for
@@ -305,7 +304,9 @@ One tap on **今日练习** builds a ten-question session from the checked notes
 | Staff ↔ keyboard | 3 | Checked notes, error-weighted | Discrimination |
 
 If no checked note has a finger flag, the hand/finger question becomes a fourth staff ↔
-keyboard question, so the session stays at ten. The blocks after the review are shuffled.
+keyboard question, so the session stays at ten. Note counts are planned across the whole
+session before question types are assigned, with the review prefix first. A single checked
+note gives one review item and one additional staff/key item.
 Older notes rotate in through the review block, so the session length does not grow with the
 note set.
 
@@ -315,7 +316,7 @@ first lesson); that starts the 14-question first lesson. This keeps the checked 
 only B, C and D are checked, the daily session only asks B, C and D.
 
 The home screen also has a row of note chips (**我的音**). A learned chip is a checkbox: tap it
-to include or exclude that note in the daily session and skills 1–6. A selected note has
+to include or exclude that note in daily practice, skills 1–5, and eligible pairs in skill 9. A selected note has
 a filled check; an unselected learned note stays white; the current new note pulses and opens
 the spotlight; any other unlearned note is dimmed but still opens its spotlight when tapped.
 A single-note review of a note and its neighbours is available from the **练** button beside
@@ -389,16 +390,17 @@ questions and tempo do not change mid-session. Each change is recorded with its 
 accuracy that triggered it, and the two levels; the report shows the last four.
 
 Question selection also follows the log: within a skill, notes with a lower first-try
-accuracy are weighted up (up to 3×), so weak notes appear more often. The daily review block
+accuracy are weighted up (up to 3×) within a per-note cap. Skill 1 balances letters; skill 3
+balances note names. Weighting cannot override coverage and feasible spacing. The daily review block
 still puts the least recently seen notes first.
 
 The clef skill always has two options, treble or bass. Skill 5 runs two questions fewer
 because each one takes three stages, which keeps a session at about three minutes. The daily
-session and the spotlight always ask ten and four questions respectively; they do not use the
+session asks ten questions; a new-note lesson has fourteen steps and resumes its remaining steps; they do not use the
 difficulty count.
 
 Three stars requires all but one first-try answer; two stars all but three; anything lower is
-one star. Stars are stored per skill (1–6) per profile and only ever go up. The daily session
+one star. Stars are stored per skill (1–9) per profile and only ever go up. The daily session
 and the spotlight show stars on the result screen but do not overwrite skill stars.
 
 Hints are never automatic at the start: after enough mistakes the correct key is highlighted,
@@ -498,7 +500,8 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
-| 2026-11-04 | Skill 3 now builds its pool from the checked notes. If every checked note uses the same clef, one learned note from the other clef is added as a contrast, so checking D and E no longer gives eight D questions. C4 still brings both spellings |
+| 2026-11-04 | Checked-note practice now stays inside its selected pool, including D/E in skill 3. Skill 1 balances letters and daily practice plans note counts for the whole session before mixing question types |
+| 2026-11-04 | Releases verify file hashes and actual Safari/Chrome loads across remote and local URLs. Per-step timeouts, failure receipts, and a process lock prevent false success and overlapping resets |
 | 2026-11-04 | Skill 8 no longer repeats the same ledger position within a session |
 | 2026-11-04 | `npm run release -- --local` and `--push` stamp a build, run the tests, clear Safari and Chrome caches for the remote and local origins, and print the correct test link. Settings shows the build tag |
 | 2026-11-04 | Tests now sweep checked-note subsets and cover the cache reset page, so a level that collapses to one note under a non-default selection fails before release |
@@ -578,7 +581,12 @@ note-trainer/
 ├── manifest.webmanifest  PWA manifest for "Add to Home Screen"
 ├── sw.js                 offline cache; cache name is written by the release script
 ├── clear-cache.html      origin-scoped cache reset page used by the release script
-├── scripts/release.mjs   build stamp, tests, commit/push, cache clear, test link
+├── AGENTS.md             development and release requirements
+├── release.json          generated build ID and SHA-256 file manifest
+├── scripts/release.mjs   build stamp, tests, commit/push, cache clear, load receipts
+├── scripts/release_integrity.mjs  shared file-integrity checks
+├── scripts/local_server.mjs       no-store server and loopback receipt service
+├── scripts/pages_refresh.mjs      remote Pages rebuild, without pushing local code
 ├── tests/smoke.mjs       Playwright regression test
 ├── package.json          npm test / release / cache scripts
 ├── icon.svg, icon-*.png  icons (180 is full-bleed for iOS, 192/512 are masked)
@@ -643,7 +651,7 @@ are not committed. Learner accounts, selection, progress and records in localSto
 GitHub Pages has build/status APIs, not a documented site-CDN purge endpoint. The rebuild
 command uses the official Pages build API for the configured legacy main/root source and
 then verifies the remote release. It never deletes Actions caches or pretends to purge a CDN.
-New pipeline files need an authorized deployment before remote verification can work.
+When setting up a new deployment, publish the pipeline files before expecting remote verification to work.
 [GitHub's Pages API](https://docs.github.com/en/rest/pages/pages) documents the rebuild behavior.
 
 Commit feature changes before `--push`. The release command only auto-commits generated
@@ -652,7 +660,8 @@ an unpushed version, or the remote link only after its files and browser loads a
 
 ## Tests
 
-The app has no build step and no runtime dependencies. The regression test is separate:
+The app needs no compilation or runtime dependencies. `npm run build` stamps the release
+metadata; regression tests run separately:
 
 ```bash
 npm install
@@ -677,10 +686,11 @@ npm run release -- --push
 ```
 
 The script runs the tests, writes a content-based build tag into `index.html`, updates the cache
-name in `sw.js`, commits, pushes, and polls the remote page until the build tag matches. It then
+name in `sw.js`, commits generated release files, pushes, and polls all remote release files
+until their hashes match. It then
 clears the browser caches and prints the remote link. If the poll times out, the command fails and does not hand over an unverified remote test link; the push itself may already have succeeded.
 
-- `cache-control` is 600 seconds; the build tag avoids guessing whether a page is fresh.
+- Pages HTTP caching is checked through actual file hashes and a fresh request URL; the local server sends `Cache-Control: no-store`.
 - Free accounts can only publish Pages from a public repository, so both the repository and
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
@@ -722,8 +732,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   picture, but the actual hand position still has to be checked on the piano by an adult.
 - Holding is judged by duration only, not by which finger pressed. In skill 5 the hand and
   finger are checked before the key is pressed, not while it is held.
-- The clef skill follows the checked notes, with one contrast note when they all share a
-  clef. It does not teach the general register rule: middle C is legal in both clefs, and one
+- The clef skill strictly follows checked notes. If they share a clef, the correct answer
+  stays the same while note content varies. It does not teach the general register rule: middle C is legal in both clefs, and one
   pitch can be written more than one way.
 - Skill 6 uses the clef as a distractor: the second half shows one but never names it, and
   the answer is the same in either clef. The other lines and spaces come later.
