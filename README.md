@@ -14,14 +14,15 @@ Current note set: three anchor notes (B3, middle C, D4) are always available; E4
 current new note, followed by A3, A4, F4 and G4. The order follows the student's method book:
 after E the book moves to A, then back to F and G. A3 is the left-hand third finger in the
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
-or unchecked on the home screen, and skills 1–6 and the daily session use only the checked
-notes. The note set is configuration, not code: adding a note is one registry entry plus one
+or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
+skill 9 uses eligible pairs from them, while skills 6–8 teach abstract staff positions. The note set is configuration, not code: adding a note is one registry entry plus one
 queue slot, see [Adding a note](#adding-a-note). The nine skills stay the same as the set
 grows; the menu does not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
 notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
-in `localStorage`; there is no server, no account recovery, and no network request.
+in `localStorage`; learner records are not uploaded to an account server, and account recovery
+is not available.
 
 The teacher is the only superuser. A separate teacher PIN unlocks the student roster: the
 teacher creates learner profiles, opens every learner's report on this device, and exports all
@@ -39,7 +40,8 @@ three minutes a day.
 - Every question is read aloud by the system voice, so no reading is required.
 - Feedback is immediate and positive; a wrong answer is "try again", never "wrong".
 - The game is one `index.html` with no compilation or runtime dependencies, and no network
-  requests. It runs from a static host, and after the first visit it runs offline.
+  requests for piano samples or learner-data uploads. It runs from a static host and caches
+  its application files for offline use.
 
 Sound is synthesized at runtime with the Web Audio API; there are no audio files to download.
 The keyboard uses an additive piano voice: twelve partials with the slight stretch of a real
@@ -490,7 +492,6 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 | Account deletion | Idea | The teacher console can clear logs but cannot remove a profile |
 | Teacher PIN change or recovery | Idea | The PIN can be set once; there is no change screen and no recovery |
 | English interface | Idea | All strings are inline; would need a small dictionary and a switch |
-| iPad audio readiness after cache reset | Queued | Intermittent missing piano or speech on first launch. Audit Web Audio unlock/resume and speech voice readiness; evaluate a tap-to-start readiness screen. Piano is synthesized, so missing audio does not establish an unfinished audio download. No implementation yet |
 | Sound check | Shipped 2026-10-29 | Settings → "试听" |
 | License | Not chosen | See [License](#license) |
 
@@ -611,7 +612,7 @@ terminal stops it.
 ### Release, cache, and the test link
 
 The pipeline distinguishes built files, verified server files, and verified browser loads.
-Only the last state is test-ready. See [the pipeline record](docs/audit_cache_pipeline_20261104/pipeline.md).
+Only the last state is test-ready.
 
 ```bash
 npm run build                           # stamp build + release.json; no tests or browser actions
@@ -676,7 +677,7 @@ keyboard → staff choices; a new-note lesson resumes at the saved step and open
 flags; the report has nine skill columns; the console stays clean; every checked-note subset
 is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (45,900 sessions across nine skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
-runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts. See `AGENTS.md` for the required delivery workflow and `docs/audit_20261104_followup/audit.md` for the generation audit; `docs/audit_cache_pipeline_20261104/pipeline.md` records the newer cache pipeline validation.
+runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts.
 
 ## Deploying
 
@@ -700,20 +701,6 @@ clears the browser caches and prints the remote link. If the poll times out, the
   a manual edit is overwritten at the next release.
 
 
-## Editing this README
-
-Notes for future edits, so the document does not drift:
-
-- Keep the section order. New feature detail goes under the relevant section, not at the end.
-- Roadmap: add a row and set a status (`Planned` / `Exploring` / `Idea` / `Shipped`). When an
-  item ships, change its status and add a changelog row; leave the row in place.
-- Changelog: one row per user-visible change, newest first, written as what changed for the
-  player, not as a commit summary.
-- Code changes should also update the header comment in `index.html`, which describes the
-  same architecture in more detail.
-- The interface is Chinese by design (it is for a Chinese-speaking child); the README is
-  English so the repository is readable to outside visitors. Keep that split.
-
 ## Credits
 
 The treble clef is `Treble clef.svg` by Tlusťa, and the bass clef is `Clef Bass (F).svg`,
@@ -728,6 +715,9 @@ No license has been chosen yet. Until one is added, the code is public for refer
 licensed for reuse. If this changes, add a `LICENSE` file and replace this section.
 
 ## Known limitations
+
+- Some iPad users report intermittent audio on first launch after clearing the game cache.
+  This is under investigation; adding a loading screen has not yet been implemented or verified.
 
 - The page cannot tell which finger was used. Skill 5 asks which finger and shows the right
   picture, but the actual hand position still has to be checked on the piano by an adult.
