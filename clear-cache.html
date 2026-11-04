@@ -42,11 +42,14 @@
     if(parsed.origin === location.origin) next = parsed.pathname + parsed.search + parsed.hash;
   }catch(e){}
   var stay = params.get('stay') === '1';
+  var token = params.get('token') || '';
+  var failed = false;
   var log = document.getElementById('log');
   var link = document.getElementById('next');
   link.href = next;
 
   function row(ok, text){
+    if(!ok) failed = true;
     var li = document.createElement('li');
     var mark = document.createElement('span');
     mark.className = ok ? 'ok' : 'warn';
@@ -70,7 +73,7 @@
     var base = baseScope();
     var regs = await navigator.serviceWorker.getRegistrations();
     var mine = regs.filter(function(reg){
-      return reg.scope === base || reg.scope.indexOf(base) === 0;
+      return reg.scope === base;
     });
     await Promise.all(mine.map(function(reg){ return reg.unregister(); }));
     row(true, mine.length ? '已注销 ' + mine.length + ' 个离线缓存服务' : '没有需要注销的离线缓存服务');
@@ -79,7 +82,9 @@
   async function clearCaches(){
     if(!('caches' in window)) return;
     var keys = await caches.keys();
-    var mine = keys.filter(function(k){ return k.indexOf('note-trainer-') === 0; });
+    var mine = keys.filter(function(k){
+      return k.indexOf('note-trainer-') === 0 && (k.indexOf('@') < 0 || k.endsWith('@' + baseScope()));
+    });
     await Promise.all(mine.map(function(k){ return caches.delete(k); }));
     row(true, mine.length ? '已删除 ' + mine.length + ' 个离线缓存库' : '没有需要删除的离线缓存库');
   }
@@ -89,7 +94,8 @@
     var failed = 0;
     for(var i = 0; i < urls.length; i++){
       try{
-        await fetch(urls[i], { cache:'reload', credentials:'same-origin' });
+        var response = await fetch(urls[i], { cache:'reload', credentials:'same-origin', headers:{'X-Note-Trainer-Reset':'1'} });
+        if(!response.ok) failed++;
       }catch(e){
         failed++;
       }
@@ -104,9 +110,14 @@
     catch(e){ row(false, '删除离线缓存失败：' + e.message); }
     try{ await refreshShell(); }
     catch(e){ row(false, '刷新页面缓存失败：' + e.message); }
+    // 注销不等于当前页面立即脱离旧控制器；刷新过程中旧版本仍可能重建缓存。
+    try{ await clearCaches(); }
+    catch(e){ row(false, '最终缓存清理失败：' + e.message); }
     row(true, '账户、勾选、进度和答题记录都保留了');
-    document.querySelector('h1').textContent = '缓存已清理';
-    if(!stay){
+    document.querySelector('h1').textContent = failed ? '缓存清理未完成' : '缓存已清理';
+    document.title = 'note-trainer-cache:' + (failed ? 'failed:' : 'ok:') + token;
+    document.documentElement.dataset.cacheStatus = failed ? 'failed' : 'ok';
+    if(!stay && !failed){
       setTimeout(function(){ location.replace(next); }, 1200);
     }
   })();

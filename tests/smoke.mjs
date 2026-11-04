@@ -5,6 +5,7 @@
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
+import { generationAudit } from './generation_audit.mjs';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
@@ -323,7 +324,7 @@ async function repeatCheck(page){
 /* 不同勾选组合下的出题多样性。旧测试只跑默认的「全部已学音」，
    所以第三关在「只勾 D、E」时退化成八题全是 D，测试照样通过。
    这里逐个换勾选音集，要求：有至少两个音时不能只剩一个；
-   第三关勾过的音名都要出现，并且高音、低音谱号都要出现；
+   第三关勾过的音名都要出现，有对应写法时才要求两种谱号；
    第八关一节课里不能出现两道同一个位置。 */
 async function selectionVarietyCheck(page){
   const result = await page.evaluate(function(){
@@ -388,8 +389,10 @@ async function selectionVarietyCheck(page){
             });
             const clefs = {};
             qs.forEach(function(q){ clefs[d.NOTES[q.noteId].clef] = 1; });
-            if(Object.keys(clefs).length < 2){
-              problems.push(c.name + ' skill 3 only one clef: ' + keys.join(' '));
+            if(c.sel.includes('C4') || (c.sel.some(id => d.NOTES[id].clef === 'bass') && c.sel.some(id => d.NOTES[id].clef === 'treble'))){
+              if(Object.keys(clefs).length < 2){
+                problems.push(c.name + ' skill 3 only one clef: ' + keys.join(' '));
+              }
             }
           }
           if(skill === 8){
@@ -527,8 +530,16 @@ async function cacheResetCheck(browser, port){
   await seedLocalStorage(context);
   const page = await context.newPage();
   try{
+    await page.goto('http://127.0.0.1:' + port + '/manifest.webmanifest');
+    await page.evaluate(async function(){
+      const other = await caches.open('other-app-cache');
+      await other.put('./other', new Response('keep'));
+      const sibling = await caches.open('note-trainer-sibling@' + location.origin + '/another-game/');
+      await sibling.put('./sibling', new Response('keep sibling'));
+    });
     await page.goto('http://127.0.0.1:' + port + '/index.html');
     await page.waitForSelector('#home.active');
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
     const before = await page.evaluate(async function(){
       await navigator.serviceWorker.ready;
       const c = await caches.open('note-trainer-old-test');
@@ -543,6 +554,8 @@ async function cacheResetCheck(browser, port){
     });
     assert.ok(before.sw >= 1, 'the game should register a service worker');
     assert.ok(before.caches.some(function(k){ return k.indexOf('note-trainer-') === 0; }));
+    assert.ok(before.caches.includes('other-app-cache'), 'worker activation must preserve unrelated caches');
+    assert.ok(before.caches.some(k => k.includes('sibling@')), 'worker activation must preserve sibling scope');
 
     await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&next=%2Findex.html');
     await page.waitForFunction(function(){
@@ -557,11 +570,27 @@ async function cacheResetCheck(browser, port){
       };
     });
     assert.equal(after.sw, 0, 'clear-cache must unregister the game service worker');
-    assert.ok(!after.caches.some(function(k){ return k.indexOf('note-trainer-') === 0; }),
+    assert.ok(!after.caches.some(function(k){ return k.indexOf('note-trainer-') === 0 && !k.includes('sibling@'); }),
       'clear-cache must delete note-trainer caches');
+    assert.ok(after.caches.some(k => k.includes('sibling@')), 'reset must preserve sibling scope');
     assert.ok(after.caches.indexOf('other-app-cache') >= 0,
       'clear-cache must leave other apps on the same origin alone');
     assert.equal(after.keep, 'yes', 'clear-cache must keep localStorage');
+    assert.equal(await page.title(), 'note-trainer-cache:ok:', 'successful reset must send a completion receipt');
+
+    // SW 开启时的真实升级/离线路径，不能把清理页缓存成游戏首页。
+    await page.goto('http://127.0.0.1:' + port + '/index.html');
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    await context.setOffline(true);
+    await page.reload();
+    await page.waitForSelector('#home.active');
+    assert.ok(await page.locator('meta[name="app-build"]').count(), 'offline fallback must be the game shell');
+    await context.setOffline(false);
+
+    await page.route('**/manifest.webmanifest', route => route.fulfill({status:500,body:'test failure'}));
+    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&token=failure');
+    await page.waitForFunction(() => document.documentElement.dataset.cacheStatus === 'failed');
+    assert.equal(await page.title(), 'note-trainer-cache:failed:failure', 'HTTP errors must not report a successful reset');
   }finally{
     await context.close();
   }
@@ -590,6 +619,12 @@ async function main(){
     });
     assert.equal(cards, 9, 'home must show nine skill cards');
     console.log('PASS home: 9 skill cards');
+    const build = await page.evaluate(() => ({
+      meta: document.querySelector('meta[name="app-build"]').content,
+      settings: document.querySelector('#buildTag').textContent
+    }));
+    assert.equal(build.settings, '构建 ' + build.meta, 'settings must display the actual page build');
+    console.log('PASS build: settings matches page build ' + build.meta);
 
     await layoutCheck(page);
     console.log('PASS layout: 13 question types x 4 viewports');
@@ -605,6 +640,8 @@ async function main(){
 
     await selectionVarietyCheck(page);
     console.log('PASS selection: every checked set keeps variety in skills 1-9 and daily');
+
+    await generationAudit(page);
 
     await ledgerCheck(page);
     console.log('PASS level 8: 6 questions, numbers 1-8');

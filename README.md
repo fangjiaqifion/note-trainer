@@ -621,13 +621,17 @@ npm run cache
 What it clears:
 
 - Safari and Chrome service worker registrations whose scope is the game directory.
-- Safari and Chrome CacheStorage entries whose name starts with `note-trainer-`.
+- Safari and Chrome CacheStorage entries for this game scope, plus legacy unscoped `note-trainer-` caches. Other game scopes are preserved.
 - The HTTP cache for `index.html`, `sw.js`, `manifest.webmanifest`, and the directory URL,
-  for both the remote and the local origin.
+  for the remote origin and both local hostnames (`127.0.0.1` and `localhost`).
 
 What it does not clear: `localStorage`. Learner profiles, checked notes, progress, and the
 practice log stay intact. The reset page is `clear-cache.html`; it uses the directory scope and
-the `note-trainer-` prefix, so other GitHub Pages projects on the same origin are untouched.
+the `note-trainer-` prefix plus the game scope. Both worker activation and reset preserve other projects.
+
+Reset completion is acknowledged by a per-run success/failure page title. The script polls this receipt instead of assuming three seconds is enough. HTTP errors, missing automation access, and an older remote reset page are reported as unverified; reset tabs remain open for inspection. `--no-open` prepares the build and prints URLs but does not clear browsers. When the active tools require CUA for UI actions, use that flag and verify each reset page through CUA.
+
+The build hash includes the service worker and reset page as well as the game shell.
 
 The script starts `python3 -m http.server 8765` if the local server is not already running. Use
 `--no-open` to print the reset URLs without opening Safari or Chrome, `--skip-tests` only when
@@ -653,9 +657,9 @@ seeds a test profile in `localStorage`, and checks: nine home cards; 13 question
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
 flags; the report has nine skill columns; the console stays clean; every checked-note subset
-keeps variety in skills 1–9 and the daily session; and `clear-cache.html` removes only this
+is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (45,900 sessions across nine skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
-runs the working copy; the cache test uses a separate context that allows them.
+runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts. See `AGENTS.md` for the required delivery workflow and `docs/audit_20261104_followup/audit.md` for the latest findings.
 
 ## Deploying
 
@@ -667,8 +671,7 @@ npm run release -- --push
 
 The script runs the tests, writes a content-based build tag into `index.html`, updates the cache
 name in `sw.js`, commits, pushes, and polls the remote page until the build tag matches. It then
-clears the browser caches and prints the remote link. If the poll times out it says so; the push
-still succeeded, so reload after a minute.
+clears the browser caches and prints the remote link. If the poll times out, the command fails and does not hand over an unverified remote test link; the push itself may already have succeeded.
 
 - `cache-control` is 600 seconds; the build tag avoids guessing whether a page is fresh.
 - Free accounts can only publish Pages from a public repository, so both the repository and

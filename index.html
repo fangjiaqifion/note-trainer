@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="e0f6cd3163">
+<meta name="app-build" content="71877f3fc3">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -891,30 +891,28 @@ function shuffle(a){
 /* 把题目重排成「相邻两题不是同一个音」。
    keyOf 返回判重用的键：技能 2、4、5 用 noteId，技能 8 用谱号 + 位置，
    技能 9 用目标音。prevKey 用来和上一块（如今日练习的复习块）衔接。
-   数组很小，直接回溯，保证可行时一定排得开；
-   如果池子里只有一个键（例如只勾了一个音），原样返回。 */
+   每次取剩余最多且不同于上一题的组，同数量时随机打破平局。
+   无解时只保留必要的重复，不再回溯枚举排列或退回整份原序列。 */
 function spaceOut(list, keyOf, prevKey){
-  const items = list.slice();
-  const used = items.map(function(){ return false; });
+  const groups = new Map();
+  shuffle(list).forEach(function(item){
+    const key = keyOf(item);
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  });
   const out = [];
-  function go(prev){
-    if(out.length === items.length) return true;
-    const candidates = [];
-    for(let i = 0; i < items.length; i++){
-      if(!used[i] && keyOf(items[i]) !== prev) candidates.push(i);
-    }
-    shuffle(candidates);
-    for(let k = 0; k < candidates.length; k++){
-      const i = candidates[k];
-      used[i] = true;
-      out.push(items[i]);
-      if(go(keyOf(items[i]))) return true;
-      out.pop();
-      used[i] = false;
-    }
-    return false;
+  while(out.length < list.length){
+    const available = shuffle(Array.from(groups.keys()).filter(function(key){
+      return groups.get(key).length > 0;
+    }));
+    const different = available.filter(function(key){ return key !== prevKey; });
+    const candidates = different.length ? different : available;
+    candidates.sort(function(a, b){ return groups.get(b).length - groups.get(a).length; });
+    const key = candidates[0];
+    out.push(groups.get(key).pop());
+    prevKey = key;
   }
-  return go(prevKey) ? out : items;
+  return out;
 }
 
 /* 十二平均律的音级表，一个八度内 C 到 B。
@@ -1035,9 +1033,6 @@ function noteForReport(letter){
 /* 一开始就会的三个音，不经过新音导入。 */
 const BASE_NOTES = ['B3','C4','D4'];
 
-/* 每个音名在第 1 关的权重。C、B 是两个锚点，出现得多一点；
-   其余音平均。找不到的音名按 1 计。 */
-const LETTER_WEIGHT = { B:4, C:4, D:2, E:2, F:2, G:2, A:2 };
 /* 需要加线的音登记在这里：{ 谱号: { 音 id: 加线的 y 位置 } }。
    中央 C 有两种写法：高音谱号下加一线（y=5）、低音谱号上加一线（y=-1）。
    漏登记的表现是：音符漂浮在谱表外，没有那条短横线。 */
@@ -3597,35 +3592,17 @@ function qKeyboardFind(noteId, opts){
    repeatTo 负责把一个池子循环填满到 n 个，再打乱，
    保证每种音、每种时值出现的次数尽量均匀。 */
 function repeatTo(arr, n){
+  if(!arr.length) return [];
   const out = [];
   while(out.length < n) out.push.apply(out, shuffle(arr));
   return out.slice(0, n);
 }
 
-/* 第 1 关的字母序列：从按权重摆好的字母里随机抽 n 个。
-   权重来自 LETTER_WEIGHT，C、B 两个锚点出现得多一点。
-   两个约束：池子里的字母尽量都出现；相邻两题不重复同一个音。
-   纯随机洗牌时常连出三个 C，孩子会觉得「怎么又是这个」。
-   spaceOut 用回溯，能排开就一定排开；旧版这里是启发式修补，
-   极端牌型修不好时会悄悄留下连着的字母。 */
+/* 第 1 关按勾选字母均衡分配数量，再随机错开相邻音名。 */
 function findKeyLetters(n, letters){
   letters = (letters && letters.length) ? letters : ['B','C','D'];
-  const base = [];
-  letters.forEach(function(letter){
-    const w = LETTER_WEIGHT[letter] || 1;
-    for(let i = 0; i < w; i++) base.push(letter);
-  });
-  const picked = [];
-  while(picked.length < n) picked.push.apply(picked, shuffle(base));
-  picked.length = n;
-  letters.forEach(function(need){
-    if(picked.indexOf(need) >= 0) return;
-    const count = {};
-    picked.forEach(function(x){ count[x] = (count[x] || 0) + 1; });
-    let idx = -1, best = 0;
-    picked.forEach(function(x, i){ if(count[x] > best){ best = count[x]; idx = i; } });
-    if(idx >= 0 && best > 1) picked[idx] = need;
-  });
+  // 先均衡数量再排顺序；旧锚点权重会产生 6 个 B + 2 个 E，根本排不开。
+  const picked = repeatTo(letters, n);
   return spaceOut(picked, function(x){ return x; });
 }
 
@@ -3701,13 +3678,8 @@ function makeStaffKey(ids, n){
   return spaceOut(qs, function(q){ return q.noteId; });
 }
 
-/* 第 3 关的音池。以勾选的音为主，勾了 C4 就自动带出它的低音写法 C4B。
-   如果勾选的音全在同一谱号，补一个相反谱号的已学音做对比：
-   没有对比音，这一关每题都只有一个可能答案，换多少题都是重复。
-   对比音取音高上最近的一个，孩子只要横向挪一点。
-
-   旧版这里是「固定四种写法 ∩ 勾选」：勾 D、E 时只剩 D4，
-   八题全是 D，正是用户反复看到的问题。 */
+/* 第 3 关严格取勾选音，C4 可使用同音高的 C4B 写法。
+   同谱号的 D/E 仍是两种题目，不能为凑两种答案而偷偷加入未勾选音。 */
 function clefPool(ids){
   const pool = [];
   if(!ids || !ids.length) return pool;
@@ -3718,24 +3690,6 @@ function clefPool(ids){
     add(id);
     if(id === 'C4') add('C4B');
   });
-  const has = { treble:false, bass:false };
-  pool.forEach(function(id){ has[NOTES[id].clef] = true; });
-  if(!has.treble || !has.bass){
-    const missing = has.treble ? 'bass' : 'treble';
-    const cand = NOTE_ORDER.filter(function(id){
-      const p = S.progress[id];
-      return p && p.pos && NOTES[id].clef === missing;
-    });
-    /* 真正的低音谱号音优先；一个都没有时才退回中央 C 的低音写法。 */
-    if(!cand.length && missing === 'bass' && S.progress.C4 && S.progress.C4.pos){
-      cand.push('C4B');
-    }
-    const midi = pool.length ? NOTES[pool[0]].midi : 60;
-    cand.sort(function(a, b){
-      return Math.abs(NOTES[a].midi - midi) - Math.abs(NOTES[b].midi - midi);
-    });
-    if(cand.length) add(cand[0]);
-  }
   return pool;
 }
 
@@ -4247,35 +4201,32 @@ function spotlightQuestions(noteId, from, count){
   return qs;
 }
 
-/* 今日练习：只练勾选的音，10 题。
-   2 题复习（最久没练的音）+ 2 题找键 + 2 题时值 + 1 题手/指/按住 +
-   3 题谱 ↔ 键。新音不自动塞进这节课：它由「我的音」里那个音的 chip
-   进入，家长想让孩子学新音时再点。
-   没有学过指法的音时，把那一题换成谱 ↔ 键，题量仍是 10。 */
+/* 今日练习：全节统一规划 10 个音，再分配复习、找键、时值、指法和谱键题型。
+   最久没练的 1–2 个音在最前；只有一个音时允许必要重复。 */
 function buildDailySession(){
   const learned = activeNotes(['key', 'pos']);
   if(!learned.length) return [];
   const fin = activeNotes(['key', 'pos', 'fin']);
-  const qs = [];
   const review = staleNotes(learned, Math.min(2, learned.length));
-  if(review.length) qs.push.apply(qs, makeStaffKey(review, review.length));
-
-  const find = makeFindKey(learned, 2);
-  const beats = makeBeats(learned, 2);
-  const staff = makeStaffKey(learned, 3);
-  const play = fin.length ? makePlay(fin, 1) : makeStaffKey(learned, 1);
-  /* 复习块固定在最前，其余交错，避免同一种题连着出现。 */
-  const mix = [find[0], staff[0], beats[0], find[1], staff[1], play[0], beats[1], staff[2]];
-  /* 复习块固定在最前；mix 的第一题还要和复习块最后一题错开。 */
-  const lastReview = qs.length ? qs[qs.length - 1].noteId : undefined;
-  qs.push.apply(qs, spaceOut(mix.filter(Boolean), function(q){ return q.noteId; }, lastReview));
-  /* 只勾了一个音时只有 1 题复习，补一道谱 ↔ 键，保持 10 题。 */
-  while(qs.length < 10){
-    const extra = makeStaffKey(learned, 1)[0];
-    if(!extra) break;
-    qs.push(extra);
-  }
-  return qs;
+  // 整节课统一分配音，再分配题型。独立抽取各小块会出现 7:3，重排也无法修复。
+  const plan = weightedRepeatTo(learned, 10);
+  review.forEach(function(id){ plan.splice(plan.indexOf(id), 1); });
+  const notes = review.concat(spaceOut(plan, function(id){ return id; }, review[review.length - 1]));
+  const kinds = ['find','s2k','beats','find','k2s','s2k','shape','k2s'];
+  while(kinds.length < notes.length - review.length) kinds.push('s2k');
+  // 指法题只能使用已学指法的音；移动题型而不是改音，保持全节的数量与间隔。
+  const playAt = notes.findIndex(function(id, i){ return i >= review.length && fin.indexOf(id) >= 0 && kinds[i - review.length] !== 'find'; });
+  if(playAt >= 0) kinds[playAt - review.length] = 'play';
+  const values = repeatTo(VALUE_IDS, notes.length);
+  return notes.map(function(id, i){
+    const kind = i < review.length ? 's2k' : kinds[i - review.length];
+    if(kind === 'find') return qFindKey(NOTES[id].letter);
+    if(kind === 'k2s') return qKeyToStaff(id, learned);
+    if(kind === 'beats') return qBeats(id, values[i]);
+    if(kind === 'shape') return qWhichShape(id, values[i]);
+    if(kind === 'play') return qPlayNote(id, pick(['quarter','half','dotted']));
+    return qStaffToKey(id);
+  });
 }
 
 /* ==================== 流程 ====================

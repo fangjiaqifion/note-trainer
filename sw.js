@@ -2,12 +2,15 @@
    缓存名由 scripts/release.mjs 按页面内容生成，不要手改；
    每次都取新文件（cache:'reload'），避免安装时把 HTTP 缓存里的旧页
    一起装进离线包。页面导航始终网络优先，离线时才回退。 */
-const CACHE = 'note-trainer-e0f6cd3163';
+const CACHE = 'note-trainer-71877f3fc3';
+const SCOPED_CACHE = CACHE + '@' + self.registration.scope;
+const mine = k => k.startsWith('note-trainer-') &&
+  (!k.includes('@') || k.endsWith('@' + self.registration.scope));
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
-    caches.open(CACHE).then(function (c) {
+    caches.open(SCOPED_CACHE).then(function (c) {
       return c.addAll(ASSETS.map(function (url) {
         return new Request(url, { cache: 'reload' });
       }));
@@ -18,22 +21,34 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+      return Promise.all(keys.filter(function (k) { return mine(k) && k !== SCOPED_CACHE; }).map(function (k) { return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
   );
 });
 
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  if (e.request.headers.get('X-Note-Trainer-Reset') === '1') return;
+  const url = new URL(e.request.url);
+  // 清理页不进离线包，也不能被导航逻辑写成 index.html。
+  if(url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope) ||
+     url.pathname.endsWith('/clear-cache.html')) return;
   if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request).then(function (r) {
+    const network = fetch(new Request(e.request, {cache:'no-cache'}));
+    e.waitUntil(network.then(async function(r){
+      if(r.ok && (url.pathname.endsWith('/index.html') || url.href.split('?')[0] === self.registration.scope)){
         const copy = r.clone();
-        caches.open(CACHE).then(function (c) { c.put('./index.html', copy); });
-        return r;
-      }).catch(function () { return caches.match('./index.html'); })
-    );
+        const c = await caches.open(SCOPED_CACHE);
+        await c.put('./index.html', copy);
+      }
+    }).catch(function(){}));
+    e.respondWith(network.catch(async function(){
+      const c = await caches.open(SCOPED_CACHE);
+      return (await c.match('./index.html')) || Response.error();
+    }));
   } else {
-    e.respondWith(caches.match(e.request).then(function (r) { return r || fetch(e.request); }));
+    e.respondWith(caches.open(SCOPED_CACHE).then(function(c){
+      return c.match(e.request).then(function(r){ return r || fetch(e.request); });
+    }));
   }
 });

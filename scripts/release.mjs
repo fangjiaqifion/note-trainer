@@ -74,15 +74,16 @@ async function fetchText(url, timeout = 8000){
   }
 }
 
-/* 构建号只由页面内容决定：index.html（去掉构建号那一行）、manifest、三个图标。
+/* 构建号覆盖页面、manifest、图标、清理页及去掉生成号的 Service Worker。
    内容没变就不换号，也就不会产生无意义的提交。 */
 async function stampBuild(){
   const indexPath = join(ROOT, 'index.html');
   const index = await readFile(indexPath, 'utf8');
   const stripped = index.replace(/[ \t]*<meta name="app-build" content="[^"]*">\s*\n?/, '');
   const parts = [Buffer.from(stripped, 'utf8')];
-  for(const name of ['manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png']){
-    parts.push(await readFile(join(ROOT, name)));
+  for(const name of ['manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'clear-cache.html', 'sw.js']){
+    const bytes = await readFile(join(ROOT, name));
+    parts.push(name === 'sw.js' ? Buffer.from(bytes.toString().replace(/const CACHE = 'note-trainer-[^']*';/, "const CACHE = 'note-trainer-BUILD';")) : bytes);
   }
   const build = createHash('sha256').update(Buffer.concat(parts)).digest('hex').slice(0, 10);
 
@@ -132,7 +133,7 @@ async function waitForRemote(build){
 async function localIsOurs(){
   try{
     const res = await fetchText(`${LOCAL}index.html`, 2000);
-    return res.ok && (res.text.indexOf('app-build') >= 0 || res.text.indexOf('识谱小练习') >= 0);
+    return res.ok && res.text === await readFile(join(ROOT, 'index.html'), 'utf8');
   }catch(e){
     return false;
   }
@@ -153,88 +154,71 @@ async function ensureLocalServer(){
 }
 
 function openApp(app, url){
-  try{
-    execFile('open', ['-a', app, url], () => {});
-    return true;
-  }catch(e){
-    return false;
-  }
+  return new Promise((resolve, reject) => {
+    execFile('open', ['-a', app, url], (error) => error ? reject(error) : resolve());
+  });
 }
 
-function closeResetTabs(){
-  const safari = `tell application "Safari"
-    set doomed to {}
-    repeat with w in windows
-      repeat with t in tabs of w
-        try
-          if URL of t contains "clear-cache.html" then set end of doomed to t
-        end try
-      end repeat
-    end repeat
-    repeat with t in doomed
-      try
-        close t
-      end try
-    end repeat
-  end tell`;
-  const chrome = `tell application "Google Chrome"
-    repeat with w in windows
-      set n to count of tabs of w
-      repeat while n > 0
-        try
-          if URL of tab n of w contains "clear-cache.html" then close tab n of w
-        end try
-        set n to n - 1
-      end repeat
-    end repeat
-  end tell`;
-  return new Promise((resolve) => {
-    execFile('osascript', ['-e', safari], { timeout: 8000 }, () => {
-      execFile('osascript', ['-e', chrome], { timeout: 8000 }, () => resolve());
-    });
-  });
+// 只读取本轮清理页的标题；完成信号由页面在所有异步步骤结束后写入。
+function resetTitles(app, token){
+  const script = app === 'Safari' ?
+    'tell application "Safari"\nset found to {}\nrepeat with w in windows\nrepeat with t in tabs of w\ntry\nif URL of t contains "' + token + '" then set end of found to name of t\nend try\nend repeat\nend repeat\nreturn found as text\nend tell' :
+    'tell application "Google Chrome"\nset found to {}\nrepeat with w in windows\nrepeat with t in tabs of w\ntry\nif URL of t contains "' + token + '" then set end of found to title of t\nend try\nend repeat\nend repeat\nreturn found as text\nend tell';
+  return new Promise(resolve => execFile('osascript', ['-e', script], {timeout:4000}, (error, stdout) => {
+    resolve(error ? '' : stdout);
+  }));
 }
 
 async function clearBrowserCaches(origins, link){
   const browsers = [];
-  if(await exists('/Applications/Safari.app')) browsers.push('Safari');
+  if(await exists('/Applications/Safari.app') || await exists('/System/Applications/Safari.app')) browsers.push('Safari');
   if(await exists('/Applications/Google Chrome.app')) browsers.push('Google Chrome');
-
+  const token = 'release-' + Date.now();
   const targets = [];
   for(const origin of origins){
     try{
-      const res = await fetchText(`${origin}clear-cache.html`, 5000);
-      if(res.ok && res.text.indexOf('清理缓存') >= 0) targets.push(origin);
-      else log(`跳过 ${origin}：clear-cache.html 还不可用（HTTP ${res.status}）`);
-    }catch(e){
-      log(`跳过 ${origin}：${e.message}`);
+      const res = await fetchText(origin + 'clear-cache.html?cb=' + token, 5000);
+      if(res.ok && res.text.includes('清理缓存')) targets.push({origin, receipts:res.text.includes('note-trainer-cache:')});
+      else log('未清理 ' + origin + '：清理页不可用（HTTP ' + res.status + '）');
+    }catch(e){ log('未清理 ' + origin + '：' + e.message); }
+  }
+  const pending = [];
+  for(const app of browsers){
+    for(let i=0; i<targets.length; i++){
+      const target = targets[i];
+      const receipt = token + '-' + i;
+      const url = target.origin + 'clear-cache.html?stay=1&token=' + receipt + '&cb=' + token;
+      if(!OPEN){ log('未执行自动清理 ' + app + ': ' + url); continue; }
+      try{
+        await openApp(app, url);
+        pending.push({app, ...target, receipt});
+      }catch(e){ log('未清理 ' + app + ' ' + target.origin + ': ' + e.message); }
     }
   }
-  if(!targets.length) return;
-
-  const resetUrls = [];
-  for(const origin of targets){
-    const next = `${origin}index.html`;
-    resetUrls.push(`${origin}clear-cache.html?stay=1&next=${encodeURIComponent(next)}`);
+  const deadline = Date.now() + 25000;
+  while(pending.some(t => t.receipts && !t.done) && Date.now() < deadline){
+    for(const app of browsers){
+      if(!pending.some(t => t.app === app && t.receipts && !t.done)) continue;
+      const titles = await resetTitles(app, token);
+      for(const target of pending.filter(t => t.app === app && !t.done)){
+        if(titles.includes('note-trainer-cache:ok:' + target.receipt)){
+          target.done = true;
+          log('已核验缓存清理：' + app + ' ' + target.origin);
+        }else if(titles.includes('note-trainer-cache:failed:' + target.receipt)){
+          target.receipts = false;
+          log('缓存清理失败：' + app + ' ' + target.origin);
+        }
+      }
+    }
+    if(pending.some(t => t.receipts && !t.done)) await sleep(500);
   }
-
-  if(!OPEN){
-    log('需要手动清理时打开这些地址（每个浏览器各一次）：');
-    for(const b of browsers) for(const u of resetUrls) log(`  ${b}: ${u}`);
-    return;
+  for(const target of pending.filter(t => !t.done)){
+    log('缓存清理未核验：' + target.app + ' ' + target.origin +
+      (target.receipts ? '（超时或 macOS 自动化权限不可用；查看保留的清理页）' : '（远程清理页版本较旧或清理失败；查看保留的清理页）'));
   }
-  if(!browsers.length){
-    log('没找到 Safari 或 Chrome，跳过自动清缓存。');
-    return;
-  }
-
-  log('打开 Safari / Chrome 清理这个游戏的离线缓存…');
-  for(const b of browsers) for(const u of resetUrls) openApp(b, u);
-  await sleep(3000);
-  await closeResetTabs();
-  log('清缓存标签页已关闭。');
-
-  for(const b of browsers) openApp(b, link);
+  if(!browsers.length) log('未找到 Safari / Chrome，未执行浏览器缓存清理。');
+  // 保留本轮清理页及其成功/失败状态，避免三秒后提前关闭或误关其他项目。
+  if(OPEN) for(const app of browsers) await openApp(app, link);
 }
 
 async function main(){
@@ -247,22 +231,26 @@ async function main(){
     const build = readBuild();
     const localOk = await ensureLocalServer();
     if(!localOk) log(`警告：${PORT} 端口没有起来，本地链接不可用。`);
-    const link = localOk ? `${LOCAL}index.html` : REMOTE;
+    if(!localOk) throw new Error('本地服务器不可用，不能交付本地测试链接');
+    const link = `${LOCAL}index.html?build=${build}`;
     log(`当前构建：${build}`);
     log(`链接：${link}`);
-    await clearBrowserCaches([REMOTE, ...(localOk ? [LOCAL] : [])], link);
+    await clearBrowserCaches([REMOTE, LOCAL, `http://localhost:${PORT}/`], link);
     return;
   }
+
+  const build = await stampBuild();
+  log(`构建号：${build}`);
 
   if(!SKIP_TESTS){
     log('跑回归测试…');
     run('npm', ['test']);
   }
 
-  const build = await stampBuild();
-  log(`构建号：${build}`);
-
   if(PUSH){
+    if(capture('gh', ['api', 'user', '--jq', '.login']) !== 'fangjiaqifion'){
+      throw new Error('当前 GitHub 账户不是 fangjiaqifion，停止推送。');
+    }
     if(capture('git', ['rev-parse', '--abbrev-ref', 'HEAD']) !== 'main'){
       throw new Error('GitHub Pages 从 main 发布，请先切回 main 再推送。');
     }
@@ -277,18 +265,19 @@ async function main(){
     log('推送到 origin/main…');
     run('git', ['push', 'origin', 'HEAD']);
     const ready = await waitForRemote(build);
-    if(!ready) log(`警告：${REMOTE_TIMEOUT} 秒内没等到 Pages 更新，链接可能还是上一版；稍后刷新即可。`);
+    if(!ready) throw new Error(`推送已完成，但 ${REMOTE_TIMEOUT} 秒内未确认 Pages 构建 ${build}；不交付旧版远程测试链接。`);
     await ensureLocalServer();
-    await clearBrowserCaches([REMOTE, LOCAL], REMOTE + 'index.html');
+    await clearBrowserCaches([REMOTE, LOCAL, `http://localhost:${PORT}/`], REMOTE + 'index.html?build=' + build);
     log('');
-    log(`远程链接（推送后测试用这个）：${REMOTE}index.html`);
+    log(`远程链接（推送后测试用这个）：${REMOTE}index.html?build=${build}`);
     log(`本地链接（备用）：${LOCAL}index.html`);
   }else{
     const localOk = await ensureLocalServer();
     if(!localOk) throw new Error(`本地服务器没有起来：${LOCAL}`);
-    await clearBrowserCaches([REMOTE, LOCAL], `${LOCAL}index.html`);
+    log(`本地测试链接：${LOCAL}index.html?build=${build}`);
+    await clearBrowserCaches([REMOTE, LOCAL, `http://localhost:${PORT}/`], `${LOCAL}index.html?build=${build}`);
     log('');
-    log(`本地链接（未推送，测试用这个）：${LOCAL}index.html`);
+    log(`本地链接（未推送，测试用这个）：${LOCAL}index.html?build=${build}`);
     const ip = spawnSync('ipconfig', ['getifaddr', 'en0'], { encoding: 'utf8' }).stdout.trim() ||
                spawnSync('ipconfig', ['getifaddr', 'en1'], { encoding: 'utf8' }).stdout.trim();
     if(ip) log(`iPad（同一 Wi-Fi）：http://${ip}:${PORT}/index.html`);

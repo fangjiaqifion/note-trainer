@@ -1,0 +1,39 @@
+
+> release
+> node scripts/release.mjs --local --no-open
+
+构建号：71877f3fc3
+跑回归测试…
+
+> test
+> node tests/scheduling_audit.mjs && node tests/smoke.mjs
+
+PASS scheduling audit: 1144 count/boundary cases, balanced B/E across 100 seeded draws
+PASS home: 9 skill cards
+PASS build: settings matches page build 71877f3fc3
+PASS layout: 13 question types x 4 viewports
+PASS single note: key -> staff keeps 2 choices
+PASS level 3: no adjacent same note name, varied order
+PASS repeats: no adjacent same note in skills 2, 4, 5, 8, 9 and daily
+PASS selection: every checked set keeps variety in skills 1-9 and daily
+PASS generation audit: 45900 sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 10 modes
+D+E level 3: D4,E4,D4,E4,D4,E4,D4,E4 | E4,D4,E4,D4,E4,D4,E4,D4 | D4,E4,D4,E4,D4,E4,D4,E4
+PASS level 8: 6 questions, numbers 1-8
+PASS spotlight: resume at saved step, open all flags
+PASS report: nine-skill matrix
+PASS cache reset: game caches cleared, other caches and localStorage kept
+PASS console: no errors
+
+All smoke tests passed.
+本地测试链接：http://127.0.0.1:8765/index.html?build=71877f3fc3
+未清理 https://fangjiaqifion.github.io/note-trainer/：清理页不可用（HTTP 404）
+未执行自动清理 Safari: http://127.0.0.1:8765/clear-cache.html?stay=1&token=release-1793791161387-0&cb=release-1793791161387
+未执行自动清理 Safari: http://localhost:8765/clear-cache.html?stay=1&token=release-1793791161387-1&cb=release-1793791161387
+未执行自动清理 Google Chrome: http://127.0.0.1:8765/clear-cache.html?stay=1&token=release-1793791161387-0&cb=release-1793791161387
+未执行自动清理 Google Chrome: http://localhost:8765/clear-cache.html?stay=1&token=release-1793791161387-1&cb=release-1793791161387
+
+本地链接（未推送，测试用这个）：http://127.0.0.1:8765/index.html?build=71877f3fc3
+iPad（同一 Wi-Fi）：http://192.168.2.164:8765/index.html
+测完再推送：npm run release -- --push
+
+测试前先看设置页最下面的「构建 71877f3fc3」；对不上就是缓存没清干净。
