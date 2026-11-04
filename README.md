@@ -193,7 +193,9 @@ The stage and the answer area follow the prompt immediately and stay top-aligned
 space stays below them. When a question also offers choices (the keyboard → staff direction of
 skill 2), the choices sit directly above the keyboard inside the answer area. The relative
 order is always question, then choices or keyboard, then empty space; the keyboard never
-jumps between the middle and the bottom edge.
+jumps between the middle and the bottom edge. On very short landscape screens (max-height
+520px, such as a phone on its side) the prompt, large letter and key height shrink together so
+the whole keyboard stays visible.
 
 The local keyboard in the first spotlight step shows only one black-key group. It keeps the
 same key width as the full keyboard: its container is 3/15 (or 4/15) of the keyboard width and

@@ -509,6 +509,26 @@
     .levels{grid-auto-rows:120px}
     .lv-desc{display:none}
   }
+  /* 极矮的横屏（手机横放）：把题目、键盘和边距一起收小，
+     仍然保持题目在上、回答在下，不让键盘被裁掉。
+     iPad 横屏高度 768，不会进入这一段。 */
+  @media (max-height:520px){
+    .topbar{padding:6px 14px 0;gap:8px}
+    .icon-btn{width:36px;height:36px;font-size:16px;border-radius:12px}
+    .level-tag{font-size:13px}
+    .prompt{min-height:36px;padding:0 14px 2px}
+    .prompt-text{font-size:18px}
+    .speak-btn{width:32px;height:32px;font-size:14px}
+    .stage{padding:0 14px}
+    .stage.letter{gap:2px;padding-bottom:0}
+    .big-letter{font-size:clamp(48px,11vw,64px)}
+    .down-arrow{font-size:24px}
+    .kb{height:clamp(96px,20vh,120px)}
+    .kb-legend{padding:0 4px 2px}
+    .kb-legend span{font-size:11px;padding:2px 7px}
+    .answer{padding:2px 14px 4px;gap:8px}
+    .answer.col{gap:4px}
+  }
   @media (orientation:landscape) and (max-height:560px){
     .home-head{padding-top:8px}
     .home-head .sub{display:none}
