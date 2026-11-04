@@ -230,9 +230,11 @@ skill automatically once that flag is open.
 | 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four dropdowns: treble/bass, above/below, number 1–8, line/space (the note name is not asked); six questions per session | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighbouring, third, ledger-count and mirror pairs) | none |
 
-The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
-does not grow with the note set. F, G and A are all treble notes; adding them would turn the
-level into "is it B3?", so the pool is deliberately kept at four spellings.
+The clef skill builds its pool from the checked notes. C4 brings both spellings (treble and
+bass). If every checked note uses the same clef, the pool adds one learned note from the other
+clef, nearest in pitch, as a contrast. Without that contrast note the level has only one
+possible answer, and a "random" set of questions is just the same note repeated. This is why
+checking D and E produces D, E and a bass note rather than eight D questions.
 
 Skill 7 is the bridge from staff geometry to pitch. It always shows two whole notes with no
 stems, so the only cue is vertical position. The first three questions, with no clef, ask for
@@ -496,6 +498,10 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | Skill 3 now builds its pool from the checked notes. If every checked note uses the same clef, one learned note from the other clef is added as a contrast, so checking D and E no longer gives eight D questions. C4 still brings both spellings |
+| 2026-11-04 | Skill 8 no longer repeats the same ledger position within a session |
+| 2026-11-04 | `npm run release -- --local` and `--push` stamp a build, run the tests, clear Safari and Chrome caches for the remote and local origins, and print the correct test link. Settings shows the build tag |
+| 2026-11-04 | Tests now sweep checked-note subsets and cover the cache reset page, so a level that collapses to one note under a non-default selection fails before release |
 | 2026-11-04 | Question generators space out adjacent notes: skill 3 balances B/C/D and never shows C twice in a row (C4 and C4B count as C), and skills 2, 4, 5, 8 and 9 and the daily mix use a shared `spaceOut` pass |
 | 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
@@ -570,7 +576,11 @@ note-trainer/
 ├── index.html            the whole game: styles, script, clef paths, question pool
 ├── LEVELS.md             skill-by-skill teaching record (Chinese)
 ├── manifest.webmanifest  PWA manifest for "Add to Home Screen"
-├── sw.js                 offline cache
+├── sw.js                 offline cache; cache name is written by the release script
+├── clear-cache.html      origin-scoped cache reset page used by the release script
+├── scripts/release.mjs   build stamp, tests, commit/push, cache clear, test link
+├── tests/smoke.mjs       Playwright regression test
+├── package.json          npm test / release / cache scripts
 ├── icon.svg, icon-*.png  icons (180 is full-bleed for iOS, 192/512 are masked)
 ├── og-cover.png          link-preview image referenced by og:image
 ├── serve.sh              local static server for development
@@ -582,25 +592,49 @@ note-trainer/
 ```bash
 bash serve.sh          # serves on 8765
 bash serve.sh 8080     # another port
+npm run release -- --local   # the full local test flow
 ```
 
-The script prints two addresses: `http://127.0.0.1:8765/index.html` for this Mac, and
+`serve.sh` prints two addresses: `http://127.0.0.1:8765/index.html` for this Mac, and
 `http://<Mac LAN IP>:8765/index.html` for the iPad on the same Wi-Fi. Closing the lid or the
 terminal stops it.
 
-### Clean local test link
+### Release, cache, and the test link
 
-For a local test, start a fresh port instead of reusing an old one:
+One command prepares the build, runs the regression test, clears the game's browser caches,
+and opens the right link. The build tag appears at the bottom of Settings; check it before
+reporting a bug. If it does not match the build the agent announced, the browser or the
+deployment is still on an old copy.
 
 ```bash
-bash serve.sh 8773
+# Local test. Nothing is pushed. Ends with the local and iPad links.
+npm run release -- --local
+
+# Remote test. Runs tests, commits, pushes, waits for GitHub Pages, clears caches,
+# and ends with the remote link.
+npm run release -- --push -m "修复：第三关按勾选音集出题"
+
+# Cache only. No tests, no build, no commit. Prints the current links.
+npm run cache
 ```
 
-A new port is a new browser origin. Chrome and Safari then start with no cookies, no
-`localStorage`, and no service worker cache for the test, without touching the rest of the
-browser profile. Give both the loopback and LAN links, and tell the tester which port is new.
-The app itself does not use cookies; profiles, checked notes and the practice log are in
-`localStorage`, and the offline cache is a service worker.
+What it clears:
+
+- Safari and Chrome service worker registrations whose scope is the game directory.
+- Safari and Chrome CacheStorage entries whose name starts with `note-trainer-`.
+- The HTTP cache for `index.html`, `sw.js`, `manifest.webmanifest`, and the directory URL,
+  for both the remote and the local origin.
+
+What it does not clear: `localStorage`. Learner profiles, checked notes, progress, and the
+practice log stay intact. The reset page is `clear-cache.html`; it uses the directory scope and
+the `note-trainer-` prefix, so other GitHub Pages projects on the same origin are untouched.
+
+The script starts `python3 -m http.server 8765` if the local server is not already running. Use
+`--no-open` to print the reset URLs without opening Safari or Chrome, `--skip-tests` only when
+the change is known to be cosmetic, and `--timeout 300` when GitHub Pages is slow.
+
+The working rule: if the commit is not pushed, the test link is local; if it is pushed, the test
+link is remote. Do not hand over a remote link before the build tag on the remote page matches.
 
 Opening `index.html` directly also renders, but the service worker will not register from
 `file://`, so offline mode is only available over http(s).
@@ -618,21 +652,32 @@ It uses `playwright-core` with the system Google Chrome, starts a temporary stat
 seeds a test profile in `localStorage`, and checks: nine home cards; 13 question types at four
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
-flags; the report has nine skill columns; and the console stays clean. Service workers are
-blocked, so the test always runs the working copy.
+flags; the report has nine skill columns; the console stays clean; every checked-note subset
+keeps variety in skills 1–9 and the daily session; and `clear-cache.html` removes only this
+game's caches and keeps `localStorage`. The main context blocks service workers so it always
+runs the working copy; the cache test uses a separate context that allows them.
 
 ## Deploying
 
-The site is served by GitHub Pages from the `main` branch, repository root. Push to `main`
-and the site rebuilds in about a minute.
+The site is served by GitHub Pages from the `main` branch, repository root.
 
-- `cache-control` is 600 seconds; when checking a fresh deploy, append a query string.
+```bash
+npm run release -- --push
+```
+
+The script runs the tests, writes a content-based build tag into `index.html`, updates the cache
+name in `sw.js`, commits, pushes, and polls the remote page until the build tag matches. It then
+clears the browser caches and prints the remote link. If the poll times out it says so; the push
+still succeeded, so reload after a minute.
+
+- `cache-control` is 600 seconds; the build tag avoids guessing whether a page is fresh.
 - Free accounts can only publish Pages from a public repository, so both the repository and
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v29`);
-  otherwise the iPad keeps the old page.
+- Do not bump the cache name by hand. `npm run release` derives it from the page content;
+  a manual edit is overwritten at the next release.
+
 
 ## Editing this README
 
@@ -667,9 +712,9 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   picture, but the actual hand position still has to be checked on the piano by an adult.
 - Holding is judged by duration only, not by which finger pressed. In skill 5 the hand and
   finger are checked before the key is pressed, not while it is held.
-- The clef skill covers the four spellings this note set uses, not the general rule that
-  clefs are chosen by register: middle C is legal in both clefs, and one pitch can be written
-  more than one way.
+- The clef skill follows the checked notes, with one contrast note when they all share a
+  clef. It does not teach the general register rule: middle C is legal in both clefs, and one
+  pitch can be written more than one way.
 - Skill 6 uses the clef as a distractor: the second half shows one but never names it, and
   the answer is the same in either clef. The other lines and spaces come later.
 - A4 is introduced before F4 and G4 with finger 5, but the shift itself is not taught. The
