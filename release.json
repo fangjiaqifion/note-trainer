@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "build": "29280ef61b",
+  "files": {
+    "index.html": "94391fad9ea4194942a858ef70f1aea1cabaee98c773214b55534abd613b5a28",
+    "sw.js": "4d432f5ba25fd91545c85ca521e347a35636a22315f9e6dbe08b15ff4ab9501c",
+    "clear-cache.html": "aa8809bfb8aeebf1baf1ecd66c106bd27a723dfc4335891ce15e5f23823d1ffa",
+    "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
+    "icon.svg": "9e1dfd6d6b77e7b761478ff88275a5a353c9a4def43886c6f9de4f50806586e4",
+    "icon-180.png": "71e841e512a2b14879931b23afb6c7f07a9f90bb74033c911f997a107073df01",
+    "icon-192.png": "0550789495af0da0879dc89849585ee336922597e4abee3fa33e3520133c80ce",
+    "icon-512.png": "a43ce7dd24074d78c61772c839848e7294148c02db7ef3242334421287d1151f"
+  }
+}

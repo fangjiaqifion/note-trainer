@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="71877f3fc3">
+<meta name="app-build" content="29280ef61b">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -5889,14 +5889,35 @@ function renderBuildTag(){
   console.log('note-trainer build:', build);
 }
 
+// 带构建号的测试链接必须匹配当前页面，旧页不能继续进入游戏冒充新版。
+const releaseParams = new URLSearchParams(location.search);
+const expectedBuild = releaseParams.get('build');
+const actualBuild = document.querySelector('meta[name="app-build"]').content;
+if(expectedBuild && expectedBuild !== actualBuild){
+  document.title = 'note-trainer-load:failed:' + (releaseParams.get('verify') || '');
+  document.body.textContent = '版本尚未更新。请求构建 ' + expectedBuild + '，当前构建 ' + actualBuild + '。请重新打开清缓存链接。';
+  return;
+}
 bindAccountUI();
 renderBuildTag();
 bootApp();
+if(releaseParams.has('verify')){
+  document.title = 'note-trainer-ready:' + actualBuild + ':' + releaseParams.get('verify');
+  try{
+    const callback = new URL(releaseParams.get('callback'));
+    if(callback.protocol === 'http:' && ['127.0.0.1','localhost'].includes(callback.hostname) &&
+       /^\/__release\/receipt\/[a-f0-9]{48}$/.test(callback.pathname)){
+      callback.searchParams.set('build',actualBuild);
+      // 顶层导航回执避免 HTTPS → localhost 的 fetch/CORS/本地网络权限问题。
+      window.addEventListener('load',function(){ location.replace(callback.href); });
+    }
+  }catch(e){}
+}
 
 /* 离线缓存只在安全上下文里注册：https 或本机调试。
    直接双击打开 file:// 时浏览器不支持，注册会静默失败，属正常。
    updateViaCache:'none' 让浏览器每次都重新取 sw.js，不再等 HTTP 缓存过期。 */
-if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
+if(!releaseParams.has('verify') && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
   window.addEventListener('load', function(){
     navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
       .then(function(reg){ return reg.update(); })

@@ -587,10 +587,30 @@ async function cacheResetCheck(browser, port){
     assert.ok(await page.locator('meta[name="app-build"]').count(), 'offline fallback must be the game shell');
     await context.setOffline(false);
 
+    const build = await page.locator('meta[name="app-build"]').getAttribute('content');
+    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?launch=1&token=auto&build=' + build);
+    await page.waitForFunction(expected => document.title === 'note-trainer-ready:' + expected + ':auto', build);
+    assert.equal(new URL(page.url()).searchParams.get('build'), build, 'reset must open the verified build');
+
     await page.route('**/manifest.webmanifest', route => route.fulfill({status:500,body:'test failure'}));
     await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&token=failure');
     await page.waitForFunction(() => document.documentElement.dataset.cacheStatus === 'failed');
     assert.equal(await page.title(), 'note-trainer-cache:failed:failure', 'HTTP errors must not report a successful reset');
+
+    await page.goto('http://127.0.0.1:' + port + '/index.html?build=0000000000&verify=old-page');
+    assert.equal(await page.title(), 'note-trainer-load:failed:old-page', 'an old page must not claim the requested build');
+    assert.match(await page.locator('body').innerText(), /版本尚未更新/);
+
+    // 模拟 Safari 的 SW 接口不返回：必须在步骤级超时后失败，不能无限挂起。
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator.serviceWorker,'getRegistrations',{
+        value:() => new Promise(() => {})
+      });
+    });
+    await page.goto('http://127.0.0.1:' + port + '/clear-cache.html?stay=1&token=hang');
+    await page.waitForFunction(() => document.documentElement.dataset.cacheStatus === 'failed', null, {timeout:12000});
+    assert.equal(await page.title(),'note-trainer-cache:failed:hang');
+    assert.match(await page.locator('body').innerText(),/service-worker 超时/);
   }finally{
     await context.close();
   }

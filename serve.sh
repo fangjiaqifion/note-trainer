@@ -17,4 +17,4 @@ fi
 echo "按 Ctrl+C 停止。"
 echo
 
-exec python3 -m http.server "${PORT}"
+exec node scripts/local_server.mjs "${PORT}"

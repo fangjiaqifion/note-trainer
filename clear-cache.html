@@ -43,6 +43,9 @@
   }catch(e){}
   var stay = params.get('stay') === '1';
   var token = params.get('token') || '';
+  var expected = params.get('build') || '';
+  var actualBuild = '';
+  var launch = params.get('launch') === '1';
   var failed = false;
   var log = document.getElementById('log');
   var link = document.getElementById('next');
@@ -90,34 +93,69 @@
   }
 
   async function refreshShell(){
-    var urls = ['./', './index.html', './sw.js', './manifest.webmanifest'];
-    var failed = 0;
-    for(var i = 0; i < urls.length; i++){
-      try{
-        var response = await fetch(urls[i], { cache:'reload', credentials:'same-origin', headers:{'X-Note-Trainer-Reset':'1'} });
-        if(!response.ok) failed++;
-      }catch(e){
-        failed++;
-      }
+    async function download(file, bust){
+      var url = new URL(file, location.href);
+      if(bust) url.searchParams.set('nt_reset', token || Date.now());
+      var response = await fetch(url, {cache:'reload',credentials:'same-origin',
+        headers:{'X-Note-Trainer-Reset':'1'},signal:AbortSignal.timeout(12000)});
+      if(!response.ok) throw new Error(file + ': HTTP ' + response.status);
+      return response;
     }
-    row(failed === 0, failed === 0 ? '已重新下载最新页面和离线脚本' : failed + ' 个文件没取到，检查网络或本地服务器');
+    var manifest = await (await download('./release.json',true)).json();
+    var required = ['index.html','sw.js','clear-cache.html','manifest.webmanifest','icon.svg','icon-180.png','icon-192.png','icon-512.png'];
+    if(manifest.schema !== 1 || !/^[a-f0-9]{10}$/.test(manifest.build) ||
+       !required.every(function(file){ return /^[a-f0-9]{64}$/.test((manifest.files || {})[file] || ''); }))
+      throw new Error('发布清单不完整');
+    actualBuild = manifest.build;
+    if(expected && expected !== actualBuild) throw new Error('请求构建 ' + expected + '，服务器仍是 ' + actualBuild);
+    if(!crypto.subtle) throw new Error('需要 HTTPS 或 localhost 才能核验文件');
+    for(var file of required){
+      var bytes = await (await download('./' + file,false)).arrayBuffer();
+      var digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)))
+        .map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      if(digest !== manifest.files[file]) throw new Error(file + ' 哈希不一致，服务器或缓存尚未更新');
+    }
+    row(true, '已核验全部发布文件，构建 ' + actualBuild);
+    var game = new URL('./index.html',location.href);
+    game.searchParams.set('build',actualBuild);
+    game.searchParams.set('verify',token);
+    if(params.get('callback')) game.searchParams.set('callback',params.get('callback'));
+    if(launch) next = game.href;
+    link.href = next;
   }
 
+  var step = '';
+  async function bounded(promise, ms){
+    var timer;
+    try{return await Promise.race([promise,new Promise(function(_,reject){
+      timer=setTimeout(function(){reject(new Error(step + ' 超时'));},ms);
+    })]);}finally{clearTimeout(timer);}
+  }
   (async function(){
-    try{ await clearServiceWorkers(); }
-    catch(e){ row(false, '注销离线服务失败：' + e.message); }
-    try{ await clearCaches(); }
-    catch(e){ row(false, '删除离线缓存失败：' + e.message); }
-    try{ await refreshShell(); }
-    catch(e){ row(false, '刷新页面缓存失败：' + e.message); }
-    // 注销不等于当前页面立即脱离旧控制器；刷新过程中旧版本仍可能重建缓存。
-    try{ await clearCaches(); }
-    catch(e){ row(false, '最终缓存清理失败：' + e.message); }
+    try{
+      step='service-worker';await bounded(clearServiceWorkers(),8000);
+      step='cache-storage';await bounded(clearCaches(),8000);
+      step='release-files';await bounded(refreshShell(),25000);
+      // 注销不等于当前页面立即脱离旧控制器，最后再清一次。
+      step='final-cache-storage';await bounded(clearCaches(),8000);
+    }catch(e){row(false,'清理未完成：' + e.message);}
     row(true, '账户、勾选、进度和答题记录都保留了');
     document.querySelector('h1').textContent = failed ? '缓存清理未完成' : '缓存已清理';
     document.title = 'note-trainer-cache:' + (failed ? 'failed:' : 'ok:') + token;
     document.documentElement.dataset.cacheStatus = failed ? 'failed' : 'ok';
-    if(!stay && !failed){
+    if(failed && params.get('callback')){
+      try{
+        var callback=new URL(params.get('callback'));
+        if(callback.protocol === 'http:' && ['127.0.0.1','localhost'].includes(callback.hostname) &&
+           /^\/__release\/receipt\/[a-f0-9]{48}$/.test(callback.pathname)){
+          callback.searchParams.set('build',expected || actualBuild);
+          callback.searchParams.set('status','failed');
+          callback.searchParams.set('stage',step);
+          location.replace(callback.href);
+        }
+      }catch(e){}
+    }
+    if((launch || !stay) && !failed){
       setTimeout(function(){ location.replace(next); }, 1200);
     }
   })();

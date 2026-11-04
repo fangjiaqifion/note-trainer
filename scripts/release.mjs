@@ -15,12 +15,13 @@
  * CacheStorage 的名字必须以 note-trainer- 开头。localStorage 不清，
  * 学生账户、勾选、进度和答题记录都保留。
  */
-import { readFile, writeFile, access } from 'node:fs/promises';
+import { readFile, writeFile, access, mkdir, open, unlink } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync, execFile } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeIntegrity, verifyRelease } from './release_integrity.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const REMOTE = 'https://fangjiaqifion.github.io/note-trainer/';
@@ -37,6 +38,34 @@ const CACHE_ONLY = has('--cache-only');
 const OPEN = !has('--no-open');
 const SKIP_TESTS = has('--skip-tests');
 const REMOTE_TIMEOUT = Number(value('--timeout', 180));
+const report = {schema:1, startedAt:new Date().toISOString(), mode:PUSH ? 'remote' : 'local', status:'running', targets:[]};
+async function saveReport(){
+  await mkdir(join(ROOT,'.release'),{recursive:true});
+  await writeFile(join(ROOT,'.release/status.json'),JSON.stringify(report,null,2) + '\n');
+}
+
+let ownsLock=false;
+const lockPath=join(ROOT,'.release/pipeline.lock');
+async function acquireLock(){
+  await mkdir(join(ROOT,'.release'),{recursive:true});
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const file=await open(lockPath,'wx');
+      await file.writeFile(String(process.pid));await file.close();ownsLock=true;return;
+    }catch(error){
+      if(error.code !== 'EEXIST') throw error;
+      const pid=Number(await readFile(lockPath,'utf8').catch(()=>''));
+      if(Number.isInteger(pid) && pid>0){
+        try{process.kill(pid,0);}catch(probe){
+          if(probe.code === 'ESRCH'){await unlink(lockPath).catch(()=>{});continue;}
+        }
+      }
+      throw new Error('已有发布/缓存流水线运行，请等待完成；不会并行清理或覆盖运行状态。');
+    }
+  }
+  throw new Error('无法获取流水线运行锁');
+}
+
 const MESSAGE = value('--message', '') || value('-m', '');
 
 function log(msg){ console.log(msg); }
@@ -68,7 +97,7 @@ async function fetchText(url, timeout = 8000){
       signal: ctrl.signal,
       headers: { 'cache-control': 'no-cache', 'pragma': 'no-cache' }
     });
-    return { ok: res.ok, status: res.status, text: await res.text() };
+    return { ok: res.ok, status: res.status, text: await res.text(), headers:Object.fromEntries(res.headers) };
   }finally{
     clearTimeout(timer);
   }
@@ -81,7 +110,7 @@ async function stampBuild(){
   const index = await readFile(indexPath, 'utf8');
   const stripped = index.replace(/[ \t]*<meta name="app-build" content="[^"]*">\s*\n?/, '');
   const parts = [Buffer.from(stripped, 'utf8')];
-  for(const name of ['manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'clear-cache.html', 'sw.js']){
+  for(const name of ['manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'clear-cache.html', 'sw.js']){
     const bytes = await readFile(join(ROOT, name));
     parts.push(name === 'sw.js' ? Buffer.from(bytes.toString().replace(/const CACHE = 'note-trainer-[^']*';/, "const CACHE = 'note-trainer-BUILD';")) : bytes);
   }
@@ -98,6 +127,7 @@ async function stampBuild(){
   const nextSw = sw.replace(/const CACHE = 'note-trainer-[^']*';/, `const CACHE = 'note-trainer-${build}';`);
   if(nextSw !== sw) await writeFile(swPath, nextSw);
 
+  await writeIntegrity(ROOT, build);
   return build;
 }
 
@@ -113,14 +143,10 @@ async function waitForRemote(build){
   let last = '';
   while(Date.now() < deadline){
     try{
-      const res = await fetchText(`${REMOTE}index.html?cb=${Date.now()}`);
-      last = res.ok ? `HTTP ${res.status}` : `HTTP ${res.status}`;
-      const m = /<meta name="app-build" content="([^"]*)">/.exec(res.text || '');
-      if(res.ok && m && m[1] === build){
-        log(`远程已更新到构建 ${build}`);
-        return true;
-      }
-      if(res.ok && m && m[1] !== build) last = `远程仍是 ${m[1]}`;
+      const expected = JSON.parse(await readFile(join(ROOT,'release.json'),'utf8'));
+      await verifyRelease(REMOTE,expected);
+      log('远程首页、SW、清理页、manifest、图标全部哈希一致：' + build);
+      return true;
     }catch(e){
       last = e.message;
     }
@@ -133,7 +159,7 @@ async function waitForRemote(build){
 async function localIsOurs(){
   try{
     const res = await fetchText(`${LOCAL}index.html`, 2000);
-    return res.ok && res.text === await readFile(join(ROOT, 'index.html'), 'utf8');
+    return res.ok && res.headers['x-note-trainer-server'] === createHash('sha256').update(await readFile(join(ROOT,'scripts/local_server.mjs'))).digest('hex') && res.headers['cache-control']?.includes('no-store') && res.text === await readFile(join(ROOT, 'index.html'), 'utf8');
   }catch(e){
     return false;
   }
@@ -141,8 +167,12 @@ async function localIsOurs(){
 
 async function ensureLocalServer(){
   if(await localIsOurs()) return true;
-  log(`在 ${PORT} 端口起本地服务器…`);
-  const child = spawn('python3', ['-m', 'http.server', String(PORT)], {
+  try{
+    await fetch(LOCAL,{signal:AbortSignal.timeout(1000)});
+    throw new Error('端口 ' + PORT + ' 已被旧服务器或其他项目占用。请停止旧服务或使用 --port 新端口；不自动终止未知进程。');
+  }catch(e){if(e.message.startsWith('端口 ')) throw e;}
+  log(`在 ${PORT} 端口起无 HTTP 缓存的本地服务器…`);
+  const child = spawn(process.execPath, [join(ROOT,'scripts/local_server.mjs'), String(PORT)], {
     cwd: ROOT, detached: true, stdio: 'ignore'
   });
   child.unref();
@@ -155,80 +185,95 @@ async function ensureLocalServer(){
 
 function openApp(app, url){
   return new Promise((resolve, reject) => {
-    execFile('open', ['-a', app, url], (error) => error ? reject(error) : resolve());
+    execFile('open', ['-a', app, url], {timeout:10000}, (error) => error ? reject(error) : resolve());
   });
 }
 
-// 只读取本轮清理页的标题；完成信号由页面在所有异步步骤结束后写入。
-function resetTitles(app, token){
-  const script = app === 'Safari' ?
-    'tell application "Safari"\nset found to {}\nrepeat with w in windows\nrepeat with t in tabs of w\ntry\nif URL of t contains "' + token + '" then set end of found to name of t\nend try\nend repeat\nend repeat\nreturn found as text\nend tell' :
-    'tell application "Google Chrome"\nset found to {}\nrepeat with w in windows\nrepeat with t in tabs of w\ntry\nif URL of t contains "' + token + '" then set end of found to title of t\nend try\nend repeat\nend repeat\nreturn found as text\nend tell';
-  return new Promise(resolve => execFile('osascript', ['-e', script], {timeout:4000}, (error, stdout) => {
-    resolve(error ? '' : stdout);
-  }));
-}
-
 async function clearBrowserCaches(origins, link){
+  if(has('--local-only')) origins = origins.filter(origin => origin !== REMOTE);
+  report.scope = has('--local-only') ? 'local-only' : 'local-and-remote';
   const browsers = [];
   if(await exists('/Applications/Safari.app') || await exists('/System/Applications/Safari.app')) browsers.push('Safari');
   if(await exists('/Applications/Google Chrome.app')) browsers.push('Google Chrome');
   const token = 'release-' + Date.now();
-  const targets = [];
-  for(const origin of origins){
+  const expected = JSON.parse(await readFile(join(ROOT,'release.json'),'utf8'));
+  for(let i=0; i<origins.length; i++){
+    const origin = origins[i];
+    let manifest;
     try{
-      const res = await fetchText(origin + 'clear-cache.html?cb=' + token, 5000);
-      if(res.ok && res.text.includes('清理缓存')) targets.push({origin, receipts:res.text.includes('note-trainer-cache:')});
-      else log('未清理 ' + origin + '：清理页不可用（HTTP ' + res.status + '）');
-    }catch(e){ log('未清理 ' + origin + '：' + e.message); }
-  }
-  const pending = [];
-  for(const app of browsers){
-    for(let i=0; i<targets.length; i++){
-      const target = targets[i];
-      const receipt = token + '-' + i;
-      const url = target.origin + 'clear-cache.html?stay=1&token=' + receipt + '&cb=' + token;
-      if(!OPEN){ log('未执行自动清理 ' + app + ': ' + url); continue; }
-      try{
-        await openApp(app, url);
-        pending.push({app, ...target, receipt});
-      }catch(e){ log('未清理 ' + app + ' ' + target.origin + ': ' + e.message); }
+      manifest = await verifyRelease(origin, origin === REMOTE && !PUSH ? undefined : expected);
+      log('服务器发布文件已核验：' + origin + ' 构建 ' + manifest.build);
+    }catch(e){
+      report.targets.push({origin,status:'server-unverified',error:e.message});
+      log('服务器未核验：' + origin + ' ' + e.message);
+      continue;
     }
-  }
-  const deadline = Date.now() + 25000;
-  while(pending.some(t => t.receipts && !t.done) && Date.now() < deadline){
     for(const app of browsers){
-      if(!pending.some(t => t.app === app && t.receipts && !t.done)) continue;
-      const titles = await resetTitles(app, token);
-      for(const target of pending.filter(t => t.app === app && !t.done)){
-        if(titles.includes('note-trainer-cache:ok:' + target.receipt)){
-          target.done = true;
-          log('已核验缓存清理：' + app + ' ' + target.origin);
-        }else if(titles.includes('note-trainer-cache:failed:' + target.receipt)){
-          target.receipts = false;
-          log('缓存清理失败：' + app + ' ' + target.origin);
+      const registration = await fetch(LOCAL + '__release/register',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({build:manifest.build,next:origin + 'index.html?build=' + manifest.build}),
+        signal:AbortSignal.timeout(3000)
+      });
+      if(!registration.ok) throw new Error('本地回执服务不可用');
+      const {token:receipt} = await registration.json();
+      const callback = LOCAL + '__release/receipt/' + receipt;
+      const url = origin + 'clear-cache.html?launch=1&token=' + receipt + '&build=' + manifest.build + '&cb=' + token + '&callback=' + encodeURIComponent(callback);
+      const target = {app,origin,build:manifest.build,receipt,status:OPEN ? 'waiting' : 'prepared',url};
+      report.targets.push(target);
+      if(!OPEN){log('待浏览器清理与加载核验 ' + app + ': ' + url);continue;}
+      try{
+        await openApp(app,url);
+        // Safari 会延迟后台标签页加载；每个目标收到回执后才打开下一个。
+        const deadline=Date.now()+60000;
+        while(target.status === 'waiting' && Date.now()<deadline){
+          try{
+            const response=await fetch(LOCAL+'__release/check/'+target.receipt,{cache:'no-store',signal:AbortSignal.timeout(2000)});
+            if(!response.ok) throw new Error('回执状态 HTTP '+response.status);
+            const receipt=await response.json();
+            if(receipt.status === 'ready' && receipt.build === target.build){
+              target.status='ready';log('浏览器实际已加载：'+target.app+' '+target.origin+' '+target.build);
+            }else if(receipt.status === 'failed'){
+              target.status='failed';target.error='清理步骤失败：'+receipt.stage;
+              log(target.app+' '+target.origin+' '+target.error);
+            }
+          }catch(e){target.error=e.message;}
+          if(target.status === 'waiting') await sleep(500);
         }
-      }
+        if(target.status === 'waiting'){target.status='timeout';target.error='未收到游戏实际加载回执，检查清理页与网络';}
+        await saveReport();
+      }catch(e){target.status='failed';target.error=e.message;}
     }
-    if(pending.some(t => t.receipts && !t.done)) await sleep(500);
   }
-  for(const target of pending.filter(t => !t.done)){
-    log('缓存清理未核验：' + target.app + ' ' + target.origin +
-      (target.receipts ? '（超时或 macOS 自动化权限不可用；查看保留的清理页）' : '（远程清理页版本较旧或清理失败；查看保留的清理页）'));
-  }
-  if(!browsers.length) log('未找到 Safari / Chrome，未执行浏览器缓存清理。');
-  // 保留本轮清理页及其成功/失败状态，避免三秒后提前关闭或误关其他项目。
-  if(OPEN) for(const app of browsers) await openApp(app, link);
+  await saveReport();
+  const complete = browsers.includes('Safari') && browsers.includes('Google Chrome') &&
+    report.targets.length === origins.length * 2 && report.targets.every(t => t.status === 'ready');
+  report.status = complete ? 'ready' : OPEN ? 'incomplete' : 'prepared';
+  await saveReport();
+  log('流水线状态：' + report.status + '；详情 .release/status.json');
+  if(OPEN && !complete) throw new Error('缓存/加载核验未全部完成，不能把本轮标记为测试就绪。');
+  if(OPEN) for(const app of browsers) await openApp(app,link);
 }
 
 async function main(){
+  if(PUSH && has('--local-only')) throw new Error('--push 不能与 --local-only 合用，远程交付必须核验远程浏览器加载。');
   if(has('--help') || has('-h')){
-    log('用法：npm run release -- [--local|--push] [--no-open] [--skip-tests] [--message "..."]');
+    log('用法：npm run release -- [--local|--push|--build-only|--verify-remote] [--no-open] [--local-only] [--message "..."]');
+    return;
+  }
+
+  await acquireLock();
+
+  if(has('--verify-remote')){
+    const expected = JSON.parse(await readFile(join(ROOT,'release.json'),'utf8'));
+    await verifyRelease(REMOTE,expected);
+    report.build=expected.build;report.status='server-verified';await saveReport();
+    log('远程全部发布文件与本地构建一致：' + expected.build);
     return;
   }
 
   if(CACHE_ONLY){
     const build = readBuild();
+    report.build=build;
     const localOk = await ensureLocalServer();
     if(!localOk) log(`警告：${PORT} 端口没有起来，本地链接不可用。`);
     if(!localOk) throw new Error('本地服务器不可用，不能交付本地测试链接');
@@ -240,7 +285,10 @@ async function main(){
   }
 
   const build = await stampBuild();
+  report.build=build;
   log(`构建号：${build}`);
+
+  if(has('--build-only')){report.status='built';await saveReport();log('仅构建完成；未执行测试、清缓存或部署。');return;}
 
   if(!SKIP_TESTS){
     log('跑回归测试…');
@@ -258,9 +306,17 @@ async function main(){
     if(dirty){
       log('提交本次发布：');
       log(dirty.split('\n').map((l) => '  ' + l).join('\n'));
-      run('git', ['add', '-A']);
+      const allowed = ['index.html','sw.js','release.json'];
+      const paths = new Set([
+        ...capture('git',['diff','--name-only']).split('\n'),
+        ...capture('git',['diff','--cached','--name-only']).split('\n'),
+        ...capture('git',['ls-files','--others','--exclude-standard']).split('\n')
+      ].filter(Boolean));
+      if([...paths].some(path => !allowed.includes(path)))
+        throw new Error('请先提交功能改动；发布只自动提交 index.html、sw.js、release.json，避免夹带其他工作。');
+      run('git', ['add', '--', ...allowed]);
       const changed = spawnSync('git', ['diff', '--cached', '--quiet'], { cwd: ROOT }).status !== 0;
-      if(changed) run('git', ['commit', '-m', MESSAGE || `发布：构建 ${build}`]);
+      if(changed) run('git', ['-c','user.name=FANG, Jiaqi','-c','user.email=fangjiaqifion@gmail.com','commit', '-m', MESSAGE || `发布构建 ${build}`]);
     }
     log('推送到 origin/main…');
     run('git', ['push', 'origin', 'HEAD']);
@@ -269,7 +325,7 @@ async function main(){
     await ensureLocalServer();
     await clearBrowserCaches([REMOTE, LOCAL, `http://localhost:${PORT}/`], REMOTE + 'index.html?build=' + build);
     log('');
-    log(`远程链接（推送后测试用这个）：${REMOTE}index.html?build=${build}`);
+    log(`${OPEN ? '远程链接（六个目标均已核验）' : '待浏览器核验的远程地址（prepared）'}：${REMOTE}index.html?build=${build}`);
     log(`本地链接（备用）：${LOCAL}index.html`);
   }else{
     const localOk = await ensureLocalServer();
@@ -285,10 +341,11 @@ async function main(){
   }
 
   log('');
-  log(`测试前先看设置页最下面的「构建 ${build}」；对不上就是缓存没清干净。`);
+  log(`目标构建 ${build}；只有实际加载回执匹配才标记 ready，未核验先查 .release/status.json。`);
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
+  report.status='failed';report.error=err.message;if(ownsLock) await saveReport();
   console.error('\n失败：' + (err && err.message ? err.message : err));
   process.exitCode = 1;
-});
+}).finally(async()=>{if(ownsLock) await unlink(lockPath).catch(()=>{});});

@@ -601,47 +601,54 @@ terminal stops it.
 
 ### Release, cache, and the test link
 
-One command prepares the build, runs the regression test, clears the game's browser caches,
-and opens the right link. The build tag appears at the bottom of Settings; check it before
-reporting a bug. If it does not match the build the agent announced, the browser or the
-deployment is still on an old copy.
+The pipeline distinguishes built files, verified server files, and verified browser loads.
+Only the last state is test-ready. See [the pipeline record](docs/audit_cache_pipeline_20261104/pipeline.md).
 
 ```bash
-# Local test. Nothing is pushed. Ends with the local and iPad links.
-npm run release -- --local
-
-# Remote test. Runs tests, commits, pushes, waits for GitHub Pages, clears caches,
-# and ends with the remote link.
-npm run release -- --push -m "修复：第三关按勾选音集出题"
-
-# Cache only. No tests, no build, no commit. Prints the current links.
-npm run cache
+npm run build                           # stamp build + release.json; no tests or browser actions
+npm run release -- --local              # tests + local server + both browsers, local and remote URLs
+npm run release -- --local --local-only # explicitly verify local URLs only; remote remains unchecked
+npm run cache                           # repeat cache clearing/load checks, without rebuilding
+npm run cache -- --local-only            # local browser cache/load checks only
+npm run verify:remote                    # compare all remote file hashes with the local release
+npm run pages:refresh                    # read-only plan for rebuilding remote main
+npm run pages:refresh -- --execute        # rebuild remote main; does not push local changes
+npm run release -- --push                # authorized push, wait for all remote files, clear/load checks
 ```
 
-What it clears:
+The development server uses `Cache-Control: no-store`. Its source hash identifies the running
+server, so an old server or a different project cannot pass the readiness check. Stop an old
+server or choose `--port`; the command does not kill unknown processes.
 
-- Safari and Chrome service worker registrations whose scope is the game directory.
-- Safari and Chrome CacheStorage entries for this game scope, plus legacy unscoped `note-trainer-` caches. Other game scopes are preserved.
-- The HTTP cache for `index.html`, `sw.js`, `manifest.webmanifest`, and the directory URL,
-  for the remote origin and both local hostnames (`127.0.0.1` and `localhost`).
+`release.json` contains SHA-256 hashes for the game, service worker, reset page, manifest and
+icons. Server verification fetches every file using a fresh URL. Browser reset unregisters only
+this game's service worker, deletes its offline caches, refreshes and hashes all release files,
+and then opens `index.html?build=...`. The game refuses a mismatched build.
 
-What it does not clear: `localStorage`. Learner profiles, checked notes, progress, and the
-practice log stay intact. The reset page is `clear-cache.html`; it uses the directory scope and
-the `note-trainer-` prefix plus the game scope. Both worker activation and reset preserve other projects.
+The loaded game acknowledges its actual build through a short-lived loopback navigation
+receipt. Each browser/origin gets a different random receipt. This avoids AppleScript tab
+reading, browser JavaScript automation settings, CORS and background HTTPS-to-localhost fetches.
+The local server stores receipts in memory for ten minutes and accepts receipt API requests
+only from loopback. It redirects back to the verified game URL after acknowledgement.
 
-Reset completion is acknowledged by a per-run success/failure page title. The script polls this receipt instead of assuming three seconds is enough. HTTP errors, missing automation access, and an older remote reset page are reported as unverified; reset tabs remain open for inspection. `--no-open` prepares the build and prints URLs but does not clear browsers. When the active tools require CUA for UI actions, use that flag and verify each reset page through CUA.
+Each target is opened and acknowledged before the next one, avoiding Safari background-tab delays. The transient verification page defers service-worker registration until it redirects to the normal game page. Reset steps have bounded timeouts and failure receipts. An atomic process lock prevents overlapping runs from racing or overwriting status.
 
-The build hash includes the service worker and reset page as well as the game shell.
+The normal scope is Safari + Chrome × GitHub Pages + 127.0.0.1 + localhost. All six targets must
+acknowledge before success. `--local-only` explicitly limits this to four local targets.
+`--no-open` only prepares URLs and records `prepared`, never `ready`. Missing files, old CDN
+bytes, failed loads and timeouts fail the full pipeline instead of silently succeeding.
+Machine-readable results are stored in gitignored `.release/status.json`; runtime receipts
+are not committed. Learner accounts, selection, progress and records in localStorage are preserved.
 
-The script starts `python3 -m http.server 8765` if the local server is not already running. Use
-`--no-open` to print the reset URLs without opening Safari or Chrome, `--skip-tests` only when
-the change is known to be cosmetic, and `--timeout 300` when GitHub Pages is slow.
+GitHub Pages has build/status APIs, not a documented site-CDN purge endpoint. The rebuild
+command uses the official Pages build API for the configured legacy main/root source and
+then verifies the remote release. It never deletes Actions caches or pretends to purge a CDN.
+New pipeline files need an authorized deployment before remote verification can work.
+[GitHub's Pages API](https://docs.github.com/en/rest/pages/pages) documents the rebuild behavior.
 
-The working rule: if the commit is not pushed, the test link is local; if it is pushed, the test
-link is remote. Do not hand over a remote link before the build tag on the remote page matches.
-
-Opening `index.html` directly also renders, but the service worker will not register from
-`file://`, so offline mode is only available over http(s).
+Commit feature changes before `--push`. The release command only auto-commits generated
+`index.html`, `sw.js` and `release.json`, avoiding unrelated work. Hand over the local link for
+an unpushed version, or the remote link only after its files and browser loads are verified.
 
 ## Tests
 
@@ -659,7 +666,7 @@ keyboard → staff choices; a new-note lesson resumes at the saved step and open
 flags; the report has nine skill columns; the console stays clean; every checked-note subset
 is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (45,900 sessions across nine skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
-runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts. See `AGENTS.md` for the required delivery workflow and `docs/audit_20261104_followup/audit.md` for the latest findings.
+runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts. See `AGENTS.md` for the required delivery workflow and `docs/audit_20261104_followup/audit.md` for the generation audit; `docs/audit_cache_pipeline_20261104/pipeline.md` records the newer cache pipeline validation.
 
 ## Deploying
 

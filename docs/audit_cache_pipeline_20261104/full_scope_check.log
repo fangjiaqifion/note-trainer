@@ -1,0 +1,16 @@
+
+> cache
+> node scripts/release.mjs --cache-only
+
+当前构建：65da7cc46a
+链接：http://127.0.0.1:8765/index.html?build=65da7cc46a
+服务器未核验：https://fangjiaqifion.github.io/note-trainer/ release.json: HTTP 404
+服务器发布文件已核验：http://127.0.0.1:8765/ 构建 65da7cc46a
+服务器发布文件已核验：http://localhost:8765/ 构建 65da7cc46a
+浏览器实际已加载：Google Chrome http://localhost:8765/ 65da7cc46a
+浏览器实际已加载：Safari http://127.0.0.1:8765/ 65da7cc46a
+浏览器实际已加载：Google Chrome http://127.0.0.1:8765/ 65da7cc46a
+浏览器实际已加载：Safari http://localhost:8765/ 65da7cc46a
+流水线状态：incomplete；详情 .release/status.json
+
+失败：缓存/加载核验未全部完成，不能把本轮标记为测试就绪。
