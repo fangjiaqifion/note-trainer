@@ -3,19 +3,21 @@
 A single-page, offline-capable notation trainer for young piano beginners. It drills one
 chain: note name → key on the keyboard → staff and clef → duration → hand and finger, then
 returns to the staff itself: first to name its lines and spaces, then to compare two notes by
-position, with and without a clef. New notes are introduced one at a time in a short spotlight,
-then folded into the same seven skills.
+position, with and without a clef, then to name ledger positions above and below the staff, and
+finally to tell visually similar notes apart. New notes are introduced one at a time in a
+14-question first lesson, then folded into the same nine skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
-current new note, followed by A4, F4 and G4. The order follows the student's method book:
-after E the book moves to A, then back to F and G. Learned notes can be checked or unchecked
-on the home screen, and skills 1–6 and the daily session use only the checked notes. The note
-set is configuration, not code: adding a note is one registry entry plus one queue slot, see
-[Adding a note](#adding-a-note). The seven skills stay the same as the set grows; the menu
-does not get longer.
+current new note, followed by A3, A4, F4 and G4. The order follows the student's method book:
+after E the book moves to A, then back to F and G. A3 is the left-hand third finger in the
+middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
+or unchecked on the home screen, and skills 1–6 and the daily session use only the checked
+notes. The note set is configuration, not code: adding a note is one registry entry plus one
+queue slot, see [Adding a note](#adding-a-note). The nine skills stay the same as the set
+grows; the menu does not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
 notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
@@ -104,11 +106,12 @@ contains:
 | `datetime_iso`, `date_local` | UTC timestamp and local date |
 | `session_id` | Groups the questions of one session |
 | `phase` | `pre`, `post`, or empty for practice |
-| `mode` | `skill`, `daily`, `spotlight`, `note`, or `test` |
-| `skill`, `kind` | Skill 1–7 and the question factory |
+| `mode` | `skill`, `daily`, `spotlight`, `note`, `contrast`, or `test` |
+| `skill`, `kind` | Skill 1–9 and the question factory |
 | `note`, `letter`, `value`, `clef`, `line_space` | What the item asked |
 | `relation`, `staff_y1`, `staff_y2`, `higher` | Skill 7 geometry: up/down/same, the two staff positions, and which note was higher (empty for other skills) |
 | `ask`, `target` | Skill 7 higher/lower questions: which wording was asked, and which note was the correct answer |
+| `pair`, `chosen` | Skill 9: the confusable pair (letters sorted, e.g. `A3\|C4`) and the first wrong note tapped; the last tap, the correct one, is not used |
 | `difficulty` | Difficulty used for that session |
 | `first_try`, `wrong_count` | Whether the first attempt was correct, and how many attempts failed |
 | `response_ms` | Time from the question appearing to the correct answer |
@@ -133,20 +136,23 @@ half needs at least three questions, otherwise it says the sample is too small.
 
 Then:
 
-- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the seven skills plus a
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the nine skills plus a
   total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
   above, orange from 60% to 79%, red below 60%.
 - **每关** (per skill): questions, total time, average time per question, first-try accuracy,
   error count, and the error-rate trend.
 - **每个音** (per note): learned and learning notes, the three progress flags, questions, time,
   accuracy, errors, trend, and a **练** (review) or **继续学** (continue learning) button.
-  Notes still in the eight-step spotlight appear as learning, so the new note is visible
+  Notes still in the 14-question first lesson appear as learning, so the new note is visible
   before it is complete.
 - **第 7 关：哪些音作了比较** (skill 7 comparisons): pairs with a clef resolve to actual note
   names (e.g., C4–E4); pairs without a clef are staff positions only (e.g., first space to
   second line). Direction questions are listed separately.
-- **练习形式** (session type): skill card, daily practice, spotlight, and single-note review,
-  with questions, time, and accuracy.
+- **易混音：哪些对容易混** (confusable pairs): each letter pair (e.g. A3 / C4) with questions,
+  first-try accuracy, errors, and the note the child tapped first when wrong. Both directions
+  of a pair are asked, so A→B and B→A can be compared.
+- **练习形式** (session type): skill card, daily practice, first lesson, single-note review,
+  and the new-note contrast finale, with questions, time, and accuracy.
 - Pre/post tests and the adaptive-difficulty history follow.
 
 **打印 / 存为 PDF** prints only the open report: the buttons, range switch, and the rest of the
@@ -158,8 +164,8 @@ page are hidden by a print stylesheet.
 finding, staff ↔ keyboard, clef, duration, hand/finger, and lines/spaces, using only notes
 that have already been taught. **后测** replays the same items with the same difficulty. Test
 rows carry the battery id and are excluded from the daily accuracy and the adaptive
-difficulty. The report shows overall and per-skill change in percentage points. Skill 7 is not
-yet part of the fixed battery; its practice rows still appear in the per-skill report. The
+difficulty. The report shows overall and per-skill change in percentage points. Skills 7–9 are not
+yet part of the fixed battery; their practice rows still appear in the per-skill report. The
 pre/post buttons are teacher-only.
 
 The battery needs at least two checked notes with staff positions. If a checked note has no
@@ -193,11 +199,12 @@ is centered, so the black keys keep their normal proportions instead of stretchi
 screen.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-seven fixed skill cards below that. The chips are the only part that grows with the note set.
+nine fixed skill cards below that. The chips are the only part that grows with the note set.
+Wide screens use three card columns, tablet portrait two, and phones one.
 
-## The seven skills
+## The nine skills
 
-The seven cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The nine cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -209,6 +216,8 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; choose above/below, then the line or space number | none |
+| 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighbouring, third, ledger-count and mirror pairs) | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
 does not grow with the note set. F, G and A are all treble notes; adding them would turn the
@@ -226,9 +235,9 @@ clef is audible as well as visible. A correct answer in skill 7 shows confetti a
 note green but gives no "correct" toast and no speech; the question's audio is stopped. The
 skill uses no note pool and starts without any learned notes.
 
-## New notes: an eight-step spotlight
+## New notes: a 14-question first lesson
 
-A new note is not a new level. It is a short flow that opens three flags on the note.
+A new note is not a new level. It is one 14-question lesson that opens three flags.
 The flags unlock a skill only after the note is complete and checked:
 
 | Flag | Meaning | Unlocks |
@@ -237,32 +246,34 @@ The flags unlock a skill only after the note is complete and checked:
 | `pos` | Match the staff position, clef and exact octave | Skills 2, 3, 4 |
 | `fin` | Know the hand and finger | Skill 5 |
 
-The flow has eight steps, taken four at a time, so a note takes two short sessions:
+The lesson takes the first five skills one at a time, then ends with a mixed item:
 
 | Step | Task | Flag opened |
 |---|---|---|
-| 0 | Local keyboard showing the new note's black-key group (C4–E4 for the two-black group, F4–B4 for the three-black group); the landmark is named once | `key` (partial) |
+| 0 | Local keyboard showing the new note's black-key group; the landmark is named once | `key` (partial) |
 | 1 | Full keyboard, any octave: only the letter counts | `key` |
 | 2 | Staff + letter → keyboard: the staff fixes the octave, the letter is a scaffold | `key` |
-| 3 | Staff → keyboard, with the letter removed | `pos` |
-| 4 | Keyboard → staff, options limited to the new note and its learned neighbours | `pos` |
-| 5 | Hand, finger, then hold a quarter note | `fin` |
-| 6 | Mixed with neighbours: staff → keyboard | — |
-| 7 | Mixed with neighbours: keyboard → staff | — |
+| 3–4 | Staff → keyboard (quarter, then half note) | `pos` |
+| 5–7 | Keyboard → staff, options limited to the new note and its learned neighbours | `pos` |
+| 8 | Which clef: treble or bass | `pos` |
+| 9–10 | Duration: read, choose the beat count, find the key and hold (quarter, half) | `key` + `pos` |
+| 11–12 | Hand → finger → hold (quarter, half) | `fin` |
+| 13 | Mixed with neighbours: staff → keyboard | — |
 
-After step 3 the key and position flags are open, but the note is not yet in the checked set.
-After step 7 all three flags are open, the note is checked automatically in **我的音**, and it
-joins every skill that asks for it. The two spotlight sessions are therefore the acquisition
-phase: the note does not appear in the daily session or skills 1–6 before it is complete.
-The home screen then shows a **下一个音** (Next note) button; the teacher or parent decides
-when to start the next note. The game never advances the note set on its own.
+After the first eight steps the key and position flags are open; after step 13 all three are
+open, the note is checked automatically in **我的音**, and it joins every skill that asks for
+it. The 14 questions are the acquisition phase: the note does not appear in the daily session
+or skills 1–6 before it is complete. The result screen then offers **和邻居比一比** (compare
+with neighbours), a six-question contrast session from skill 9; the home screen also shows a
+**下一个音** (Next note) button. The teacher or parent decides when to start the next note.
 
-E4 is the current new note, followed by A4, F4 and G4. The order follows the method book: after
-E the book moves to A, then back to F and G. A4 falls outside the right-hand five-finger
-position; for now it is introduced with the same spotlight and a "move the whole hand right,
-fifth finger on A" convention. A dedicated hand-shift lesson is still future work. Any
-unlearned chip can be tapped to start that note's spotlight, so a teacher or parent can choose
-A, F or G without waiting for the **下一个音** button.
+The current order is E4, then A3, then A4, F4 and G4. A3 is the left-hand third finger in the
+middle-C position and pairs with E4 (right-hand third finger). A4 falls outside the right-hand
+five-finger position; for now it uses a "move the whole hand right, fifth finger on A"
+convention. A dedicated hand-shift lesson is still future work. Any unlearned chip can be
+tapped to start that note's first lesson, so a teacher or parent can choose A3, A4, F or G
+without waiting for the **下一个音** button. If the learner stops halfway, the report's
+**继续学** button resumes at the saved step.
 
 ## Daily practice
 
@@ -283,7 +294,7 @@ note set.
 
 The daily session does not insert the current new note. To learn it, tap its chip in
 **我的音** (the current new note pulses, and any other unlearned chip opens its own
-spotlight); that starts the four-step spotlight. This keeps the checked set authoritative: if
+first lesson); that starts the 14-question first lesson. This keeps the checked set authoritative: if
 only B, C and D are checked, the daily session only asks B, C and D.
 
 The home screen also has a row of note chips (**我的音**). A learned chip is a checkbox: tap it
@@ -292,8 +303,8 @@ a filled check; an unselected learned note stays white; the current new note pul
 the spotlight; any other unlearned note is dimmed but still opens its spotlight when tapped.
 A single-note review of a note and its neighbours is available from the **练** button beside
 each note in the teacher report. The report also shows notes still in the spotlight as
-**学习中** (learning), with a **继续学** (continue learning) button that resumes at step 4
-instead of restarting the note.
+**学习中** (learning), with a **继续学** (continue learning) button that resumes at the saved
+step instead of restarting the note.
 
 ## Notation conventions
 
@@ -303,9 +314,14 @@ instead of restarting the note.
 | Middle C (C4) | Treble | First ledger line below | Right | 1 |
 | D4 | Treble | Space below the staff | Right | 2 |
 | E4 | Treble | First line (bottom line) | Right | 3 |
+| A3 | Bass | Fifth line (top line) | Left | 3 |
 | F4 | Treble | First space | Right | 4 |
 | G4 | Treble | Second line | Right | 5 |
 | A4 | Treble | Second space | Right | 5 |
+
+A3 and A4 share the letter A, so the home chips add a small octave number (A₃, A₄) only
+when a letter appears twice. A3 is the left-hand third finger of the middle-C position;
+A4 is the right-hand fifth finger after the whole-hand shift.
 
 The stem direction *is* the hand: right hand up, left hand down. The fingering digit sits
 outside the staff, on the far side from the note. This matches printed music, so nothing has
@@ -383,14 +399,15 @@ const NOTES = {
         posHint:'E 在高音谱号的第一条线上',
         clefHint:'E 在高音谱号的第一条线上' }
 };
-const NOTE_ORDER = ['B3','C4','D4','E4','F4','G4','A4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','A3','A4','F4','G4'];
 const BASE_NOTES = ['B3','C4','D4'];
 ```
 
 To add a note:
 
 1. Add an entry to `NOTES`.
-   - `midi` is the MIDI number (59 = B3, 60 = middle C, 64 = E4, 65 = F4, 67 = G4).
+   - `midi` is the MIDI number (57 = A3, 59 = B3, 60 = middle C, 64 = E4, 65 = F4,
+     67 = G4, 69 = A4).
    - `y` is the staff position in staff units: line 1 = 4, space 1 = 3.5, line 2 = 3,
      space 2 = 2.5, the space below the staff = 4.5, the first ledger line below = 5.
    - `hand` (`'L'` / `'R'`) also decides the stem direction; `finger` is the digit drawn
@@ -401,12 +418,14 @@ To add a note:
    `BASE_NOTES`; that array is only for the three notes that are known from the start.
 3. If the note needs a ledger line, register it in `LEDGER` under the clef, using the same
    `y` value (`LEDGER.treble.C4 = 5`).
-4. Test the spotlight: the local keyboard should end at the new note, the full-keyboard step
-   should accept only the exact pitch, and the mixed step should offer the new note and its
-   learned neighbours.
+4. Test the first lesson: the local keyboard should show only the new note's black-key group
+   (F3–B3 for A3, for example), the staff steps should use the exact pitch, and the mixed step
+   should offer the new note and its learned neighbours. The 14 questions come from
+   `SPOT_STEPS`; a new note needs no change there.
 
 No other code changes are needed. Skills 1–6 read `activeNotes(needs)` and pick up the
-new note once it is complete and checked. Skill 7 uses no note pool.
+new note once it is complete and checked. Skills 7–9 use no note pool; skill 9 reads the
+learned set to build its pairs.
 
 ## Adding a skill
 
@@ -441,7 +460,10 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 | Note names for staff lines | Idea | Skill 6 asks where line 2 is; the next step is "line 2 is G" |
 | Skill 7 in daily and pre/post | Idea | Two-note comparison is not in the daily mix or the 12-item battery yet |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
-| More left-hand notes | Idea | B3 is the only left-hand note, so skill 5 is right-hand heavy |
+| More left-hand notes | Idea | B3 and A3 are the only left-hand notes, so skill 5 is still right-hand heavy |
+| Skill 8 placement | Idea | The naming half is shipped; the next step is "put the note on the third ledger line above the treble staff" |
+| Grand staff for skill 9 | Idea | The mirror pairs (E4/A3, D4/B3) are most visible on a two-staff system; the current version uses one staff |
+| A3 treble spelling | Idea | A3 is taught on the bass staff; its treble spelling (second ledger line below) is not yet taught |
 | Progress history for teachers | Shipped 2026-11-03 | Time, daily-by-skill matrix, per-skill and per-note tables, comparison pairs, error-rate trend, print/PDF |
 | Adaptive question selection | Shipped 2026-11-02 | Error-weighted note pools and auto difficulty |
 | Pre/post testing | Shipped 2026-11-02 | Frozen 12-item battery, same items and difficulty at post |
@@ -459,6 +481,11 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | Skill 9 **易混音**: two whole notes on one staff, tap the named one; neighbour, third, ledger-count and mirror pairs; both directions; the new-note result screen offers a six-question finale, and the report has a per-pair confusion table |
+| 2026-11-04 | Skill 8 **加线加间**: a clef plus one ledger note; choose above/below, then the line or space; one to three ledger lines by difficulty |
+| 2026-11-04 | The new-note flow is now a 14-question first lesson covering skills 1–5; key/pos open after step 8, fin after step 14 |
+| 2026-11-04 | A3 added: left-hand third finger, bass fifth line, taught between E4 and A4; chips add an octave subscript when a letter appears twice |
+| 2026-11-04 | Fixed the letter A read as "I": Apple voices read `ay` as `eye`; the TTS map now uses `eigh`, and level 1 asks **A 音在键盘哪里？** |
 | 2026-11-03 | Teacher role: a separate teacher PIN opens a student roster, creates learner profiles, opens every learner's report on the device, and exports all learners' CSV. Normal profiles keep only practice, note checks, settings, switch and lock |
 | 2026-11-03 | New practice report: range switch (7/14/30/all), time on questions, daily-by-skill matrix, per-skill and per-note tables, skill-7 comparison pairs, error-rate trend, learning notes, and print/PDF |
 | 2026-11-03 | Level 7 prompts now say only "choose the higher note" / "choose the lower note", even when a clef is drawn; a correct answer shows confetti and no toast or speech |
