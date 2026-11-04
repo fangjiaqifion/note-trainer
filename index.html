@@ -164,18 +164,23 @@
   .prompt{display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 18px 2px;min-height:56px}
   .prompt-text{font-size:clamp(21px,3vw,30px);font-weight:800;text-align:center;line-height:1.25}
   .speak-btn{width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-size:16px;flex:none}
-  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 14px}
-  .stage.letter{flex-direction:column;justify-content:flex-end;gap:10px;padding-bottom:22px}
+  /* 题目在上、回答在下，两块紧接题干自上而下排。
+     舞台不再吃掉剩余高度，否则回答区会被推到屏幕最底边，
+     题目和键盘中间会空出一大块；多余空间留在最下面。 */
+  .stage{flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:4px 14px}
+  .stage.letter{flex-direction:column;justify-content:center;gap:10px;padding-bottom:6px}
   .answer{display:flex;justify-content:center;align-items:center;gap:14px;padding:6px 14px 14px;flex-wrap:wrap}
   .answer.opts{gap:12px}
   .answer.hold{flex-direction:column;gap:8px}
-  /* 选项和键盘同时出现时（第 2 关「键 → 谱」），两张都放在最下方的
-     回答区里竖着排：选项在上、键盘贴底，键盘的位置永远不变。 */
+  /* 选项和键盘同时出现时（第 2 关「键 → 谱」），两张在回答区里
+     竖着排：选项在上、键盘在下，跟着题目走，不单独贴屏幕底边。 */
   .answer.col{flex-direction:column;flex-wrap:nowrap;gap:10px;padding-top:2px}
   .answer.col .cards-row{width:100%}
   .cards-row{display:flex;gap:14px;width:100%;justify-content:center}
 
   .big-letter{font-size:clamp(84px,15vw,150px);font-weight:900;line-height:1;color:var(--blue);letter-spacing:6px;text-shadow:0 8px 0 #E4EDFA}
+  /* 谱面外的具体八度（A3）在大字母里用小号数字，不和孩子正在认的音名抢。 */
+  .big-letter sub{font-size:.42em;vertical-align:-.18em;letter-spacing:0}
   body.halloween .big-letter{color:#7B4B96;text-shadow:0 8px 0 #EDE1F4}
   .down-arrow{font-size:44px;color:#D9C6A6;line-height:1;animation:bob 1.6s ease-in-out infinite}
   .qmark{font-size:clamp(70px,12vw,120px);font-weight:900;color:#E7DAC7}
@@ -245,6 +250,12 @@
   .kb .w.wrong{animation:shake .35s}
   .kb .w.hint::after{content:"";position:absolute;inset:4px;border-radius:8px;border:3px dashed var(--orange);animation:fade 1s infinite}
   .kb .w.target{background:linear-gradient(#FFE7C2,#FFCF8A);box-shadow:inset 0 0 0 3px var(--orange), inset 0 -8px 0 #F2C58C;animation:pulse 1.3s infinite}
+  /* 新音导入里已经找过的键：打勾并压暗，孩子一眼看出「这个用过了」。 */
+  .kb .w.used,.kb .b.used{background:linear-gradient(#F2E9DA,#E4D6BE);box-shadow:inset 0 0 0 3px #D5C3A6, inset 0 -8px 0 #DCCCB2}
+  .kb .b.used{background:linear-gradient(#6E665A,#574F45);box-shadow:inset 0 -5px 0 #3F3931}
+  .kb .usedmark{position:absolute;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--orange);color:#fff;font-size:14px;font-weight:900;line-height:24px;text-align:center;font-style:normal;box-shadow:0 2px 4px rgba(120,70,20,.25);z-index:3}
+  .kb .w .usedmark{top:auto;bottom:16px}
+  .kb .b .usedmark{top:10px;width:18px;height:18px;font-size:11px;line-height:18px}
   .kb .w .middot{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:var(--orange);opacity:.9}
   .kb .w .lbl{position:absolute;bottom:11px;left:0;right:0;text-align:center;font-size:13px;font-weight:700;color:#A8977F}
   .kb .b{position:absolute;top:0;height:62%;background:linear-gradient(#3B3A44,#26252D);border-radius:0 0 6px 6px;box-shadow:inset 0 -5px 0 #16161B, 0 2px 4px rgba(0,0,0,.25);z-index:2;transition:background .08s}
@@ -261,7 +272,7 @@
   .opt.correct{border-color:var(--green);background:#EFFAF4;box-shadow:0 5px 0 #BFE6D2}
   .opt.wrong{border-color:var(--red);background:#FDF1F0;box-shadow:0 5px 0 #F3CFCB;animation:shake .35s}
   .opt.sel{border-color:var(--blue);background:#EEF5FF;box-shadow:0 5px 0 #C9DCF5}
-  /* 第 8 关：把位置说法补全。五个空都是下拉，选满才判。
+  /* 第 8 关：把位置说法补全。四个空都是下拉，选满才判。
      select 用原生控件，iPad 上会弹系统滚轮，字号和点按区都够大。 */
   .answer.sentence{flex-direction:column;gap:8px;padding-top:4px}
   .ledger-sentence{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 4px;max-width:780px;font-size:clamp(19px,2.6vw,26px);font-weight:800;line-height:1.45}
@@ -807,9 +818,9 @@
                 qPlayNote 自己分三段（手 → 指 → 按住），前两段不判整题；
                 qStaffSpot 直接在谱面上点线或间，训练的是谱面坐标；
                 qKeyboardFind / qKeyName 是新音导入用的键盘题。
-                版式约定：键盘永远在游戏页最下方（.answer），
-                选项在键盘正上方；谱面或大字在舞台中间。
-                不要在某个题型里把键盘放回舞台，孩子会觉得键盘「跑了」。
+                版式约定：题目在上（.stage），回答在下（.answer），
+                两块紧接题干自上而下排，键盘和选项都跟着回答区走，
+                不再单独贴屏幕底边；多余空间留在最下面。
      4. 流程层  judge / renderQuestion / buildQuestions / startSession /
                 startLevel / startDaily / startSpotlight / startTest / finishLevel
                 管对错、换题、结算；渲染层和题型层都不碰这里。
@@ -2193,6 +2204,10 @@ function buildKeyboard(kb, opts){
     if(midi === 60){ el.classList.add('midc'); el.insertAdjacentHTML('beforeend', '<i class="middot"></i>'); }
     if(opts.labels) el.insertAdjacentHTML('beforeend', '<span class="lbl">' + letterOf(midi) + '</span>');
     if(opts.target === midi) el.classList.add('target');
+    if(opts.used && opts.used.indexOf(midi) >= 0){
+      el.classList.add('used');
+      el.insertAdjacentHTML('beforeend', '<i class="usedmark">✓</i>');
+    }
     kb.appendChild(el);
   }
   /* 黑键贴在相邻白键之间。一个八度里只有 5 个黑键，
@@ -2211,6 +2226,10 @@ function buildKeyboard(kb, opts){
     el.style.left = ((i + 1) * w - blackW / 2) + '%';
     el.style.width = blackW + '%';
     if(opts.target === midi) el.classList.add('target');
+    if(opts.used && opts.used.indexOf(midi) >= 0){
+      el.classList.add('used');
+      el.insertAdjacentHTML('beforeend', '<i class="usedmark">✓</i>');
+    }
     kb.appendChild(el);
   }
 }
@@ -2336,7 +2355,7 @@ function confetti(force){
              当前新音、从第几步开始、这次走了几步；只有导入用 */
 const G = { mode:'skill', level:1, qs:[], i:0, first:0, q:null, busy:false, session:0,
             sid:'', phase:'', diffKey:'normal', batteryId:'',
-            spotNote:null, spotFrom:0, spotCount:0 };
+            spotNote:null, spotFrom:0, spotCount:0, spotFound:{} };
 /* 当前题里正在跑的「按住」控制器（见 holdPad）。换题、退出关卡时
    要显式停掉，否则定时器和持续音会越过题目边界继续跑。 */
 let activePad = null;
@@ -2492,6 +2511,7 @@ function qFindKey(letter){
           if(G.q.answered) return;
           if(letterOf(midi) === letter){
             el.classList.add('correct');
+            markSpotFound(midi);
             judge(true, '对！这是 ' + letter);
           }else{
             el.classList.add('wrong');
@@ -2525,7 +2545,9 @@ function qStaffToKey(noteId, valueId, hint, opts){
         /* 新音导入第 2 步：把新音画在谱面上，旁边再给一个大写音名。
            有谱面才能要求「就是这个八度」；大写音名只是脚手架，
            到第 3 步就撤掉，只留谱面。 */
-        setPrompt('找到 ' + note.letter, '找到 ' + note.letter);
+        /* 谱面才是判断八度的依据；大写音名只是脚手架。
+           题干说「谱面上的这个音」，避免孩子只看字母、把别的八度当答案。 */
+        setPrompt('按谱面上的这个音', '按谱面上的这个音');
         stageEl.classList.add('with-letter');
         stageEl.innerHTML = staffBlock({ noteId:noteId, value: valueId || 'quarter' }) +
           '<div class="find-letter">' + note.letter + '</div>';
@@ -2573,7 +2595,7 @@ function qKeyToStaff(noteId, pool){
     kind:'k2s', noteId:noteId, wrong:0,
     render: function(){
       setPrompt('这个键在五线谱上是哪一个？', '这个键在五线谱上是哪一个');
-      /* 键盘固定在屏幕最下方，选项放在它正上方，和别的关卡同一个位置。
+      /* 选项在上、键盘在下，都在回答区里，和别的关卡同一个相对位置。
          以前这张题的键盘在舞台中间、选项在下面，孩子会觉得「键盘跑了」。 */
       stageEl.innerHTML = '<div class="qmark">?</div>';
       const row = document.createElement('div');
@@ -3399,10 +3421,38 @@ function qWhichHigher(ys, clef, intro, ask){
   };
 }
 
+/* 新音导入时已经在这个字母上找过的键。第 1 步随便找一个 A，
+   第 2 步就不再把同一个 A 当正确答案：打勾标出，让孩子找另一个 A。
+   只在 spotlight 里记录，技能关和今日练习不受影响。 */
+function spotUsedMidis(letter){
+  if(G.mode !== 'spotlight' || !G.spotFound) return [];
+  const list = G.spotFound[letter];
+  return list ? list.slice() : [];
+}
+function markSpotFound(midi){
+  if(G.mode !== 'spotlight') return;
+  if(!G.spotFound) G.spotFound = {};
+  const letter = letterOf(midi);
+  const list = G.spotFound[letter] || (G.spotFound[letter] = []);
+  if(list.indexOf(midi) < 0) list.push(midi);
+}
+/* 具体八度的写法和读法：A3、C4。noteName 只在同一个字母出现两次时
+   才补八度，这里要的是「任何时候都能说清是哪个八度」。 */
+function octaveName(noteId){
+  const n = NOTES[noteId];
+  return n.letter + (Math.floor(n.midi / 12) - 1);
+}
+function octaveHTML(noteId){
+  const n = NOTES[noteId];
+  return n.letter + '<sub>' + (Math.floor(n.midi / 12) - 1) + '</sub>';
+}
+
 /* ==================== 新音导入用的键盘题 ====================
    qKeyboardFind：在键盘上找到指定的音，可以限定键盘范围。
    局部键盘（C4 到新音）用在新音导入的第 0 步，先把黑键地标看清楚；
-   完整键盘用在第 2 步，要求点中新音本身，不能点成别的八度。
+   完整键盘用在第 2 步。第 1 步已经找过的同字母键会打勾标出，
+   第 2 步改成「再找一个 A」，不能再点同一个八度；只有从第 2 步
+   续学时（还没有找过的键），才退回「找到 A3」这种带八度的问法。
    题干和答对提示都用 NOTES 里的 landmark，所以加 F、G 时不用改代码。 */
 function qKeyboardFind(noteId, opts){
   opts = opts || {};
@@ -3413,23 +3463,40 @@ function qKeyboardFind(noteId, opts){
   return {
     kind:'kbfind', noteId:noteId, wrong:0,
     render: function(){
-      /* 第 0 步（局部键盘）把地标说出来，当一次示范；
-         完整键盘那题只留任务，孩子要自己看黑键组。
-         先说音名、再说位置，和答对提示「对！E 在……」保持同一句式；
-         两个短句之间用逗号，句号会被朗读成「句号」。 */
+      /* 第 0 步（局部键盘）把地标说出来，当一次示范，不记入「已找过」；
+         完整键盘那题先看这个字母有没有用过，再决定问什么。 */
+      const used = intro ? [] : spotUsedMidis(n.letter);
+      const another = used.length > 0;
       const task = intro ? n.letter + ' 在' + n.landmark + '，找到 ' + n.letter
-                         : '在键盘上找到 ' + n.letter;
+                 : another ? '再找一个 ' + n.letter
+                 : '在键盘上找到 ' + octaveName(noteId);
       setPrompt(task, task);
       stageEl.classList.add('letter');
-      stageEl.innerHTML = '<div class="big-letter">' + n.letter + '</div><div class="down-arrow">↓</div>';
+      stageEl.innerHTML = '<div class="big-letter">' +
+        (another || intro ? n.letter : octaveHTML(noteId)) +
+        '</div><div class="down-arrow">↓</div>';
       const kb = makeKB({
         labels: S.labels,
         start: start, count: count,
+        used: used,
         onDown: function(midi, el){
           if(G.q.answered) return;
-          if(midi === n.midi){
+          /* 已经打勾的那个键不是错，只是用过了：提示换一个，不计错。 */
+          if(another && used.indexOf(midi) >= 0){
+            el.classList.add('wrong');
+            setTimeout(function(){ el.classList.remove('wrong'); }, 420);
+            toast('这个 ' + n.letter + ' 已经找过了，换一个 ' + n.letter);
+            return;
+          }
+          const right = another ? letterOf(midi) === n.letter : midi === n.midi;
+          if(right){
             el.classList.add('correct');
-            judge(true, intro ? '对！' + n.letter + ' 在' + n.landmark : '对！这是 ' + n.label);
+            /* 第 0 步是局部键盘的示范，不记入「已找过」；
+               否则第 1、2 步会以为这个八度已经用掉。 */
+            if(!intro) markSpotFound(midi);
+            judge(true, intro ? '对！' + n.letter + ' 在' + n.landmark
+                              : another ? '对！这也是 ' + n.letter
+                              : '对！这是 ' + n.label);
           }else{
             el.classList.add('wrong');
             setTimeout(function(){ el.classList.remove('wrong'); }, 420);
@@ -3440,8 +3507,14 @@ function qKeyboardFind(noteId, opts){
       answerEl.appendChild(kb);
     },
     reveal: function(){
+      /* 找另一个字母时，提示只能落在还没用过的那一个上；
+         如果提示了打勾的键，孩子会以为要用过的那个才对。 */
+      const used = intro ? [] : spotUsedMidis(n.letter);
+      const another = used.length > 0;
       $$('.kb .w, .kb .b', answerEl).forEach(function(k){
-        if(Number(k.dataset.midi) === n.midi) k.classList.add('hint');
+        const midi = Number(k.dataset.midi);
+        if(another ? (letterOf(midi) === n.letter && used.indexOf(midi) < 0)
+                   : midi === n.midi) k.classList.add('hint');
       });
       setPrompt(n.keyHint);
     }
@@ -3763,9 +3836,10 @@ function ledgerSpots(){
 }
 
 /* 一道第 8 关的题：把一句位置说法补全。
-   题干是「（音名）音在（高/低）谱号的（上/下）加（数字）（线/间）」，
-   五个括号都是下拉，选满才判；改任意一个都重新判，判错不锁死。
-   音名由谱面位置算出来，所以这一关现在同时考「看谱号、数加线、认音名」。 */
+   题干是「这个音在（高/低）谱号的（上/下）加（数字）（线/间）」，
+   四个括号都是下拉，选满才判；改任意一个都重新判，判错不锁死。
+   这一关只考位置说法，不考音名：孩子还不一定认识谱表外的实际音高，
+   问他「这是什么音」会把位置题变成音名题，答对也靠猜。 */
 function qLedgerName(spot){
   const clef = spot.clef;
   const y = spot.y;
@@ -3779,8 +3853,8 @@ function qLedgerName(spot){
   const rightNum = Math.ceil(k / 2);
   const rightLabel = staffSpotLabel(y);
   const rightLetter = staffPitch(clef, y).letter;
-  const sentence = rightLetter + ' 音在' + clefName + '的' + rightDir + cnNum(rightNum) + rightKind;
-  const picks = { letter:'', clef:'', dir:'', num:'', kind:'' };
+  const sentence = '这个音在' + clefName + '的' + rightDir + cnNum(rightNum) + rightKind;
+  const picks = { clef:'', dir:'', num:'', kind:'' };
   let lastTry = '';
 
   function noteEl(){ return stageEl.querySelector('.note'); }
@@ -3829,9 +3903,7 @@ function qLedgerName(spot){
         return sel;
       }
 
-      /* 音名按 C D E F G A B 的顺序摆，和音阶一致，不按字母表。 */
-      select('letter', '音名', ['C','D','E','F','G','A','B'].map(function(l){ return [l, l]; }));
-      row.appendChild(text('音在'));
+      row.appendChild(text('这个音在'));
       select('clef', '高音或低音谱号', [['treble','高音'],['bass','低音']]);
       row.appendChild(text('谱号的'));
       select('dir', '上加或下加', [['up','上'],['down','下']]);
@@ -3842,16 +3914,16 @@ function qLedgerName(spot){
 
       const cap = document.createElement('div');
       cap.className = 'spot-cap';
-      cap.textContent = '五个空都选好，就会自动判';
+      cap.textContent = '四个空都选好，就会自动判';
       answerEl.appendChild(cap);
 
       function tryJudge(){
-        if(!picks.letter || !picks.clef || !picks.dir || !picks.num || !picks.kind) return;
-        const combo = [picks.letter, picks.clef, picks.dir, picks.num, picks.kind].join('|');
+        if(!picks.clef || !picks.dir || !picks.num || !picks.kind) return;
+        const combo = [picks.clef, picks.dir, picks.num, picks.kind].join('|');
         if(combo === lastTry) return;
         lastTry = combo;
         G.q.chosen = combo;
-        const right = picks.letter === rightLetter && picks.clef === rightClef &&
+        const right = picks.clef === rightClef &&
           picks.dir === rightDirKey && picks.num === String(rightNum) && picks.kind === rightKindKey;
         if(right){
           $$('select', row).forEach(function(s){ s.classList.add('correct'); });
@@ -4201,6 +4273,7 @@ function startSpotlight(){
   G.mode = 'spotlight';
   G.level = 0;
   G.spotNote = noteId;
+  G.spotFound = {};
   G.spotFrom = (S.spot && S.spot.note === noteId) ? (S.spot.step || 0) : 0;
   G.spotCount = Math.min(SPOT_PER_SESSION, SPOT_STEP_COUNT - G.spotFrom);
   if(G.spotCount <= 0){ toast('这个音已经练完了', 'ok'); return; }

@@ -187,16 +187,24 @@ These are teacher-only. A normal learner profile does not show them.
 
 ## Layout
 
-The keyboard is docked at the bottom of the play screen in every question that uses it. When
-a question also offers choices (the keyboard → staff direction of skill 2), the choices sit
-directly above the keyboard. The staff or the large prompt occupies the space above. The
-keyboard therefore never jumps between the middle and the bottom, and the keys stay at the
-bottom edge where the hand naturally rests.
+The play screen reads top to bottom: prompt, question, answer, empty space. The question
+stage no longer absorbs the leftover height, so the keyboard is not pushed to the bottom edge.
+The stage and the answer area follow the prompt immediately and stay top-aligned; the extra
+space stays below them. When a question also offers choices (the keyboard → staff direction of
+skill 2), the choices sit directly above the keyboard inside the answer area. The relative
+order is always question, then choices or keyboard, then empty space; the keyboard never
+jumps between the middle and the bottom edge.
 
 The local keyboard in the first spotlight step shows only one black-key group. It keeps the
 same key width as the full keyboard: its container is 3/15 (or 4/15) of the keyboard width and
 is centered, so the black keys keep their normal proportions instead of stretching across the
 screen.
+
+In the new-note lesson, the previous keyboard question can leave one octave of the same letter
+marked with a check. The next keyboard question then asks **再找一个 A** and rejects the checked
+key with a spoken nudge rather than as a wrong answer. If the lesson resumes directly at that
+second keyboard step and no key has been found yet, the prompt names the exact octave (**A3**)
+so the target is unambiguous.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
 nine fixed skill cards below that. The chips are the only part that grows with the note set.
@@ -216,7 +224,7 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with five dropdowns: note name, treble/bass, above/below, number, line/space | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four dropdowns: treble/bass, above/below, number, line/space (the note name is not asked) | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighbouring, third, ledger-count and mirror pairs) | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
@@ -252,7 +260,7 @@ The lesson follows a fixed 3 / 2 / 2 / 2 / 2 split, then ends with three mixed i
 |---|---|---|
 | 0 | Local keyboard showing the new note's black-key group; the landmark is named once | `key` (partial) |
 | 1 | Full keyboard, any octave: only the letter counts | `key` |
-| 2 | Full keyboard, exact octave: the new note itself | `key` |
+| 2 | Full keyboard: the octave found in step 1 is checked, and the task becomes find another octave; when the lesson resumes here, the prompt names the exact octave | `key` |
 | 3 | Staff + letter → keyboard: the staff fixes the octave, the letter is a scaffold | `key` |
 | 4 | Keyboard → staff, options limited to the new note and its learned neighbours | `pos` |
 | 5 | Which clef: the new note | `pos` |
@@ -486,8 +494,9 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | Skill 8 asks only for the position: **这个音在（高/低）谱号的（上/下）加（数字）（线/间）** with four dropdowns. The note-name dropdown is gone because students do not yet know the pitch outside the staff |
+| 2026-11-04 | The play screen keeps the question and answer together directly below the prompt; the keyboard is no longer pinned to the bottom edge. The new-note keyboard step marks an octave already found and asks for another A instead of silently requiring A3 |
 | 2026-11-04 | New-note lesson rebalanced to 3 find-keyboard, 2 staff↔keyboard, 2 clef, 2 duration, 2 hand/finger, and 3 mixed items; finishing still opens all three flags and checks the note |
-| 2026-11-04 | Skill 8 now fills the sentence **（音名）音在（高/低）谱号的（上/下）加（数字）（线/间）** with five dropdowns; the note name is read from the drawn position, and the sentence is spoken on a correct answer |
 | 2026-11-04 | Skill 6 now tells a line tap from a space tap: a line needs a tap within 0.18 staff steps, so the middle of the fourth space no longer counts as the fifth line |
 | 2026-11-04 | The new-note contrast finale asks the new note once against each learned note, up to six; it no longer repeats the same pair, and the note stays the answer every time |
 | 2026-11-04 | Skill 9 **易混音**: two whole notes on one staff, tap the named one; neighbour, third, ledger-count and mirror pairs; both directions; the new-note result screen offers a contrast finale, and the report has a per-pair confusion table |
