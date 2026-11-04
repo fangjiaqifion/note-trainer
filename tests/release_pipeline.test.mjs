@@ -75,3 +75,15 @@ test('本地服务器禁止 HTTP 缓存且不暴露 .git',async()=>{
     assert.equal(failure.status,'failed');assert.equal(failure.stage,'service-worker');
   }finally{child.kill();}
 });
+
+test('只读远程核验保留既有浏览器验收状态',async()=>{
+  const source=await readFile(new URL('../scripts/release.mjs',import.meta.url),'utf8');
+  const start=source.indexOf("  if(has('--verify-remote')){");
+  const branch=source.slice(start,source.indexOf('  if(CACHE_ONLY){',start));
+  const vm=await import('node:vm');
+  const report={status:'ready',build:'1234567890',targets:[{status:'ready'}]},before=structuredClone(report);
+  let verified=0;
+  const context=vm.createContext({report,has:()=>true,readFile:async()=>JSON.stringify({build:'1234567890'}),join:()=>'',ROOT:'',REMOTE:'https://example.invalid/',verifyRelease:async()=>verified++,saveReport:async()=>{throw new Error('read-only check must not overwrite status');},log:()=>{}});
+  await vm.runInContext('(async()=>{'+branch+'})()',context);
+  assert.equal(verified,1);assert.deepEqual(report,before);
+});

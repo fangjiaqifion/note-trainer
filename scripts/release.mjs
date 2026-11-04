@@ -266,7 +266,7 @@ async function main(){
   if(has('--verify-remote')){
     const expected = JSON.parse(await readFile(join(ROOT,'release.json'),'utf8'));
     await verifyRelease(REMOTE,expected);
-    report.build=expected.build;report.status='server-verified';await saveReport();
+    // Read-only verification must preserve the completed browser receipt report.
     log('远程全部发布文件与本地构建一致：' + expected.build);
     return;
   }
