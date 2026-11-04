@@ -490,6 +490,7 @@ Reserved for future work. Add rows; do not rewrite finished ones.
 | Account deletion | Idea | The teacher console can clear logs but cannot remove a profile |
 | Teacher PIN change or recovery | Idea | The PIN can be set once; there is no change screen and no recovery |
 | English interface | Idea | All strings are inline; would need a small dictionary and a switch |
+| iPad audio readiness after cache reset | Queued | Intermittent missing piano or speech on first launch. Audit Web Audio unlock/resume and speech voice readiness; evaluate a tap-to-start readiness screen. Piano is synthesized, so missing audio does not establish an unfinished audio download. No implementation yet |
 | Sound check | Shipped 2026-10-29 | Settings → "试听" |
 | License | Not chosen | See [License](#license) |
 
