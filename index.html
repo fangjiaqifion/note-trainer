@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="29280ef61b">
+<meta name="app-build" content="0b38711202">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -1379,9 +1379,15 @@ function migrateLegacyState(){
   st.difficulty = 'auto';
   st.autoLevel = (old && DIFFS[old.difficulty]) ? old.difficulty : 'normal';
   st.selected = null;          // 让 ensureSelection 按已学音补
-  st.events = [];
-  st.autoHistory = [];
-  st.battery = null;
+  // 旧存档可能已包含研究记录；仅在字段缺失或格式无效时使用空值。
+  st.events = Array.isArray(st.events) ? st.events : [];
+  st.autoHistory = Array.isArray(st.autoHistory) ? st.autoHistory : [];
+  st.battery = st.battery || null;
+  st.events.forEach(function(e){
+    if(!e || typeof e !== 'object') return;
+    st.eventSeq = Math.max(Number(st.eventSeq) || 0, Number(e.seq) || 0);
+    st.practiceSeq = Math.max(Number(st.practiceSeq) || 0, Number(e.pseq) || 0);
+  });
   /* 旧版第 7 关是 E 的完整一课。建档时先记下来，ensureProgress 会把
      E4 补满；这颗星星属于旧关卡，不能留给新的第 7 关。 */
   if(st.stars && st.stars[7]){
