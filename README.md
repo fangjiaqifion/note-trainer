@@ -216,7 +216,7 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; choose above/below, then the line or space number | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with five dropdowns: note name, treble/bass, above/below, number, line/space | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighbouring, third, ledger-count and mirror pairs) | none |
 
 The clef skill uses a fixed pool (B3, C4 on the treble staff, C4 on the bass staff, D4) and
@@ -246,26 +246,30 @@ The flags unlock a skill only after the note is complete and checked:
 | `pos` | Match the staff position, clef and exact octave | Skills 2, 3, 4 |
 | `fin` | Know the hand and finger | Skill 5 |
 
-The lesson takes the first five skills one at a time, then ends with a mixed item:
+The lesson follows a fixed 3 / 2 / 2 / 2 / 2 split, then ends with three mixed items:
 
-| Step | Task | Flag opened |
+| Step | Task | Flag |
 |---|---|---|
 | 0 | Local keyboard showing the new note's black-key group; the landmark is named once | `key` (partial) |
 | 1 | Full keyboard, any octave: only the letter counts | `key` |
-| 2 | Staff + letter → keyboard: the staff fixes the octave, the letter is a scaffold | `key` |
-| 3–4 | Staff → keyboard (quarter, then half note) | `pos` |
-| 5–7 | Keyboard → staff, options limited to the new note and its learned neighbours | `pos` |
-| 8 | Which clef: treble or bass | `pos` |
-| 9–10 | Duration: read, choose the beat count, find the key and hold (quarter, half) | `key` + `pos` |
-| 11–12 | Hand → finger → hold (quarter, half) | `fin` |
-| 13 | Mixed with neighbours: staff → keyboard | — |
+| 2 | Full keyboard, exact octave: the new note itself | `key` |
+| 3 | Staff + letter → keyboard: the staff fixes the octave, the letter is a scaffold | `key` |
+| 4 | Keyboard → staff, options limited to the new note and its learned neighbours | `pos` |
+| 5 | Which clef: the new note | `pos` |
+| 6 | Which clef: a learned note written in the other clef | `pos` |
+| 7–8 | Duration: read, choose the beat count, find the key and hold (quarter, half) | `key` + `pos` |
+| 9–10 | Hand → finger → hold (quarter, half) | `fin` |
+| 11–13 | Mixed: the new note and its learned neighbours, staff ↔ keyboard | — |
 
-After the first eight steps the key and position flags are open; after step 13 all three are
-open, the note is checked automatically in **我的音**, and it joins every skill that asks for
-it. The 14 questions are the acquisition phase: the note does not appear in the daily session
-or skills 1–6 before it is complete. The result screen then offers **和邻居比一比** (compare
-with neighbours), a six-question contrast session from skill 9; the home screen also shows a
-**下一个音** (Next note) button. The teacher or parent decides when to start the next note.
+After the first eight questions (steps 0–7) the key and position flags are open; after step 13
+all three are open, the note is checked automatically in **我的音**, and it joins every skill
+that asks for it. The 14 questions are the acquisition phase: the note does not appear in the
+daily session or skills 1–6 before it is complete. The result screen then offers
+**和邻居比一比** (compare with neighbours): one contrast item per learned comparison note,
+up to six. The new note is always the answer, so every item compares it with a different note
+instead of repeating one pair; the session is shorter when fewer comparison notes are learned.
+The home screen also shows a **下一个音** (Next note) button. The teacher or parent decides when
+to start the next note.
 
 The current order is E4, then A3, then A4, F4 and G4. A3 is the left-hand third finger in the
 middle-C position and pairs with E4 (right-hand third finger). A4 falls outside the right-hand
@@ -419,13 +423,14 @@ To add a note:
 3. If the note needs a ledger line, register it in `LEDGER` under the clef, using the same
    `y` value (`LEDGER.treble.C4 = 5`).
 4. Test the first lesson: the local keyboard should show only the new note's black-key group
-   (F3–B3 for A3, for example), the staff steps should use the exact pitch, and the mixed step
-   should offer the new note and its learned neighbours. The 14 questions come from
+   (F3–B3 for A3, for example), the staff steps should use the exact pitch, and the mixed
+   items should offer the new note and its learned neighbours. The 14 questions come from
    `SPOT_STEPS`; a new note needs no change there.
 
 No other code changes are needed. Skills 1–6 read `activeNotes(needs)` and pick up the
-new note once it is complete and checked. Skills 7–9 use no note pool; skill 9 reads the
-learned set to build its pairs.
+new note once it is complete and checked. Skills 7–8 use no note pool. Skill 9's card reads
+the checked set; the new-note contrast finale reads all learned notes so it can vary the
+comparison note.
 
 ## Adding a skill
 
@@ -481,9 +486,13 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
-| 2026-11-04 | Skill 9 **易混音**: two whole notes on one staff, tap the named one; neighbour, third, ledger-count and mirror pairs; both directions; the new-note result screen offers a six-question finale, and the report has a per-pair confusion table |
-| 2026-11-04 | Skill 8 **加线加间**: a clef plus one ledger note; choose above/below, then the line or space; one to three ledger lines by difficulty |
-| 2026-11-04 | The new-note flow is now a 14-question first lesson covering skills 1–5; key/pos open after step 8, fin after step 14 |
+| 2026-11-04 | New-note lesson rebalanced to 3 find-keyboard, 2 staff↔keyboard, 2 clef, 2 duration, 2 hand/finger, and 3 mixed items; finishing still opens all three flags and checks the note |
+| 2026-11-04 | Skill 8 now fills the sentence **（音名）音在（高/低）谱号的（上/下）加（数字）（线/间）** with five dropdowns; the note name is read from the drawn position, and the sentence is spoken on a correct answer |
+| 2026-11-04 | Skill 6 now tells a line tap from a space tap: a line needs a tap within 0.18 staff steps, so the middle of the fourth space no longer counts as the fifth line |
+| 2026-11-04 | The new-note contrast finale asks the new note once against each learned note, up to six; it no longer repeats the same pair, and the note stays the answer every time |
+| 2026-11-04 | Skill 9 **易混音**: two whole notes on one staff, tap the named one; neighbour, third, ledger-count and mirror pairs; both directions; the new-note result screen offers a contrast finale, and the report has a per-pair confusion table |
+| 2026-11-04 | Skill 8 **加线加间**: a clef plus one ledger note; a two-step above/below and number choice; one to three ledger lines by difficulty |
+| 2026-11-04 | The new-note flow is now a 14-question first lesson covering skills 1–5; key/pos open after the first eight questions, fin after step 14 |
 | 2026-11-04 | A3 added: left-hand third finger, bass fifth line, taught between E4 and A4; chips add an octave subscript when a letter appears twice |
 | 2026-11-04 | Fixed the letter A read as "I": Apple voices read `ay` as `eye`; the TTS map now uses `eigh`, and level 1 asks **A 音在键盘哪里？** |
 | 2026-11-03 | Teacher role: a separate teacher PIN opens a student roster, creates learner profiles, opens every learner's report on the device, and exports all learners' CSV. Normal profiles keep only practice, note checks, settings, switch and lock |
