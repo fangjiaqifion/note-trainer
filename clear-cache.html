@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>清理缓存 · 识谱小练习</title>
+<style>
+  :root{--ink:#3A2E22;--muted:#8A7A67;--line:#EADCC8;--paper:#FFF7EC;--blue:#3C7DD9;--green:#3FA96F}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--paper);color:var(--ink);
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:24px}
+  main{width:min(520px,100%);background:#fff;border:2px solid var(--line);border-radius:24px;padding:28px 26px;
+       box-shadow:0 10px 30px rgba(80,55,20,.08);text-align:center}
+  h1{margin:0 0 6px;font-size:22px}
+  p{margin:0 0 14px;color:var(--muted);font-size:14px}
+  ul{margin:0 0 18px;padding:0;list-style:none;text-align:left;font-size:14px}
+  li{padding:7px 0;border-top:1px solid #F3EADC;display:flex;gap:8px}
+  li:first-child{border-top:0}
+  .ok{color:var(--green);font-weight:700;flex:none}
+  .warn{color:#C2543F;font-weight:700;flex:none}
+  a.btn{display:inline-block;margin-top:4px;padding:13px 26px;border-radius:16px;background:var(--blue);color:#fff;
+        text-decoration:none;font-weight:700}
+  .small{font-size:12px;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>正在清理这个游戏的缓存…</h1>
+  <p>只清识谱小练习的离线缓存和页面缓存。学生账户、勾选、进度和答题记录（localStorage）不会动。</p>
+  <ul id="log"><li><span class="ok">…</span><span>检查离线缓存服务</span></li></ul>
+  <a class="btn" id="next" href="./index.html">打开游戏</a>
+  <p class="small">远程和本地是两个不同的地址，各清一次才干净。</p>
+</main>
+<script>
+(function(){
+  var params = new URLSearchParams(location.search);
+  var rawNext = params.get('next') || './index.html';
+  var next = './index.html';
+  try{
+    var parsed = new URL(rawNext, location.href);
+    if(parsed.origin === location.origin) next = parsed.pathname + parsed.search + parsed.hash;
+  }catch(e){}
+  var stay = params.get('stay') === '1';
+  var log = document.getElementById('log');
+  var link = document.getElementById('next');
+  link.href = next;
+
+  function row(ok, text){
+    var li = document.createElement('li');
+    var mark = document.createElement('span');
+    mark.className = ok ? 'ok' : 'warn';
+    mark.textContent = ok ? '✓' : '!';
+    var span = document.createElement('span');
+    span.textContent = text;
+    li.appendChild(mark);
+    li.appendChild(span);
+    log.appendChild(li);
+  }
+
+  function baseScope(){
+    return new URL('./', location.href).href;
+  }
+
+  /* 只动这个游戏的缓存：服务员的 scope 必须等于当前目录，
+     缓存名必须以 note-trainer- 开头。同一个 GitHub Pages 域名下
+     可能还有别的项目，不能把它们的离线缓存一起删掉。 */
+  async function clearServiceWorkers(){
+    if(!('serviceWorker' in navigator)) return;
+    var base = baseScope();
+    var regs = await navigator.serviceWorker.getRegistrations();
+    var mine = regs.filter(function(reg){
+      return reg.scope === base || reg.scope.indexOf(base) === 0;
+    });
+    await Promise.all(mine.map(function(reg){ return reg.unregister(); }));
+    row(true, mine.length ? '已注销 ' + mine.length + ' 个离线缓存服务' : '没有需要注销的离线缓存服务');
+  }
+
+  async function clearCaches(){
+    if(!('caches' in window)) return;
+    var keys = await caches.keys();
+    var mine = keys.filter(function(k){ return k.indexOf('note-trainer-') === 0; });
+    await Promise.all(mine.map(function(k){ return caches.delete(k); }));
+    row(true, mine.length ? '已删除 ' + mine.length + ' 个离线缓存库' : '没有需要删除的离线缓存库');
+  }
+
+  async function refreshShell(){
+    var urls = ['./', './index.html', './sw.js', './manifest.webmanifest'];
+    var failed = 0;
+    for(var i = 0; i < urls.length; i++){
+      try{
+        await fetch(urls[i], { cache:'reload', credentials:'same-origin' });
+      }catch(e){
+        failed++;
+      }
+    }
+    row(failed === 0, failed === 0 ? '已重新下载最新页面和离线脚本' : failed + ' 个文件没取到，检查网络或本地服务器');
+  }
+
+  (async function(){
+    try{ await clearServiceWorkers(); }
+    catch(e){ row(false, '注销离线服务失败：' + e.message); }
+    try{ await clearCaches(); }
+    catch(e){ row(false, '删除离线缓存失败：' + e.message); }
+    try{ await refreshShell(); }
+    catch(e){ row(false, '刷新页面缓存失败：' + e.message); }
+    row(true, '账户、勾选、进度和答题记录都保留了');
+    document.querySelector('h1').textContent = '缓存已清理';
+    if(!stay){
+      setTimeout(function(){ location.replace(next); }, 1200);
+    }
+  })();
+})();
+</script>
+</body>
+</html>

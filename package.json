@@ -3,7 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/smoke.mjs"
+    "test": "node tests/smoke.mjs",
+    "serve": "bash serve.sh",
+    "release": "node scripts/release.mjs",
+    "release:push": "node scripts/release.mjs --push",
+    "cache": "node scripts/release.mjs --cache-only"
   },
   "devDependencies": {
     "playwright-core": "^1.64.0"
