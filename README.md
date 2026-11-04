@@ -427,8 +427,7 @@ To add a note:
      space 2 = 2.5, the space below the staff = 4.5, the first ledger line below = 5.
    - `hand` (`'L'` / `'R'`) also decides the stem direction; `finger` is the digit drawn
      outside the staff (0 means no fixed fingering yet).
-   - `stage` is the introduction order; `landmark`, `keyHint` and `posHint` are the spoken
-     and written hints.
+   - `landmark`, `keyHint` and `posHint` are the spoken and written hints.
 2. Append the id to `NOTE_ORDER` in the order it should be taught. Do not put it in
    `BASE_NOTES`; that array is only for the three notes that are known from the start.
 3. If the note needs a ledger line, register it in `LEDGER` under the clef, using the same
@@ -497,6 +496,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | Question generators space out adjacent notes: skill 3 balances B/C/D and never shows C twice in a row (C4 and C4B count as C), and skills 2, 4, 5, 8 and 9 and the daily mix use a shared `spaceOut` pass |
 | 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
 | 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
@@ -631,7 +631,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v26`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v29`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README

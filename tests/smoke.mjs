@@ -258,6 +258,68 @@ async function answerOne(page){
   }, prev, { timeout: 6000 });
 }
 
+async function clefOrderCheck(page){
+  const result = await page.evaluate(function(){
+    const d = window.__dbg;
+    const bad = [];
+    const seen = {};
+    for(let k = 0; k < 200; k++){
+      const letters = d.buildQuestions(3).map(function(q){
+        return d.NOTES[q.noteId].letter;
+      });
+      seen[letters.join('')] = 1;
+      for(let i = 1; i < letters.length; i++){
+        if(letters[i] === letters[i - 1]){
+          bad.push(letters.join(''));
+          break;
+        }
+      }
+    }
+    return { bad: bad.slice(0, 5), distinct: Object.keys(seen).length };
+  });
+  assert.deepEqual(result.bad, [], 'skill 3 must not repeat the same note name twice in a row');
+  assert.ok(result.distinct >= 20, 'skill 3 must produce varied orders');
+}
+
+async function repeatCheck(page){
+  const problems = await page.evaluate(function(){
+    const d = window.__dbg;
+    const bad = [];
+    function noteAdjacent(skill){
+      for(let k = 0; k < 100; k++){
+        const qs = d.buildQuestions(skill);
+        for(let i = 1; i < qs.length; i++){
+          if(qs[i].noteId && qs[i - 1].noteId && qs[i].noteId === qs[i - 1].noteId){
+            bad.push('skill ' + skill + ': ' + qs.map(function(q){ return q.noteId; }).join(' '));
+            return;
+          }
+        }
+      }
+    }
+    [2, 4, 5, 9].forEach(noteAdjacent);
+    for(let k = 0; k < 100; k++){
+      const qs = d.buildDailySession();
+      for(let i = 1; i < qs.length; i++){
+        if(qs[i].noteId && qs[i - 1].noteId && qs[i].noteId === qs[i - 1].noteId){
+          bad.push('daily: ' + qs.map(function(q){ return q.noteId; }).join(' '));
+          return;
+        }
+      }
+    }
+    for(let k = 0; k < 100; k++){
+      const qs = d.buildQuestions(8);
+      for(let i = 1; i < qs.length; i++){
+        if(qs[i].clef + '|' + qs[i].spot === qs[i - 1].clef + '|' + qs[i - 1].spot){
+          bad.push('skill 8 position repeated');
+          break;
+        }
+      }
+    }
+    return bad.slice(0, 5);
+  });
+  assert.deepEqual(problems, [], 'adjacent repeats: ' + problems.join(' | '));
+}
+
 async function ledgerCheck(page){
   const info = await page.evaluate(function(){
     const d = window.__dbg;
@@ -379,6 +441,12 @@ async function main(){
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
+
+    await clefOrderCheck(page);
+    console.log('PASS level 3: no adjacent same note name, varied order');
+
+    await repeatCheck(page);
+    console.log('PASS repeats: no adjacent same note in skills 2, 4, 5, 8, 9 and daily');
 
     await ledgerCheck(page);
     console.log('PASS level 8: 6 questions, numbers 1-8');

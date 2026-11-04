@@ -918,6 +918,35 @@ function spreadLetters(list){
   return a;
 }
 
+/* 把题目重排成「相邻两题不是同一个音」。
+   keyOf 返回判重用的键：技能 2、4、5 用 noteId，技能 8 用谱号 + 位置，
+   技能 9 用目标音。prevKey 用来和上一块（如今日练习的复习块）衔接。
+   数组很小，直接回溯，保证可行时一定排得开；
+   如果池子里只有一个键（例如只勾了一个音），原样返回。 */
+function spaceOut(list, keyOf, prevKey){
+  const items = list.slice();
+  const used = items.map(function(){ return false; });
+  const out = [];
+  function go(prev){
+    if(out.length === items.length) return true;
+    const candidates = [];
+    for(let i = 0; i < items.length; i++){
+      if(!used[i] && keyOf(items[i]) !== prev) candidates.push(i);
+    }
+    shuffle(candidates);
+    for(let k = 0; k < candidates.length; k++){
+      const i = candidates[k];
+      used[i] = true;
+      out.push(items[i]);
+      if(go(keyOf(items[i]))) return true;
+      out.pop();
+      used[i] = false;
+    }
+    return false;
+  }
+  return go(prevKey) ? out : items;
+}
+
 /* 十二平均律的音级表，一个八度内 C 到 B。
    midi 音高除以 12 取余就得到音级，负数的余数要先 +12 转正。 */
 const LETTERS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -1620,11 +1649,27 @@ function weightedPick(ids){
   }
   return ids[ids.length - 1];
 }
-/* 和 repeatTo 一样保证每种音至少出现一次，多出来的名额按错误率加权。 */
+/* 和 repeatTo 一样保证每种音至少出现一次，多出来的名额按错误率加权。
+   每个音最多出现 ceil(n / 池子大小) 次，避免加权把某一个音堆到
+   四五次，后面的 spaceOut 才有可能把它们完全隔开。 */
 function weightedRepeatTo(ids, n){
   if(!ids.length) return [];
+  const cap = Math.ceil(n / ids.length);
+  const counts = {};
+  ids.forEach(function(id){ counts[id] = 0; });
   const out = [];
-  if(n >= ids.length) out.push.apply(out, shuffle(ids));
+  /* 先保证每种音至少出现一次，再按权重补满。 */
+  if(n >= ids.length){
+    shuffle(ids).forEach(function(id){ out.push(id); counts[id]++; });
+  }
+  while(out.length < n){
+    const avail = ids.filter(function(id){ return counts[id] < cap; });
+    if(!avail.length) break;
+    const id = weightedPick(avail);
+    out.push(id);
+    counts[id]++;
+  }
+  /* n 小于池子大小时 cap = 1，上面只会选出 n 个不同的音，正好。 */
   while(out.length < n) out.push(weightedPick(ids));
   return shuffle(out).slice(0, n);
 }
@@ -3684,7 +3729,7 @@ function makeStaffKey(ids, n){
   list.slice(0, half).forEach(function(id){ qs.push(qStaffToKey(id)); });
   list.slice(half).forEach(function(id){ qs.push(qKeyToStaff(id, ids)); });
   while(qs.length < n) qs.push(qKeyToStaff(weightedPick(ids), ids));
-  return shuffle(qs);
+  return spaceOut(qs, function(q){ return q.noteId; });
 }
 
 /* 谱号关：优先用固定四种写法，但只取勾选里的音；
@@ -3698,18 +3743,37 @@ function makeClef(ids, n){
   });
   if(!pool.length) pool = learned.slice();
   if(!pool.length) return [];
-  return shuffle(repeatTo(pool, n)).map(qClef);
+
+  /* 先按字母均分，再放回具体写法。C4 和 C4B 都显示成「中央 C」，
+     如果按 id 循环，C 会占掉一半题目；按字母排，B、C、D 各约三分之一，
+     C 的两种写法在出现时交替，既都练到，又不会连着出。
+     只要池子里有两个以上音名，同一个音名就不会连续出现。 */
+  const byLetter = {};
+  pool.forEach(function(id){
+    const letter = NOTES[id].letter;
+    (byLetter[letter] = byLetter[letter] || []).push(id);
+  });
+  const letters = spreadLetters(repeatTo(Object.keys(byLetter), n));
+  Object.keys(byLetter).forEach(function(letter){ byLetter[letter] = shuffle(byLetter[letter]); });
+  const cursor = {};
+  return letters.map(function(letter){
+    const list = byLetter[letter] || pool;
+    const i = cursor[letter] || 0;
+    cursor[letter] = i + 1;
+    return qClef(list[i % list.length]);
+  });
 }
 
 function makeBeats(ids, n){
   if(!ids.length) return [];
+  const notes = weightedRepeatTo(ids, n);
   const vals = shuffle(repeatTo(VALUE_IDS, n));
   const qs = [];
   for(let i = 0; i < n; i++){
-    const id = weightedPick(ids);
+    const id = notes[i];
     qs.push(i % 3 === 2 ? qWhichShape(id, vals[i]) : qBeats(id, vals[i]));
   }
-  return shuffle(qs);
+  return spaceOut(qs, function(q){ return q.noteId; });
 }
 
 function makePlay(ids, n){
@@ -3721,7 +3785,7 @@ function makePlay(ids, n){
   const vals = shuffle(repeatTo(['quarter','half','dotted'], m));
   const qs = [];
   for(let i = 0; i < m; i++) qs.push(qPlayNote(list[i], vals[i]));
-  return shuffle(qs);
+  return spaceOut(qs, function(q){ return q.noteId; });
 }
 
 function makeSpot(ids, n){
@@ -3974,7 +4038,9 @@ function makeLedger(ids, n){
     if(cand.length) picked.push(pick(cand));
   });
   while(picked.length < n) picked.push(pick(pool));
-  return shuffle(picked.slice(0, n)).map(qLedgerName);
+  return spaceOut(picked.slice(0, n).map(qLedgerName), function(q){
+    return q.clef + '|' + q.spot;
+  });
 }
 
 /* ==================== 第 9 关：易混音 ====================
@@ -4116,7 +4182,7 @@ function makeContrast(ids, n){
     qs.push(qContrast(pair, pair.a.id));
     if(qs.length < want) qs.push(qContrast(pair, pair.b.id));
   }
-  return shuffle(qs);
+  return spaceOut(qs, function(q){ return q.noteId; });
 }
 
 /* 新音学完后的收尾：只问这个新音，每次换一个对比音。
@@ -4189,7 +4255,9 @@ function buildDailySession(){
   const play = fin.length ? makePlay(fin, 1) : makeStaffKey(learned, 1);
   /* 复习块固定在最前，其余交错，避免同一种题连着出现。 */
   const mix = [find[0], staff[0], beats[0], find[1], staff[1], play[0], beats[1], staff[2]];
-  qs.push.apply(qs, shuffle(mix.filter(Boolean)));
+  /* 复习块固定在最前；mix 的第一题还要和复习块最后一题错开。 */
+  const lastReview = qs.length ? qs[qs.length - 1].noteId : undefined;
+  qs.push.apply(qs, spaceOut(mix.filter(Boolean), function(q){ return q.noteId; }, lastReview));
   /* 只勾了一个音时只有 1 题复习，补一道谱 ↔ 键，保持 10 题。 */
   while(qs.length < 10){
     const extra = makeStaffKey(learned, 1)[0];
