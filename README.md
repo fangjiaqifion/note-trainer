@@ -287,8 +287,8 @@ middle-C position and pairs with E4 (right-hand third finger). A4 falls outside 
 five-finger position; for now it uses a "move the whole hand right, fifth finger on A"
 convention. A dedicated hand-shift lesson is still future work. Any unlearned chip can be
 tapped to start that note's first lesson, so a teacher or parent can choose A3, A4, F or G
-without waiting for the **下一个音** button. If the learner stops halfway, the report's
-**继续学** button resumes at the saved step.
+without waiting for the **下一个音** button. The step is saved after every answered question,
+so stopping halfway and coming back continues at the next question.
 
 ## Daily practice
 
@@ -319,7 +319,7 @@ the spotlight; any other unlearned note is dimmed but still opens its spotlight 
 A single-note review of a note and its neighbours is available from the **练** button beside
 each note in the teacher report. The report also shows notes still in the spotlight as
 **学习中** (learning), with a **继续学** (continue learning) button that resumes at the saved
-step instead of restarting the note.
+step instead of restarting the note. The step is saved after each answered question.
 
 ## Notation conventions
 
@@ -497,6 +497,7 @@ date rather than semver.
 
 | Date | Change |
 |---|---|
+| 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
 | 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
 | 2026-11-04 | Skill 8 asks only for the position: **这个音在（高/低）谱号的（上/下）加（数字）（线/间）** with four dropdowns. The note-name dropdown is gone because students do not yet know the pitch outside the staff |
 | 2026-11-04 | The play screen keeps the question and answer together directly below the prompt; the keyboard is no longer pinned to the bottom edge. The new-note keyboard step marks an octave already found and asks for another A instead of silently requiring A3 |
@@ -603,6 +604,22 @@ The app itself does not use cookies; profiles, checked notes and the practice lo
 Opening `index.html` directly also renders, but the service worker will not register from
 `file://`, so offline mode is only available over http(s).
 
+## Tests
+
+The app has no build step and no runtime dependencies. The regression test is separate:
+
+```bash
+npm install
+npm test
+```
+
+It uses `playwright-core` with the system Google Chrome, starts a temporary static server,
+seeds a test profile in `localStorage`, and checks: nine home cards; 13 question types at four
+viewports with no clipping or horizontal scroll; a single checked note still gets two
+keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
+flags; the report has nine skill columns; and the console stays clean. Service workers are
+blocked, so the test always runs the working copy.
+
 ## Deploying
 
 The site is served by GitHub Pages from the `main` branch, repository root. Push to `main`
@@ -613,7 +630,7 @@ and the site rebuilds in about a minute.
   the site are public.
 - The page carries `noindex, nofollow, noarchive`: search engines will not index it, but
   anyone with the link can still open it.
-- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v24`);
+- After editing `index.html`, bump the cache name in `sw.js` (currently `note-trainer-v25`);
   otherwise the iPad keeps the old page.
 
 ## Editing this README

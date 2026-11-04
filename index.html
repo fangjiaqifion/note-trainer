@@ -1163,7 +1163,7 @@ const SPOT_STEPS = [
   }
 ];
 const SPOT_STEP_COUNT = SPOT_STEPS.length;   // 14
-const SPOT_PER_SESSION = SPOT_STEP_COUNT;    // 一次走完
+const SPOT_PER_SESSION = SPOT_STEP_COUNT;    // 默认一次走完；中途退出按已答步数续学
 
 /* 白键序号：C3 = 0，C4 = 7，E4 = 9。局部键盘和「新音在哪个八度」
    都靠它算，不用把每个音的键位手写一遍。 */
@@ -2517,6 +2517,11 @@ function recordAnswer(q){
   };
   S.events.push(e);
   if(S.events.length > EVENT_LIMIT) S.events.splice(0, S.events.length - EVENT_LIMIT);
+  /* 新音导入每答对一题就记住走到第几步。中途按返回时，
+     下次从下一题接着走，而不是从第 1 题重来。 */
+  if(G.mode === 'spotlight' && G.spotNote){
+    advanceSpotlight((G.spotFrom || 0) + G.i + 1);
+  }
   saveStoreSoon();
 }
 
@@ -4272,7 +4277,7 @@ function startNoteContinue(noteId){
   startSpotlight();
 }
 
-/* 新音导入：只练当前新音，一次走完 14 题。 */
+/* 新音导入：只练当前新音，默认一次走完 14 题；中途退出从下一步续学。 */
 function startSpotlight(){
   const noteId = currentSpotlight();
   if(!noteId){ toast('这个音已经学完了', 'ok'); return; }
@@ -4319,16 +4324,18 @@ function startContrastNote(noteId){
   });
 }
 
-/* 新音导入走完 14 题之后打开对应的标记。
+/* 新音导入走到第 nextStep 步时打开对应的标记。
    第 0–7 步覆盖键位和谱位；第 8–13 步补指法和混合。
    标记一旦打开就不会再关，孩子重玩不会掉进度。
    这里不按对错卡进度：四岁的孩子需要的是接触次数，
-   掌握程度由家长看结算页的一次答对率和星星判断。 */
-function advanceSpotlight(){
-  if(!G.spotNote || !G.spotCount) return;
+   掌握程度由家长看结算页的一次答对率和星星判断。
+   nextStep 省略时按「这次整节走完」计算，结算页用这个默认值。 */
+function advanceSpotlight(nextStep){
+  if(!G.spotNote) return;
   const p = S.progress[G.spotNote];
   if(!p) return;
-  const next = Math.min(SPOT_STEP_COUNT, (G.spotFrom || 0) + G.spotCount);
+  const next = Math.min(SPOT_STEP_COUNT,
+    nextStep == null ? (G.spotFrom || 0) + (G.spotCount || 0) : nextStep);
   /* 前 8 步走完（局部键盘、找键、谱 ↔ 键），key/pos 先打开；
      走满 14 步再补 fin。 */
   if(next >= 8){ p.key = 1; p.pos = 1; }
@@ -5825,6 +5832,10 @@ window.__dbg = {
   buildDailySession: buildDailySession,
   makeBattery: makeBattery,
   startTest: startTest,
+  startLevel: startLevel,
+  startDaily: startDaily,
+  startNoteImport: startNoteImport,
+  startSpotlight: startSpotlight,
   startNoteReview: startNoteReview,
   evaluateAuto: evaluateAuto,
   openReport: openReport,
