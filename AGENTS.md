@@ -28,6 +28,18 @@ the parent records only the submodule pointer and is never pushed implicitly.
 - Documentation-only edits do not change the runtime build and do not require a release,
   database pressure test, browser-cache reset, or deployment.
 
+## Mandatory work-completion gate
+
+Every task must finish with a documentation review without waiting for a user reminder.
+Follow the [work-completion pipeline](docs/development.md#work-completion-pipeline): update
+applicable AGENTS, operating docs, the tracker, and capability/design docs; record which
+were updated or reviewed unchanged and why. Resolve contradictory current guidance.
+After an authorized deployment, update actual build/migration/browser evidence before the
+final handoff and commit that evidence. Preserve historical audits. Do not report a
+substantive task complete while required documentation remains stale. This applies when
+cloned alone and within the parent workspace. It is an agent workflow requirement, not
+an installed automatic hook or permission to push/deploy.
+
 ## Question-generation invariants
 
 - Skills 1–5 and daily practice target only checked notes that meet learning prerequisites.

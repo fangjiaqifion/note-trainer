@@ -7,6 +7,48 @@ Internal technical reference. Read [AGENTS.md](../AGENTS.md) for constraints and
 These procedures were extracted from the former README; they are not a record of a
 new release. Documentation-only changes do not require running this pipeline.
 
+## Work-completion pipeline
+
+Run this pipeline for every substantive task, including fixes and documentation work.
+The documentation gate is mandatory without another user prompt. It is an agent working
+procedure, not a background watcher or a script that can judge semantic accuracy.
+
+1. **Establish the baseline.** Read applicable AGENTS and the current tracker; inspect
+   Git status, preserve unrelated work, and identify the owning repository. Consult
+   relevant operating/design docs before changing the behavior they describe.
+2. **Implement and verify.** Complete the authorized change and run appropriate checks.
+   For runtime delivery run the full local release pipeline below. Use synthetic data;
+   distinguish local fixtures from live acceptance and device-specific evidence.
+3. **Review documentation before the feature commit.** Check AGENTS for changed rules,
+   interfaces, ownership, and privacy boundaries. Update operating docs for changed steps,
+   migrations, configuration, recovery, or failure handling; update the tracker for actual
+   status, evidence, limits, and next actions. Review README and LEVELS when capabilities
+   or instructional design change. Keep unaffected documents unchanged with a reason.
+   Replace stale current guidance instead of only appending a contradictory update.
+4. **Commit the complete unit locally.** Stage explicit paths and include affected docs
+   with implementation. Exclude credentials, learner data, and ignored runtime evidence.
+   Do not derive push/deployment authorization from this checklist.
+5. **Release only when authorized and relevant.** Apply required migrations before a
+   dependent client; run the push release pipeline, verify remote file hashes, and collect
+   actual Safari/Chrome navigation receipts for the declared origins. With browser control,
+   use `--no-open` and the generated URLs; `prepared` is not `ready`. Verify changed product
+   behavior through an isolated synthetic workflow when needed. Reuse existing test identities.
+6. **Close the evidence loop.** After deployment, update the tracker and dated acceptance
+   record with observed build, migrations, checks, browser results, and remaining limits.
+   Commit this evidence. Publish it only within existing authorization. In a nested checkout,
+   update parent coordination docs if affected and commit the submodule pointer locally
+   after game commits. Never push the parent implicitly.
+7. **Check and hand off.** Review the final diff, run `git diff --check`, check affected
+   local Markdown links, and search current docs for obsolete instructions. Record the
+   documentation disposition in the tracker: updated files, reviewed-unchanged documents
+   and reasons, verification, and unresolved gaps. Report the actual outcome and distinguish
+   local commits, pushes, server verification, and browser acceptance.
+
+For documentation-only work, perform steps 1, 3, 4, and 7; update evidence in step 6 when
+the record changes. Do not rebuild runtime assets, clear caches, contact the live student
+database, or repeat pressure tests merely to validate Markdown. Do not change the recorded
+runtime build or claim new browser acceptance from a documentation commit.
+
 ## Adding a note
 
 Everything about the note set lives in three declarations near the top of `index.html`:

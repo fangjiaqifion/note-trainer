@@ -4,15 +4,18 @@ Last updated: 2026-11-05
 
 ## Delivery boundary
 
-Migration 003 has been applied to the existing Supabase project, and build `29d4243781`
-has been pushed and its Pages file hashes verified. The GitHub database-health workflow
-passed its first live run. The owner created the dedicated application account, it was
-allowlisted, and the owner completed password/TOTP login. Both live management views
-and all six Safari/Chrome release receipts are verified. Teacher registration/login
-was exercised in isolated local browser fixtures; no real teacher or student was enrolled
-as part of activation.
-Consult the progress tracker and release audit for actual verification status. Do not treat
-a local browser fixture as a live Supabase acceptance result.
+Migrations 001–004 are applied. The latest accepted runtime is `e30cc2ef11`, with
+Pages file hashes and all six Safari/Chrome release receipts verified. The owner-created
+administrator is allowlisted and completed password/TOTP login; ordinary teachers use
+username/key access without MFA. A reusable invitation registered one synthetic teacher,
+and a fresh private Safari login passed. Live Chrome acceptance then created one synthetic
+student through the ordinary dialog and read back one answer from the cloud, without
+manual binding. The database-health workflow also passed its initial live run.
+
+See the [current tracker](progress_tracker.md) and
+[automatic-sync acceptance](audit_20261105_automatic_students/audit.md) for evidence and
+limits. The earlier [portal audit](audit_20261105_portal/audit.md) records its own baseline.
+No real learners were used in these acceptance checks.
 
 ## Teacher experience
 
@@ -25,7 +28,9 @@ a local browser fixture as a live Supabase acceptance result.
 3. Copy the generated `NT2-` teacher key into private storage. A JSON download is optional.
    Confirm saving to clear the pending plaintext registration key from browser storage.
 4. On another device choose `教师登录`, enter username/key, and establish the local PIN.
-   Explicitly load students and progress; login alone never imports or uploads a roster.
+   Load existing cloud students/progress explicitly on a new device. After local teacher
+   verification, an initial unowned local roster may automatically join this teacher
+   workspace; profiles owned by another workspace are never reassigned.
 5. Create learners normally in the teacher overview. Automatic enrolment, backup snapshots,
    display labels, progress, and answers synchronize without a participant-code/binding step.
    Offline/cloud-request failures retain a local queue and retry after reconnection. Student

@@ -4,8 +4,8 @@ Last updated: 2026-11-05
 
 Internal operating reference. Ordinary practice can remain offline. The cloud-default update
 automatically enrols teacher-owned profiles and synchronizes progress, answers, and private
-display labels. Local PINs/hashes are not uploaded. Migration 004 and the new client release
-are required; consult the tracker for deployment status.
+display labels. Local PINs/hashes are not uploaded. Migrations 001–004 are applied and
+runtime build `e30cc2ef11` is accepted; consult the tracker for evidence and limits.
 Researchers read authorized participant codes, progress, and answers only. Cloud JSON
 retains workspace_id/student_id; local CSV adds cloud_workspace/cloud_participant/event_id.
 Use those stable fields for cross-device joins; legacy participant remains a local-profile ID.
@@ -14,11 +14,21 @@ Server authorization is separate from the local PIN.
 ## New teacher portal
 
 The invitation/username/key implementation and its activation boundary are documented in
-[Teacher Portal and Administrator Operations](teacher_portal.md). Migration 003 and Pages
-publication, initial administrator password/TOTP setup, and six native-browser load checks
-are complete. Teacher registration acceptance remains isolated-fixture evidence; no real
-learner was enrolled automatically. New teacher keys have
+[Teacher Portal and Administrator Operations](teacher_portal.md). Pages publication,
+initial administrator password/TOTP setup, and six native-browser load checks are complete.
+Live synthetic invitation registration, fresh-device login, automatic student creation,
+and answer readback passed. No real learners were used. New teacher keys have
 no fixed annual expiry; existing student/researcher and legacy keys retain their prior policy.
+
+### Normal teacher and student setup
+
+Register with an invitation and alphanumeric username, save the teacher key, then create
+students in the ordinary teacher overview. Cloud IDs, private display labels, progress,
+and answers synchronize automatically. No configuration upload, participant-code entry,
+manual binding, or forced backup download is required. Offline work stays local until
+reconnection. An initial unowned local roster can join the first verified teacher workspace;
+profiles owned by another workspace are never reassigned. A new-device teacher login still
+requires explicitly loading existing cloud students/progress.
 
 ## Legacy teacher setup (advanced compatibility only)
 
@@ -31,7 +41,7 @@ no fixed annual expiry; existing student/researcher and legacy keys retain their
 5. Generate each learner's recovery code in cloud management. Never give a learner the
    teacher code or put a recovery code in a public link.
 
-Codes are high-entropy credentials; the server stores hashes only. They expire in one year
+These legacy codes are high-entropy credentials; the server stores hashes only. They expire in one year
 and permit up to ten active devices per code. Different recovery codes use different Auth
 identities, preventing reuse of teacher tokens when switching to a student role. Local PINs
 are switching guards only. Do not retain teacher/researcher credentials or sessions on
@@ -39,8 +49,8 @@ untrusted shared devices; local storage is not an encrypted vault.
 
 ## Second device and conflicts
 
-1. Open the ordinary game and choose cloud recovery (`云端恢复`); paste a code or select
-   its JSON file.
+1. Open cloud accounts (`云端账户`). Teachers use `教师登录` with username/key;
+   learners and legacy accounts use `学生 / 旧账户恢复` with their scoped code or JSON file.
 2. Students see only themselves; teachers their class; researchers readonly reports and
    deidentified exports.
 3. Set a four-digit local PIN and load a student. Preserve the current roster snapshot

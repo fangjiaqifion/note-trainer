@@ -3,11 +3,27 @@
 Last updated: 2026-11-05
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
-record. Earlier audits describe their own stages, not current readiness. This English
-revision consolidates the previous tracker against its linked final acceptance evidence;
-it does not report a new release or repeat live tests.
+record. Earlier audits describe their own stages, not current readiness. Current status below incorporates the accepted teacher portal and automatic-student
+release. The documentation review itself did not rerun runtime or live database tests.
 
-## Last recorded delivery baseline
+## Current accepted delivery
+
+| Item | Accepted result |
+|---|---|
+| Runtime build | `e30cc2ef11` |
+| Game commits | Feature `ac86b85`, release `d8d55a2`, acceptance record `d07e0de`, pushed |
+| Database | Migrations 001–004 applied; migration 004 succeeded before dependent client publication |
+| Release verification | Pages file hashes matched; six Safari/Chrome receipts ready across Pages, 127.0.0.1:8771, and localhost:8771 |
+| Teacher access | Reusable invitation, ASCII-alphanumeric username, saved random key; ordinary teachers need no MFA |
+| Administrator | Separate unlinked `manage.html`, allowlist, owner-entered password/TOTP; invitation and teacher views accepted |
+| Default student flow | Ordinary New Student creation automatically enrolls and syncs labels, progress, and answers; offline queue and idempotent retry |
+| Live acceptance | Existing synthetic teacher, one synthetic `AUTO01` student, one answer read back from cloud; no manual binding or forced download |
+| Health check | Three daily GitHub runs configured; initial run passed; no service-availability guarantee |
+
+Evidence: [automatic-sync audit](audit_20261105_automatic_students/audit.md) and
+[portal audit](audit_20261105_portal/audit.md). Prior device/network/capacity limits remain.
+
+## Historical pre-portal delivery baseline
 
 | Item | Recorded result |
 |---|---|
@@ -37,7 +53,7 @@ portal and automatic-sync implementation were explicitly authorized for deployme
 |---|---|---|---|
 | NT-001 | Long-term local retention and full backup/restore | Restore implemented and tested; capacity strategy incomplete | Interrupted staging cleanup, iPad write/capacity measurements, deeper semantic validation, ordinary multi-tab concurrency |
 | NT-002 | iPad startup/audio readiness | Ordinary settings diagnostics shipped; three scenarios user-confirmed | If reproduced, record OS/mode, export diagnostics, and test offline/mute/disabled-sound cases |
-| NT-003 | Cloud sync and researcher management | Explicit binding, recovery, permissions, and synthetic live acceptance passed | Controlled binding, continued offline backups, regional networks, service pause recovery, ongoing abuse/capacity review |
+| NT-003 | Cloud sync and researcher management | Cloud-default student creation, teacher portal, scoped recovery, and synthetic live acceptance passed | Continued off-device backups, explicit new-device progress loading, regional networks, service pause recovery, abuse/capacity review |
 
 ## Teacher portal implementation, 2026-11-05
 
@@ -47,7 +63,7 @@ a dedicated database-health workflow. Local build `29d4243781` passed the full r
 regression suite and four Safari/Chrome local-origin navigation receipts. See
 [operations/design](teacher_portal.md) and [acceptance audit](audit_20261105_portal/audit.md).
 Migration 003 has been applied and feature commit `59d8018` pushed to the existing game remote.
-Pages files match build `29d4243781`. Health workflow run `42040722798` passed on GitHub;
+At that stage, Pages files matched build `29d4243781`; the current build is listed above. Health workflow run `42040722798` passed on GitHub;
 its URL variable and publishable-key secret are configured. The dedicated administrator was owner-created and allowlisted, and the owner completed
 live password/TOTP login. Both management tabs and all six Safari/Chrome release receipts
 across Pages/127.0.0.1/localhost are verified for build `29d4243781`. No real learners were
@@ -93,14 +109,17 @@ enrolled and no live teacher-registration claim is inferred from local fixtures.
 
 ### Production identity and authorization
 
-- Strong, revocable, expiring recovery codes map separate Auth identities to teacher,
-  student, or readonly researcher permissions. The four-digit local PIN is not server authorization.
+- Strong, revocable recovery codes map separate Auth identities to teacher,
+  student, or readonly researcher permissions. Portal teacher keys have no fixed annual
+  expiry; legacy/student/researcher grants retain expiry. The local PIN is not server authorization.
 - Cloud-bound profiles use a same-origin single-writer lock and revision conflict checks.
   Loading cloud progress retains a local snapshot and merges unconfirmed events.
 - Bound profiles reject overwrite imports and research-log clearing. Unbound ordinary
   profiles still lack automatic multi-tab practice merging.
-- Explicit binding first saves/downloads a complete local snapshot. Real old profiles are
-  never silently migrated. Legacy events without IDs receive stable UUIDv5 values based
+- Automatic teacher enrolment preserves an internal local snapshot without a forced
+  download; the first verified workspace can adopt unowned local profiles, as authorized.
+  Profiles owned by another workspace are never reassigned. Legacy manual binding remains
+  in advanced compatibility tools. Legacy events without IDs receive stable UUIDv5 values based
   on cloud-student UUID and canonical fields; existing UUIDs are preserved.
 - Changes to roster/state during asynchronous binding stop overwrite. Cloud management
   actions are serialized. In-flight requests retain the originating Auth transport.
@@ -132,7 +151,7 @@ enrolled and no live teacher-registration claim is inferred from local fixtures.
 - A 10,000-event local backlog produced exactly 200 nonempty batches and one registration;
   idle checks made zero requests. Independent Chrome HTTP fixtures are separate from live
   database evidence. Earlier CUA readbacks were local 5/5 and remote 2/2.
-- Final recorded full regression: 46 Node tests, 1,144 scheduling boundaries, 45,900
+- Historical pre-portal full regression: 46 Node tests, 1,144 scheduling boundaries, 45,900
   generated sessions, four viewports, reports, SW/offline, cloud faults, roster restore,
   storage barriers, and old-cache upgrade. These tests were not rerun for translation.
 
@@ -148,11 +167,12 @@ No claim of unlimited retention or universal reliability is justified.
    than rebuilding implemented restore, identity, or permissions.
 2. For device/network issues, reuse existing synthetic identities and recovery codes.
    Do not rerun passed live pressure tests without a changed implementation or validation goal.
-3. Real learner binding remains explicit and preceded by backup. Check actual use against
-   the approved ethics/notice arrangements before changing data handling; the earlier user
-   reported ethics approval and no institution-specified storage region.
-4. Run targeted checks for each change, update evidence/status, and commit complete units.
-   Run the full release pipeline only when runtime delivery changes.
+3. Follow the authorized cloud-default student flow and workspace isolation. Reuse existing
+   synthetic accounts for checks; never modify real learner data for testing. Preserve the
+   documented privacy boundary for labels and local PINs.
+4. Follow the mandatory [work-completion pipeline](development.md#work-completion-pipeline),
+   including documentation disposition and post-release evidence. Run the full release
+   pipeline only when runtime delivery changes.
 
 Runtime paths, never print or commit their contents:
 
@@ -165,7 +185,7 @@ Runtime paths, never print or commit their contents:
 
 The synthetic Supabase project is `note-trainer-synthetic-test`, Singapore region;
 isolated table/RPC: `nt_sync_events`/`nt_sync_batch`. Production tables are separate.
-The last dedicated local server used port 8766; check its source fingerprint before reuse
+The last accepted release used a dedicated local server on port 8771; check its source fingerprint before reuse
 and never kill an unknown process. `sync_test=1` selects the isolated test entry.
 
 Commands, only as needed:
@@ -203,3 +223,14 @@ ordinary New Student dialog, and read back its private display label and one cor
 answered practice item through the cloud report. No manual binding, participant-code
 entry, or forced backup download occurred. The administrator dashboard showed one
 invitation slot used out of ten. No additional teacher registration was performed.
+
+## Documentation completion review, 2026-11-05
+
+Updated parent/game AGENTS, development completion pipeline, portal delivery/onboarding
+instructions, cloud operations, and parent/game trackers. Reconciled the current baseline,
+cloud-default ownership, credential expiry, and legacy compatibility guidance. README and
+LEVELS were reviewed unchanged: published capabilities already match the release, and
+instructional design is unaffected. Dated acceptance audits were retained as evidence.
+Validation: changed local Markdown links, stale-guidance review, and Git whitespace checks.
+No runtime files changed; no new release, browser, or database acceptance is claimed.
+Future work must run this documentation gate without another user reminder.
