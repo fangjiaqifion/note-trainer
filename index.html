@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="13d5d3b4a4">
+<meta name="app-build" content="29d4243781">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -365,6 +365,17 @@
   .field span{display:block;font-size:13px;font-weight:700;color:#6B6156;margin-bottom:5px}
   .field input{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:#FFFDF9;font:inherit;font-size:18px;font-weight:600;color:var(--ink);outline:none}
   .field input:focus{border-color:var(--blue);background:#fff}
+  #cloudModal [hidden]{display:none!important}
+  #cloudModal textarea,#cloudModal select{width:100%;max-width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:#FFFDF9;font:inherit;font-size:16px;color:var(--ink);resize:vertical;overflow-wrap:anywhere}
+  #cloudModal textarea:focus-visible,#cloudModal input:focus-visible,#cloudModal button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+  #cloudModal .cloud-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  #cloudModal .cloud-tabs button{font-size:14px;padding:10px 12px;box-shadow:none;border-radius:12px}
+  #cloudModal .cloud-tabs button[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}
+  #cloudModal details{margin:14px 0;padding:10px 0;border-top:1px solid var(--line)}
+  #cloudModal summary{cursor:pointer;font-weight:600;font-size:14px;line-height:1.5}
+  #cloudModal h3{font-size:17px;margin:18px 0 10px}
+  #cloudModal #cloudPacket{border:2px solid var(--line);border-radius:14px;padding:14px;margin-top:16px}
+  #cloudModal #cloudPacket button{font-size:14px;margin:8px 4px 0 0;padding:10px 12px}
   .form-err{min-height:18px;margin:2px 0 0;color:var(--red);font-size:13px;font-weight:600}
 
   /* 启动 / 切换账户的整屏 */
@@ -597,7 +608,7 @@
       </div>
       <div class="who-grid" id="whoGrid"></div>
       <div class="gate-foot">
-        <button class="ghost-btn" id="btnGateCloud">云端恢复</button>
+        <button class="ghost-btn" id="btnGateCloud">云端账户</button>
         <button class="ghost-btn" id="btnGateTeacher">🔒 老师入口</button>
         <button class="ghost-btn" id="btnGateBack" style="display:none">返回练习</button>
       </div>

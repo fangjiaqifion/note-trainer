@@ -96,7 +96,7 @@ try{
  await checkpoint('standard page opened');
  await p.locator('#btnGateTeacher').click();await p.locator('#teacherPin').fill('1234');await p.locator('#teacherPin2').fill('1234');await p.locator('#btnTeacherSetupSave').click();
  await p.locator('#btnTeacherNew').click();await p.locator('#accName').fill('TEST01');await p.locator('#accPin').fill('1111');await p.locator('#accPin2').fill('1111');await p.locator('#btnAccCreate').click();
- await p.locator('#btnTeacherCloud').click();await p.locator('summary').filter({hasText:'首次开通班级'}).click();
+ await p.locator('#btnTeacherCloud').click();await p.locator('#cloudRecoveryTab').click();await p.locator('summary').filter({hasText:'首次开通班级'}).click();
  await p.locator('#cloudConfig').setInputFiles({name:'config.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(config))});
  await waitStatus(p,'配置已加载');await p.locator('#cloudBootstrap').fill(bootstrap);await p.locator('#cloudCreate').click();await waitStatus(p,'恢复码已生成');
  const teacherRecovery=await p.locator('#cloudIssued').inputValue();assert.ok(teacherRecovery.startsWith('nt1.'));if(LIVE)await writeFile(new URL('teacher_recovery.json',liveDir),JSON.stringify({recovery:teacherRecovery}),{mode:0o600});await checkpoint('cloud class created');
@@ -104,7 +104,7 @@ try{
  await p.waitForFunction(()=>!!window.__dbg?.ACCOUNTS.accounts[0]?.cloudStudent);
  await teacher(p);await p.locator('#cloudRetry').click();await waitStatus(p,'本机记录已同步');await p.locator('#cloudRefresh').click();
  await p.locator('#cloudRoster button').filter({hasText:'学生恢复码'}).click();await waitStatus(p,'恢复码已生成');const learnerRecovery=await p.locator('#cloudIssued').inputValue();if(LIVE)await writeFile(new URL('learner_recovery.json',liveDir),JSON.stringify({recovery:learnerRecovery}),{mode:0o600});
- await p.locator('#cloudResearchCode').click();await waitStatus(p,'恢复码已生成');
+ await p.locator('#cloudSafety summary').click();await p.locator('#cloudResearchCode').click();await waitStatus(p,'恢复码已生成');
  await p.waitForFunction(previous=>document.querySelector('#cloudIssued').value!==previous,learnerRecovery);const researcherRecovery=await p.locator('#cloudIssued').inputValue();if(LIVE)await writeFile(new URL('researcher_recovery.json',liveDir),JSON.stringify({recovery:researcherRecovery}),{mode:0o600});await checkpoint('scoped codes issued');
  await p.locator('#cloudClose').click();await p.locator('#btnTeacherExit').click();await p.locator('#whoGrid button').first().click();await pin(p,'1111');
  await p.getByRole('button',{name:'1 键盘上的位置 ★★★',exact:true}).click();await answer(p);
@@ -114,8 +114,8 @@ try{
  if(db)assert.equal((await db.query('select count(*)::int n from public.nt_cloud_events')).rows[0].n,1);
  else{const rows=await serverRows(p),events=await p.evaluate(()=>window.__dbg.S.events);assert.equal(rows.length,1);assert.deepEqual(rows[0].payload,events[0]);}
  await checkpoint('actual answer read back');
- const second=await context(),q=await second.newPage();await q.goto(base);await q.locator('#btnGateCloud').click();await q.locator('#cloudRecovery').fill(learnerRecovery);await q.locator('#cloudRecover').click();await waitStatus(q,'学生');
- await q.locator('#cloudLocalPin').fill('2222');q.once('dialog',d=>d.accept());await q.locator('#cloudRoster button').filter({hasText:'载入本机'}).click();
+ const second=await context(),q=await second.newPage();await q.goto(base);await q.locator('#btnGateCloud').click();await q.locator('#cloudRecoveryTab').click();await q.locator('#cloudRecovery').fill(learnerRecovery);await q.locator('#cloudRecover').click();await waitStatus(q,'学生');
+ await q.locator('#cloudLocalPinBox summary').click();await q.locator('#cloudLocalPin').fill('2222');q.once('dialog',d=>d.accept());await q.locator('#cloudRoster button').filter({hasText:'载入本机'}).click();
  await q.waitForFunction(()=>!!window.__dbg?.ACCOUNTS.accounts[0]?.cloudStudent);await q.locator('#whoGrid button').first().click();await pin(q,'2222');await q.locator('#home.active').waitFor();
  assert.equal(await q.evaluate(()=>window.__dbg.S.events.length),1,'new device restores the actual answer');
  await q.getByRole('button',{name:'1 键盘上的位置 ★★★',exact:true}).click();offline=true;await answer(q);await q.reload();
@@ -126,7 +126,7 @@ try{
  if(db)assert.equal((await db.query('select count(*)::int n from public.nt_cloud_events')).rows[0].n,2,'lost response retry is idempotent');
  else{const rows=await serverRows(q),events=await q.evaluate(()=>window.__dbg.S.events);assert.equal(rows.length,2);for(const e of events)assert.deepEqual(rows.find(r=>r.event_id===e.id).payload,e);}
  await checkpoint('second device offline and lost receipt read back');
- const third=await context(),r=await third.newPage();await r.goto(base);await r.locator('#btnGateCloud').click();await r.locator('#cloudRecovery').fill(researcherRecovery);await r.locator('#cloudLocalPin').fill('3333');await r.locator('#cloudRecover').click();await waitStatus(r,'研究者只读');
+ const third=await context(),r=await third.newPage();await r.goto(base);await r.locator('#btnGateCloud').click();await r.locator('#cloudRecoveryTab').click();await r.locator('#cloudRecovery').fill(researcherRecovery);await r.locator('#cloudLocalPin').fill('3333');await r.locator('#cloudRecover').click();await waitStatus(r,'研究者只读');
  assert.equal(await r.locator('#cloudRoster button').filter({hasText:'载入本机'}).count(),0);
  await r.locator('#cloudRoster button').filter({hasText:'只读报告'}).click();await r.getByText('P001：2 题',{exact:false}).waitFor();
  const exporting=r.waitForEvent('download');await r.locator('#cloudReadReport button').click();const exported=await exporting;

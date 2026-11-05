@@ -2,11 +2,11 @@
    缓存名由 scripts/release.mjs 按页面内容生成，不要手改；
    每次都取新文件（cache:'reload'），避免安装时把 HTTP 缓存里的旧页
    一起装进离线包。页面导航始终网络优先，离线时才回退。 */
-const CACHE = 'note-trainer-13d5d3b4a4';
+const CACHE = 'note-trainer-29d4243781';
 const SCOPED_CACHE = CACHE + '@' + self.registration.scope;
 const mine = k => k.startsWith('note-trainer-') &&
   (!k.includes('@') || k.endsWith('@' + self.registration.scope));
-const ASSETS = ['./cloud_client.mjs', './cloud_ui.mjs', './audio_readiness.mjs', './sync_test.mjs', './experiments/supabase_sync/transport.mjs', './', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
+const ASSETS = ['./portal_identity.mjs', './portal_config.mjs', './cloud_client.mjs', './cloud_ui.mjs', './audio_readiness.mjs', './sync_test.mjs', './experiments/supabase_sync/transport.mjs', './', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -32,7 +32,7 @@ self.addEventListener('fetch', function (e) {
   const url = new URL(e.request.url);
   // 清理页不进离线包，也不能被导航逻辑写成 index.html。
   if(url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope) ||
-     url.pathname.endsWith('/clear-cache.html')) return;
+     url.pathname.endsWith('/clear-cache.html') || url.pathname.endsWith('/manage.html') || url.pathname.endsWith('/manage.mjs')) return;
   if (e.request.mode === 'navigate') {
     const network = fetch(new Request(e.request, {cache:'no-cache'}));
     e.waitUntil(network.then(async function(r){

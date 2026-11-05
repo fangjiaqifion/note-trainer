@@ -39,6 +39,17 @@ has no push or deployment authorization.
 | NT-002 | iPad startup/audio readiness | Ordinary settings diagnostics shipped; three scenarios user-confirmed | If reproduced, record OS/mode, export diagnostics, and test offline/mute/disabled-sound cases |
 | NT-003 | Cloud sync and researcher management | Explicit binding, recovery, permissions, and synthetic live acceptance passed | Controlled binding, continued offline backups, regional networks, service pause recovery, ongoing abuse/capacity review |
 
+## Teacher portal implementation, 2026-11-05
+
+Local work adds reusable invitations, ASCII-alphanumeric case-insensitive usernames, random
+teacher keys, a separate MFA-protected `manage.html`, owner-maintenance SQL preparation, and
+a dedicated database-health workflow. Local build `29d4243781 passed the full required
+regression suite and four Safari/Chrome local-origin navigation receipts. See
+[operations/design](teacher_portal.md) and [acceptance audit](audit_20261105_portal/audit.md).
+Migration 003 and owner provisioning have not been applied to Supabase; no new site push or
+scheduled Actions activation is implied. Local release evidence is recorded separately in
+`docs/audit_20261105_portal/audit.md`. Preserve existing legacy accounts and synthetic identities.
+
 ## Completed, do not rebuild
 
 ### Local data protection

@@ -1,0 +1,23 @@
+name: Cloud database health
+on:
+  schedule:
+    - cron: '23 1,9,17 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cloud-health
+  cancel-in-progress: false
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check dedicated database health row
+        env:
+          NT_SUPABASE_URL: ${{ vars.NT_SUPABASE_URL }}
+          NT_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NT_SUPABASE_PUBLISHABLE_KEY }}
+        run: node scripts/cloud_health.mjs

@@ -86,3 +86,12 @@ Other checks cover scheduling boundaries, four viewports, choices, continuation,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and
 unverified capacity, regional-network, and device scenarios are listed in the tracker.
+
+## Teacher portal configuration exception
+
+`portal_config.mjs` intentionally contains only the project URL and publishable browser key.
+This is a reviewed exception to storing all key configuration only under ignored `secrets/`: new
+teachers must not upload a configuration file. It grants no administrator authority. Never place
+secret/service-role keys, sessions, teacher credentials, or invitation plaintext in published assets.
+The independent management entry is `manage.html`; its discoverable URL is not an access control.
+See `docs/teacher_portal.md` for owner setup/recovery and rollout boundaries.

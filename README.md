@@ -161,3 +161,11 @@ The cartoon hands, keyboard, and cover image were drawn for this project.
 
 No license has been chosen yet. Until one is added, the code is public for reference but not
 licensed for reuse. If this changes, add a `LICENSE` file and replace this section.
+
+### Teacher portal development
+
+A local invitation-based teacher portal is under acceptance. Teachers register with a reusable
+invitation and an alphanumeric username, then save a random teacher key for later login. A
+separate, unlinked administrator page manages invitations and teacher access. It requires explicit
+server-side administrator authorization and MFA. This is not a claim of live deployment; see
+[portal operations and rollout status](docs/teacher_portal.md).

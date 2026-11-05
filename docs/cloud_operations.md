@@ -9,7 +9,14 @@ retains workspace_id/student_id; local CSV adds cloud_workspace/cloud_participan
 Use those stable fields for cross-device joins; legacy participant remains a local-profile ID.
 Server authorization is separate from the local PIN.
 
-## Teacher setup
+## New teacher portal
+
+The local invitation/username/key implementation and its deployment boundary are documented in
+[Teacher Portal and Administrator Operations](teacher_portal.md). It is not live until migration 003,
+owner administrator setup, site publication, and acceptance are completed. New teacher keys have
+no fixed annual expiry; existing student/researcher and legacy keys retain their prior policy.
+
+## Legacy teacher setup
 
 1. Open the local teacher entry, set/enter its PIN, and create the learner.
 2. In cloud management (`云端管理`), load the administrator-provided public client

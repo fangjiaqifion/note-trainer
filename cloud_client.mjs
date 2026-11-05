@@ -1,5 +1,6 @@
 // Recoverable, scoped cloud access. No service key, local PIN, or learner name crosses this boundary.
 const {createTransport,SyncError}=await import('./experiments/supabase_sync/transport.mjs?build='+(new URL(import.meta.url).searchParams.get('build')||'dev'));
+const {username,parseTeacherKey,portalResult}=await import('./portal_identity.mjs?build='+(new URL(import.meta.url).searchParams.get('build')||'dev'));
 export const CLOUD_URL='https://pokrwqirkjcjlworttvk.supabase.co';
 const KEY='nt.cloud.';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -70,7 +71,7 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
   });
  }
  const rpc=(name,body)=>request('/rest/v1/rpc/nt_cloud_'+name,{method:'POST',body});
- async function recover(packet){
+ async function recover(packet,teacherName=null){
   const {config:c,secret}=decodeRecovery(packet);configure(c);
   // Each capability has its own Auth identity. Switching from teacher to learner
   // must never reuse a JWT that still has teacher memberships on the server.
@@ -86,7 +87,7 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
     if(!pending)save('pendingIdentity.'+digest,sessionKey);
     transport=null;await auth().authenticate();
    }
-   const access=await rpc('claim',{recovery_code:secret});
+   const access=portalResult(teacherName===null?await rpc('claim',{recovery_code:secret}):await request('/rest/v1/rpc/nt_portal_login',{method:'POST',body:{username:username(teacherName),recovery_code:secret}}));
    save('identity.'+digest,sessionKey);save('authKey',sessionKey);save('access',access);
    storage.removeItem(KEY+'pendingIdentity.'+digest);return access;
   }catch(error){sessionKey=previousKey;transport=null;throw error;}
@@ -100,7 +101,11 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
   const id=await rpc('issue',{w:access.workspace,s:student,access_role:role,code_hash:await codeHash(pending.secret)});
   return {id,packet:encodeRecovery(config,pending.secret)};
  }
- async function students(){return request('/rest/v1/nt_cloud_students?select=id,workspace_id,local_id,code,state,revision&workspace_id=eq.'+encodeURIComponent(load('access').workspace)+'&order=id');}
+ async function students(){
+  const access=load('access');
+  if(access.username&&!await request('/rest/v1/rpc/nt_portal_access',{method:'POST',body:{w:access.workspace}}))throw new SyncError('教师账户已停用或本机授权已撤销，请联系管理员或重新登录',{permanent:true});
+  return request('/rest/v1/nt_cloud_students?select=id,workspace_id,local_id,code,state,revision&workspace_id=eq.'+encodeURIComponent(access.workspace)+'&order=id');
+ }
  async function profile(id){if(!UUID.test(id)) throw Error('学生 ID 无效');const rows=await request('/rest/v1/nt_cloud_students?select=*&id=eq.'+id);if(rows.length!==1) throw new SyncError('学生未授权或已撤销',{permanent:true});return rows[0];}
  async function readEvents(id){
   if(!UUID.test(id)) throw Error('学生 ID 无效');
@@ -113,6 +118,19 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
  }
  return {
   configure,get access(){return load('access');},get config(){return config;},rpc,recover,issue,students,profile,readEvents,
+  async registerTeacher(invitation,name,secret){
+   name=username(name);
+   if(!/^[a-f0-9]{48}$/.test(invitation)||!/^[a-f0-9]{64}$/.test(secret))throw Error('注册信息格式不正确');
+   // A registration gets its own identity; never attach it to an existing class session.
+   const digest=await codeHash(secret),previousKey=sessionKey;
+   sessionKey=load('registrationIdentity.'+digest,KEY+'registration.'+digest);transport=null;
+   save('registrationIdentity.'+digest,sessionKey);
+   try{
+    const access=portalResult(await request('/rest/v1/rpc/nt_portal_register',{method:'POST',body:{invitation,username:name,secret_hash:digest}}));
+    save('identity.'+digest,sessionKey);save('authKey',sessionKey);save('access',access);return access;
+   }catch(error){sessionKey=previousKey;transport=null;throw error;}
+  },
+  loginTeacher(name,key){return recover(encodeRecovery(config,parseTeacherKey(key)),username(name));},
   forgetPendingCode(){storage.removeItem(KEY+'pendingCode');},
   async create(bootstrap){const workspace=await rpc('create',{bootstrap_code:bootstrap});const access={workspace,role:'teacher',student:null};save('access',access);return access;},
   async addStudent(local,code){return rpc('add_student',{w:load('access').workspace,local_key:local,participant_code:code});},
