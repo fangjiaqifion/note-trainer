@@ -164,8 +164,9 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 
 ### Teacher portal development
 
-A local invitation-based teacher portal is under acceptance. Teachers register with a reusable
+An invitation-based teacher portal is published and undergoing initial administrator setup. Teachers register with a reusable
 invitation and an alphanumeric username, then save a random teacher key for later login. A
 separate, unlinked administrator page manages invitations and teacher access. It requires explicit
-server-side administrator authorization and MFA. This is not a claim of live deployment; see
+server-side administrator authorization and MFA. Database migration and published-file verification are complete; initial administrator
+activation and final browser acceptance remain pending. See
 [portal operations and rollout status](docs/teacher_portal.md).

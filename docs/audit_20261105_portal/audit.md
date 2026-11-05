@@ -75,3 +75,30 @@ network, long-duration, or production Supabase MFA/portal claim is implied by lo
 The health workflow is prepared, not active. Free-tier inactivity and public GitHub schedule
 disabling still need monitoring; this is not a guarantee against service suspension or a
 substitute for independent backups.
+
+## Authorized live activation, 2026-11-05
+
+The user explicitly authorized migration, administrator setup, Pages publication, and health
+workflow activation after reviewing the local implementation. This section supersedes the
+local-only delivery boundary above; it does not retroactively convert fixture tests into live tests.
+
+- Supabase SQL preflight returned NULL for portal tables/functions. The reviewed migration 003
+  was copied from the local file through native TextEdit/Chrome controls and executed once.
+  The console reported `Success. No rows returned`. Its transaction completed without an error.
+- Live publishable-key verification returned true from the dedicated health RPC and 401/403
+  from the unauthenticated administrator-list endpoint. No learner data was queried or altered.
+- GitHub identity and destination were verified as `fangjiaqifion` and the existing
+  `fangjiaqifion/note-trainer` repository. Feature commit `59d8018` was pushed through the full
+  required release command with browser opening disabled. All regression suites passed again;
+  Pages release assets matched build `29d4243781`. Browser status is `prepared`, not ready.
+- Repository variable `NT_SUPABASE_URL` and secret `NT_SUPABASE_PUBLISHABLE_KEY` were
+  configured without printing the public client-key value. Workflow run
+  [42040722798](https://github.com/fangjiaqifion/note-trainer/actions/runs/42040722798)
+  completed successfully. The schedule is three runs daily; its free-service and GitHub
+  inactivity limitations remain as documented.
+- The Supabase `Create a new user` form is open for the owner to enter the dedicated
+  application email/password and submit personally. Auto-confirm is enabled in that form.
+  No administrator user UUID has been selected or granted yet. The owner must finish this
+  handoff before allowlisting and personally entering the first TOTP verification code.
+- Final native Safari/Chrome receipts across Pages/127.0.0.1/localhost remain pending.
+  This is not a claim of completed administrator activation or end-to-end live registration.

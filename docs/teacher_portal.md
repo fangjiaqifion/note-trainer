@@ -4,8 +4,10 @@ Last updated: 2026-11-05
 
 ## Delivery boundary
 
-This document describes the new local implementation. Deployment requires migration 003,
-one owner-provisioned application administrator, site publication, and live acceptance.
+Migration 003 has been applied to the existing Supabase project, and build `29d4243781`
+has been pushed and its Pages file hashes verified. The GitHub database-health workflow
+passed its first live run. Initial administrator creation/MFA and final native-browser
+release receipts remain pending the owner credential-entry handoff.
 Consult the progress tracker and release audit for actual verification status. Do not treat
 a local browser fixture as a live Supabase acceptance result.
 

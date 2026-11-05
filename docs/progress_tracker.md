@@ -46,8 +46,10 @@ teacher keys, a separate MFA-protected `manage.html`, owner-maintenance SQL prep
 a dedicated database-health workflow. Local build `29d4243781 passed the full required
 regression suite and four Safari/Chrome local-origin navigation receipts. See
 [operations/design](teacher_portal.md) and [acceptance audit](audit_20261105_portal/audit.md).
-Migration 003 and owner provisioning have not been applied to Supabase; no new site push or
-scheduled Actions activation is implied. Local release evidence is recorded separately in
+Migration 003 has been applied and feature commit `59d8018` pushed to the existing game remote.
+Pages files match build `29d4243781`. Health workflow run `42040722798` passed on GitHub;
+its URL variable and publishable-key secret are configured. Initial administrator credential
+creation/MFA and final six native-browser release receipts remain pending the owner handoff. Local release evidence is recorded separately in
 `docs/audit_20261105_portal/audit.md`. Preserve existing legacy accounts and synthetic identities.
 
 ## Completed, do not rebuild
