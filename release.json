@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "build": "df08b997fd",
+  "build": "0d74cfd3df",
   "files": {
-    "index.html": "94972e9f197b1c446c7e676065e9a0ae6d45fdb3ba683ec42cd47780581681ff",
-    "sw.js": "5f6536b5d99555bf9a13218e51fb6939c8dd8ec194c4baaec550314da60fe85b",
+    "index.html": "2eaf8bc2441278c378697afc20d0a6c456a2725fddb949f2694fc06886d1ee1e",
+    "sw.js": "1f8601532bac8e09edb3580af356b8292bb4cc28b64785a45c1426720a1b5b62",
     "clear-cache.html": "500d30c3694eecf60edafad0a278386ecc37e51bc1ed746724aa4d367e5f4b54",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
-    "cloud_client.mjs": "fbf9d33faeee640560755f942bb36e06db6433bfae6908327ee76f3f610d4737",
-    "cloud_ui.mjs": "b9ce8a1cd2b4c7a7d9a45c87504ba36ebba43b57922b6fee5dd0aa73f5d1df30",
+    "cloud_client.mjs": "6b3cda9e88bf38f39eded146d86107f6f25ddf1adc1310552e855cfa471afa3f",
+    "cloud_ui.mjs": "703a5538edd2697ce6ad41f653442a2032ac7916f89ff77e87bbf41b754253c1",
     "audio_readiness.mjs": "cc4c74974c85a02ec2c351c34924ef1e6bc9d489a99bb12cab9c3c507db88ede",
     "sync_test.mjs": "787aed3ce8df77f5f0fec4d10a556fabe12b94a8c7a3df6c0ff09ec94e862eb8",
     "experiments/supabase_sync/transport.mjs": "6ac64861ca21ddec04b06938434f81ea355300488b0d4140ed48ccd0107e6cb9",

@@ -2,7 +2,7 @@
    缓存名由 scripts/release.mjs 按页面内容生成，不要手改；
    每次都取新文件（cache:'reload'），避免安装时把 HTTP 缓存里的旧页
    一起装进离线包。页面导航始终网络优先，离线时才回退。 */
-const CACHE = 'note-trainer-df08b997fd';
+const CACHE = 'note-trainer-0d74cfd3df';
 const SCOPED_CACHE = CACHE + '@' + self.registration.scope;
 const mine = k => k.startsWith('note-trainer-') &&
   (!k.includes('@') || k.endsWith('@' + self.registration.scope));

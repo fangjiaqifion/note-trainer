@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {createCloudClient,CLOUD_URL,encodeRecovery,decodeRecovery,eventPayload,statePayload} from '../cloud_client.mjs';
+import {createCloudClient,CLOUD_URL,encodeRecovery,decodeRecovery,eventPayload,statePayload,canSyncAccount} from '../cloud_client.mjs';
 const config={url:CLOUD_URL,publishableKey:'sb_publishable_fixture'};
 const sid=randomUUID();
 function fixture(){
@@ -55,4 +55,13 @@ test('switching recovery roles uses distinct server identities and explicitly re
  f.storage.removeItem(learnerKey);
  await f.client.recover(encodeRecovery(config,'b'.repeat(64)));
  assert.notEqual(JSON.parse(f.storage.getItem('nt.cloud.authKey')),learnerKey);
+});
+
+test('shared-device learner queue excludes other learners, other classes and readonly roles',()=>{
+ const own={id:'local-a',cloudStudent:'student-a',cloudWorkspace:'class-a'},other={id:'local-b',cloudStudent:'student-b',cloudWorkspace:'class-a'};
+ assert.equal(canSyncAccount({role:'learner',workspace:'class-a',student:'student-a'},own),true);
+ assert.equal(canSyncAccount({role:'learner',workspace:'class-a',student:'student-a'},other),false);
+ assert.equal(canSyncAccount({role:'teacher',workspace:'class-a'},other),true);
+ assert.equal(canSyncAccount({role:'teacher',workspace:'class-b'},own),false);
+ assert.equal(canSyncAccount({role:'researcher',workspace:'class-a'},own),false);
 });

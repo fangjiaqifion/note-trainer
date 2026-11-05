@@ -1,4 +1,4 @@
-import {createCloudClient,decodeRecovery} from './cloud_client.mjs';
+import {createCloudClient,decodeRecovery,canSyncAccount} from './cloud_client.mjs';
 // The host owns game state; this module owns network state and the management dialog.
 export function mountCloudUI(host){
  const client=createCloudClient({storage:localStorage});
@@ -86,7 +86,7 @@ export function mountCloudUI(host){
   try{
    await writer();
    for(const account of host.accounts()){
-    if(!account.cloudStudent || account.cloudWorkspace!==client.access.workspace)continue;
+    if(!canSyncAccount(client.access,account))continue;
     const state=host.readState(account.id);if(!state || !Array.isArray(state.events))throw Object.assign(Error('本机存档缺失，已停止同步'),{permanent:true});
     await client.push(account.cloudStudent,state,client.meta(account.cloudStudent));
    }

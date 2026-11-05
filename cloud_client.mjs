@@ -14,6 +14,10 @@ export function eventPayload(event){
  if(!UUID.test(event?.id)) throw new SyncError('答题记录缺少稳定 ID，请先完成迁移',{permanent:true});
  return Object.fromEntries(EVENT_FIELDS.filter(k=>event[k]!==undefined).map(k=>[k,event[k]]));
 }
+export function canSyncAccount(access,account){
+ return !!(account.cloudStudent && account.cloudWorkspace===access?.workspace &&
+  (access.role==='teacher' || (access.role==='learner' && access.student===account.cloudStudent)));
+}
 export function randomCode(){return [...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 export async function codeHash(code){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code)))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 export function encodeRecovery(config,secret){
@@ -35,11 +39,12 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
   return transport ||= createTransport({...config,storage,sessionKey,fetchImpl});
  }
  async function request(path,{method='GET',body}={}){
+  const requestTransport=auth(),requestConfig=config;
   return locks.request(KEY+'auth',async()=>{
-   let session=await auth().authenticate();
+   let session=await requestTransport.authenticate();
    for(let attempt=0;attempt<2;attempt++){
-    const r=await fetchImpl(config.url+path,{method,headers:{apikey:config.publishableKey,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
-    if(r.status===401 && attempt===0){session=await auth().authenticate(true);continue;}
+    const r=await fetchImpl(requestConfig.url+path,{method,headers:{apikey:requestConfig.publishableKey,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(12000)});
+    if(r.status===401 && attempt===0){session=await requestTransport.authenticate(true);continue;}
     if(!r.ok){const raw=r.headers?.get('retry-after'),seconds=Number(raw);throw new SyncError('云端请求未完成 ('+r.status+')',{status:r.status,permanent:[400,401,403,404,409,422].includes(r.status),retryAfter:raw?Math.max(0,Number.isFinite(seconds)?seconds*1000:Date.parse(raw)-Date.now()):0});}
     if(r.status===204) return null;
     return r.json();
