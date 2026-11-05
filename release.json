@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "build": "29d4243781",
+  "build": "e30cc2ef11",
   "files": {
-    "index.html": "b0d03cc25b2458c070e4fc04ffb18cffc2026c24a13dc870932598a6ff160dba",
-    "sw.js": "3bc2ac49d39a9ee1a922661e2c1c1641bba4df1e010b3d5e5651225a9dff6d20",
+    "index.html": "8b7b20c5bb4f1f2487aa3a954410530a093823a1d24d6e79f86f7574d8be8b11",
+    "sw.js": "c5c927931c6f30d204cf8006c71f0055248692986e0db4ad15dcfee570e0388c",
     "clear-cache.html": "500d30c3694eecf60edafad0a278386ecc37e51bc1ed746724aa4d367e5f4b54",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
-    "cloud_client.mjs": "e6e55f723d131ea61da1b601277d156038a9aae43be6e25e290e13521b194e72",
-    "cloud_ui.mjs": "00e4cdda1c4e724b5670fb3651386e5eb9a8fba9c755036d261d6b228e9bbe5e",
+    "cloud_client.mjs": "5124d051e3b6c6fb3e19832626057f58bca3fb91e6d66e436d744c7f8f4217c0",
+    "cloud_ui.mjs": "44daf417c95b6b6f8f825ec3e3ef977322b68f9edfb05345c011d51c578e5399",
     "portal_identity.mjs": "b90bc7c216db4c71d431724e022e92399ef746e72f010b40e4d41854432e39fa",
     "portal_config.mjs": "f7ecbfae22d9dfe8e96165e37a3204de97856131484748e1af9991e55461e2a0",
     "manage.html": "2d76ad8727e9fd1b62438fb2b57bf6bc5fb7e9bb159d95552f198cdca3cbd832",
