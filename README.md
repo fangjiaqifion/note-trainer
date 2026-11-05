@@ -39,7 +39,7 @@ three minutes a day.
   images, never by typing.
 - Every question is read aloud by the system voice, so no reading is required.
 - Feedback is immediate and positive; a wrong answer is "try again", never "wrong".
-- The game is one `index.html` with no compilation or runtime dependencies, and no network
+- The game is a static single-page app with local modules and no compilation or third-party runtime dependencies, and no network
   requests for piano samples. Explicitly bound cloud profiles upload allowlisted practice data. It runs from a static host and caches
   its application files for offline use.
 

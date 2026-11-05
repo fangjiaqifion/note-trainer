@@ -1,5 +1,5 @@
 // Explicit isolated test integration. Never scans the normal account namespace.
-import {createTransport} from './experiments/supabase_sync/transport.mjs';
+const {createTransport}=await import('./experiments/supabase_sync/transport.mjs?build='+(new URL(import.meta.url).searchParams.get('build')||'dev'));
 const PREFIX='nt.sync-test.';
 export function createGameSync({storage, report, fetchImpl=fetch, locks=navigator.locks, events=window, loadConfig, delay=10000, random=Math.random, online=()=>navigator.onLine, clock={setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id)}}) {
   let transport, config, active=false, timer, retry=0, loseResponse=false, disposed=false, paused=false;

@@ -87,7 +87,7 @@ async function serverRows(page){return page.evaluate(async()=>{
 });}
 try{
  const probe=await browser.newContext({serviceWorkers:'block'}),bad=await probe.newPage();
- await bad.route('**/cloud_ui.mjs',r=>r.fulfill({status:503,body:'unavailable'}));
+ await bad.route('**/cloud_ui.mjs*',r=>r.fulfill({status:503,body:'unavailable'}));
  await bad.goto(base+'index.html?verify=module-failure');
  await bad.waitForFunction(()=>document.title==='note-trainer-load:failed:module-failure');
  await probe.close();

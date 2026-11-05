@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {createCloudClient,CLOUD_URL,encodeRecovery,decodeRecovery,eventPayload,statePayload,canSyncAccount} from '../cloud_client.mjs';
+import {createCloudClient,CLOUD_URL,encodeRecovery,decodeRecovery,eventPayload,statePayload,canSyncAccount,identifyLegacyEvents} from '../cloud_client.mjs';
 const config={url:CLOUD_URL,publishableKey:'sb_publishable_fixture'};
 const sid=randomUUID();
 function fixture(){
@@ -72,4 +72,14 @@ test('local save timestamps do not generate progress writes or cross-device revi
  await f.client.push(sid,{...state,updatedAt:999},f.client.meta(sid));
  assert.equal(f.calls.length,before,'opening or viewing the same progress must not issue a write');
  assert.equal(statePayload(state).updatedAt,undefined);
+});
+
+test('pre-cloud backup copies get identical stable IDs without changing original data or existing UUIDs',async()=>{
+ const student=randomUUID(),existing=randomUUID(),legacy=[{seq:1,t:123,kind:'find',ms:100},{id:existing,seq:2,t:124}];
+ const a=await identifyLegacyEvents(student,legacy),b=await identifyLegacyEvents(student,[{ms:100,kind:'find',t:123,seq:1},{t:124,seq:2,id:existing}]);
+ assert.equal(a[0].id,b[0].id);assert.equal(a[1].id,existing);assert.equal(legacy[0].id,undefined);
+ assert.notEqual((await identifyLegacyEvents(randomUUID(),legacy))[0].id,a[0].id);
+ assert.match(a[0].id,/^[a-f0-9-]{14}5[a-f0-9-]+$/);
+ const f=fixture();await f.client.push(student,{v:3,events:a},f.client.meta(student));
+ await f.client.push(student,{v:3,events:b},{revision:1,ack:[]});assert.equal(f.received.size,2,'a second old backup cannot manufacture extra research rows');
 });

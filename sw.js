@@ -2,7 +2,7 @@
    缓存名由 scripts/release.mjs 按页面内容生成，不要手改；
    每次都取新文件（cache:'reload'），避免安装时把 HTTP 缓存里的旧页
    一起装进离线包。页面导航始终网络优先，离线时才回退。 */
-const CACHE = 'note-trainer-1d0c66e2f6';
+const CACHE = 'note-trainer-13d5d3b4a4';
 const SCOPED_CACHE = CACHE + '@' + self.registration.scope;
 const mine = k => k.startsWith('note-trainer-') &&
   (!k.includes('@') || k.endsWith('@' + self.registration.scope));
@@ -48,7 +48,21 @@ self.addEventListener('fetch', function (e) {
     }));
   } else {
     e.respondWith(caches.open(SCOPED_CACHE).then(function(c){
-      return c.match(e.request).then(function(r){ return r || fetch(e.request); });
+      // Only alias module URLs for this exact build. Old workers miss the new query
+      // and fetch fresh code; this worker can serve its coherent module graph offline.
+      let key=e.request,versioned=false;
+      if(url.pathname.endsWith('.mjs') && url.searchParams.get('build')===CACHE.slice('note-trainer-'.length)){
+        const canonical=new URL(url);canonical.search='';key=canonical.href;versioned=true;
+      }
+      return c.match(key).then(function(r){
+        if(r && versioned){
+          // A synthetic response keeps the requested URL as import.meta.url; a
+          // cached canonical response would erase the build query for child imports.
+          const headers=new Headers(r.headers);headers.delete('content-encoding');headers.delete('content-length');
+          return new Response(r.body,{status:r.status,statusText:r.statusText,headers:headers});
+        }
+        return r || fetch(e.request);
+      });
     }));
   }
 });

@@ -1,5 +1,5 @@
 // Recoverable, scoped cloud access. No service key, local PIN, or learner name crosses this boundary.
-import {createTransport,SyncError} from './experiments/supabase_sync/transport.mjs';
+const {createTransport,SyncError}=await import('./experiments/supabase_sync/transport.mjs?build='+(new URL(import.meta.url).searchParams.get('build')||'dev'));
 export const CLOUD_URL='https://pokrwqirkjcjlworttvk.supabase.co';
 const KEY='nt.cloud.';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -17,6 +17,24 @@ export function eventPayload(event){
 export function canSyncAccount(access,account){
  return !!(account.cloudStudent && account.cloudWorkspace===access?.workspace &&
   (access.role==='teacher' || (access.role==='learner' && access.student===account.cloudStudent)));
+}
+// UUIDv5: an identical pre-cloud record in two backups must get the same ID.
+// The cloud student UUID is the namespace; this hash is not an authentication secret.
+export async function identifyLegacyEvents(student,events){
+ if(!UUID.test(student)||!Array.isArray(events))throw Error('迁移记录格式错误');
+ const namespace=Uint8Array.from(student.replaceAll('-','').match(/../g),x=>parseInt(x,16));
+ const result=[];
+ for(const event of events){
+  if(event.id){eventPayload(event);result.push({...event});continue;}
+  const payload=Object.fromEntries(EVENT_FIELDS.filter(k=>k!=='id'&&event[k]!==undefined).sort().map(k=>[k,event[k]]));
+  const name=new TextEncoder().encode(JSON.stringify(payload)),bytes=new Uint8Array(namespace.length+name.length);
+  bytes.set(namespace);bytes.set(name,namespace.length);
+  const digest=new Uint8Array(await crypto.subtle.digest('SHA-1',bytes)).slice(0,16);
+  digest[6]=(digest[6]&15)|80;digest[8]=(digest[8]&63)|128;
+  const hex=[...digest].map(x=>x.toString(16).padStart(2,'0')).join('');
+  result.push({...event,id:[hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-')});
+ }
+ return result;
 }
 export function randomCode(){return [...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 export async function codeHash(code){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code)))].map(x=>x.toString(16).padStart(2,'0')).join('');}

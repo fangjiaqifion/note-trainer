@@ -1,8 +1,10 @@
-import {createCloudClient,decodeRecovery,canSyncAccount} from './cloud_client.mjs';
+const moduleBuild=new URL(import.meta.url).searchParams.get('build')||'dev';
+const {createCloudClient,decodeRecovery,canSyncAccount,identifyLegacyEvents}=await import('./cloud_client.mjs?build='+moduleBuild);
 // The host owns game state; this module owns network state and the management dialog.
 export function mountCloudUI(host){
+ if(moduleBuild!==document.querySelector('meta[name="app-build"]').content)throw Error('页面组件版本已变化，请刷新后继续');
  const client=createCloudClient({storage:localStorage});
- let timer,active=false,paused=false,attempt=0,saveVersion=0,disposed=false,releaseLock,hasLock=false;
+ let timer,active=false,paused=false,attempt=0,saveVersion=0,managing=false,disposed=false,releaseLock,hasLock=false;
  const dialog=document.createElement('div');dialog.className='modal';dialog.id='cloudModal';
  dialog.innerHTML=`<div class="sheet"><h2>云端账户与同步</h2>
  <p class="hint">恢复码等同账户钥匙，请离线保存，不要发送给无关人员。四位 PIN 仅保护本机。恢复码一年有效，教师可撤销；每码最多十台设备。</p>
@@ -33,7 +35,11 @@ export function mountCloudUI(host){
  document.body.append(dialog);
  const $=id=>dialog.querySelector('#'+id),status=text=>{$('cloudStatus').textContent=text;};
  function download(name,value){host.download(name,typeof value==='string'?value:JSON.stringify(value),'application/json');}
- async function action(fn){try{await fn();}catch(e){status(e.message || '操作未完成，请保留本机数据并重试');}}
+ async function action(fn){
+  if(managing)return;managing=true;dialog.setAttribute('aria-busy','true');
+  try{await fn();}catch(e){status(e.message || '操作未完成，请保留本机数据并重试');}
+  finally{managing=false;dialog.removeAttribute('aria-busy');}
+ }
  async function writer(){
   if(hasLock)return;
   if(!navigator.locks)throw Error('云同步需要支持 Web Locks 的新版 Safari 或 Chrome');
@@ -111,9 +117,11 @@ export function mountCloudUI(host){
   const id=$('cloudLocal').value,code=$('cloudParticipant').value.trim();
   if(!/^[A-Za-z0-9_-]{1,40}$/.test(code))throw Error('请输入参与者编号');
   if(!confirm('先完整备份本机名册，再将所选学生绑定到云端 '+code+'？只上传练习与进度，不上传姓名或本地 PIN。'))return;
-  await writer();host.beforeBind();
+  await writer();const rosterToken=host.beforeBind(),source=host.readState(id);
+  if(!source||!Array.isArray(source.events))throw Error('本机存档缺失，已停止绑定');
   const remote=await client.addStudent(id,code);
-  host.bind(id,remote,client.access.workspace);location.reload();
+  const events=await identifyLegacyEvents(remote,source.events);
+  host.bind(id,remote,client.access.workspace,{rosterToken,original:JSON.stringify(source),events});location.reload();
  });
  $('cloudBackup').onclick=()=>action(async()=>{host.requireLocalTeacher();const backup=await client.backup();download('note-trainer_cloud_backup.json',backup);status('云端灾备已导出，含恢复码哈希；请离线保管。此备份由管理员恢复，不含认证会话。');});
  $('cloudDevices').onclick=()=>action(async()=>{

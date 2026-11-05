@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="1d0c66e2f6">
+<meta name="app-build" content="13d5d3b4a4">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -4792,7 +4792,7 @@ $('#btnTrySound').addEventListener('click', function(){
 });
 
 let audioProbe=null,audioEvidence=null;
-import('./audio_readiness.mjs').then(function(m){
+import('./audio_readiness.mjs?build='+document.querySelector('meta[name="app-build"]').content).then(function(m){
   audioProbe=m.createAudioProbe({getContext:audioCtx,prepare:roomReverb,
     voices:function(){loadVoices();return {zh:!!zhVoice,en:!!enVoice};},
     voiceEvents:('speechSynthesis' in window)?speechSynthesis:null});
@@ -6104,7 +6104,7 @@ let normalBootReady=Promise.resolve();
 if(!SYNC_TEST){
   if(releaseParams.has('verify')){
     // Verification pages load code but do not claim a writer, sync, or mutate profiles.
-    normalBootReady=Promise.all([import('./cloud_ui.mjs'),import('./audio_readiness.mjs')]);
+    normalBootReady=Promise.all([import('./cloud_ui.mjs?build='+actualBuild),import('./audio_readiness.mjs?build='+document.querySelector('meta[name="app-build"]').content)]);
   }else{
   const host = {
     accounts:()=>ACCOUNTS.accounts,
@@ -6124,17 +6124,22 @@ if(!SYNC_TEST){
     },
     setWriter:ready=>{cloudWriter=ready;},
     beforeBind:function(){
+      if(!currentGeneration()||JSON.stringify(ACCOUNTS)!==localStorage.getItem(ACCOUNTS_KEY))throw new Error('名册已变化，请刷新后绑定');
       if(CURRENT && !flushStore()) throw new Error('请先解决本机保存问题');
       const backup=captureRosterBackup();
       // A durable snapshot must exist before creating any server profile.
       localStorage.setItem('nt.cloud.migrationBackup',JSON.stringify(backup));
       download('note-trainer_before_cloud_'+dayKey(new Date())+'.json',JSON.stringify(backup),'application/json');
+      return localStorage.getItem(ACCOUNTS_KEY);
     },
-    bind:function(id,remote,workspace){
+    bind:function(id,remote,workspace,prepared){
+      if(!currentGeneration()||localStorage.getItem(ACCOUNTS_KEY)!==prepared.rosterToken)throw new Error('名册已变化，请刷新后重试');
       const backup=captureRosterBackup(),acc=backup.roster.accounts.find(a=>a.id===id);
       if(!acc || acc.cloudStudent) throw new Error('请选择尚未绑定的学生');
       acc.cloudStudent=remote;acc.cloudWorkspace=workspace;
-      const st=backup.states[id];for(const event of st.events) if(!event.id) event.id=crypto.randomUUID();
+      const st=backup.states[id];
+      if(JSON.stringify(st)!==prepared.original)throw new Error('绑定期间本机练习已变化，已停止覆盖，请重试');
+      st.events=prepared.events;
       restoreRosterBackup(backup,localStorage.getItem(ACCOUNTS_KEY));
     },
     importRemote:function(profile,events,pin,access){
@@ -6163,7 +6168,7 @@ if(!SYNC_TEST){
     }
   };
   const bound=ACCOUNTS.accounts.some(a=>a.cloudStudent);
-  const init=import('./cloud_ui.mjs').then(function(m){cloudUI=m.mountCloudUI(host);return cloudUI.ready;});
+  const init=import('./cloud_ui.mjs?build='+actualBuild).then(function(m){cloudUI=m.mountCloudUI(host);return cloudUI.ready;});
   for(const id of ['btnGateCloud','btnTeacherCloud','btnCloudSettings']) $('#'+id).onclick=function(){init.then(()=>cloudUI.open()).catch(()=>toast('云同步组件未就绪，请刷新或关闭其他游戏页','bad'));};
   if(bound) init.then(bootApp).catch(function(error){document.body.textContent='云端档案保护：'+error.message+'。本机记录仍保留，请关闭其他游戏页后刷新。';});
   else { bootApp();init.catch(function(){toast('云同步组件未加载，未绑定的本机练习仍可使用','bad');}); }
@@ -6191,7 +6196,7 @@ function bootSyncTest(){
     try{ remoteConfig=JSON.parse(await this.files[0].text()); $('#syncStatus').textContent='测试配置已加载，点击启动检测；配置只保留在本页内存。'; }
     catch{ $('#syncStatus').textContent='配置文件无效，请重试。'; }
   };
-  const ready = import('./sync_test.mjs').then(function(m){
+  const ready = import('./sync_test.mjs?build='+actualBuild).then(function(m){
     syncModule = m.createGameSync({storage:localStorage, loadConfig:location.protocol==='https:' ? async function(){ if(!remoteConfig) throw Object.assign(new Error('先加载测试配置'),{permanent:true});return remoteConfig; } : undefined, report:function(text){ $('#syncStatus').textContent = text; }});
     return syncModule;
   }).catch(function(){ $('#syncStatus').textContent = '同步组件加载失败；可离线练习，刷新后重试'; return null; });
