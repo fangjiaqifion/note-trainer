@@ -33,7 +33,7 @@
 ## 撤销与找回
 
 “查看或撤销授权”撤销恢复码及通过该码恢复的全部设备；“查看或撤销设备”可以撤销单台设备，包括首次开通设备。
-仅撤销设备后，持有效恢复码仍可再次恢复；丢失凭据时应同时撤销对应恢复码，再生成新码。
+仅撤销设备后，持有效恢复码仍可再次恢复；丢失凭据时应撤销对应恢复码。轮换教师码前，先生成、下载并确认另一份有效教师恢复码，再撤销旧码，避免把自己锁在班级之外。
 恢复码和所有已授权设备都丢失时，需要数据库管理员核实归属后处理，游戏不能凭同名或四位 PIN 找回云数据。
 
 ## 备份与灾难恢复
@@ -62,3 +62,5 @@
   开通码只从 gitignored `.release/cloud_bootstrap.txt` 读取；使用 `.release/browser_test_config.json` 的公开客户端配置。
   身份、恢复码与会话保存在 `.release/cloud_live/`，不得输出或提交；已有身份时脚本拒绝盲目重建班级。
 - 真实现场验收未完成前，只能称受控试用或候选发布，不能写成已完全 production ready。
+
+服务行为依据：[Supabase 匿名认证](https://supabase.com/docs/guides/auth/auth-anonymous)、[RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)、[数据库函数权限](https://supabase.com/docs/guides/database/functions)、[备份](https://supabase.com/docs/guides/platform/backups)。
