@@ -185,8 +185,10 @@ The parent's pre-existing untracked `.statamcp/` is unrelated and must remain un
 
 The user authorized automatic teacher-owned student enrolment and synchronization, replacing
 the manual participant-code/binding workflow. Local build `e30cc2ef11` passed the full release regression suite. Migration 004 was
-applied successfully to the live project before the client update. Pages publication
-and browser-load acceptance are pending. Automatic full local snapshots, offline queues,
+applied successfully to the live project before the client update. Pages now serves build `e30cc2ef11`; all six Safari/Chrome release receipts across
+Pages, 127.0.0.1, and localhost are verified. Feature commit `ac86b85` and generated
+release commit `d8d55a2` were pushed to origin/main. See
+[automatic student acceptance](audit_20261105_automatic_students/audit.md). Automatic full local snapshots, offline queues,
 idempotent enrolment, state/roster race protection, and private display labels are covered
 by targeted checks. PIN hashes remain local; researcher access excludes names.
 
@@ -195,3 +197,9 @@ The supplied invitation was separately tested against the live portal: one synth
 Safari session with an uppercase username. No MFA was required. Exactly one registration was
 performed; the synthetic key is retained privately under ignored `.release/portal_live_invite/`.
 No real learners or administrator credentials were used.
+
+Live acceptance reused the synthetic teacher above, created only `AUTO01` through the
+ordinary New Student dialog, and read back its private display label and one correctly
+answered practice item through the cloud report. No manual binding, participant-code
+entry, or forced backup download occurred. The administrator dashboard showed one
+invitation slot used out of ten. No additional teacher registration was performed.
