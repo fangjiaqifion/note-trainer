@@ -183,6 +183,16 @@ These are teacher-only. A normal learner profile does not show them.
   profile name. For sharing, use participant codes as names, or drop the name column.
 - **导出全部 CSV** (teacher console) combines every learner on the device into one file with
   the same columns and a `participant` value per learner.
+- **完整备份** (Full backup) in the teacher roster exports every learner, internal ID, settings,
+  progress, complete event history, pre/post battery, and the roster's salted local PIN hashes.
+  It excludes cloud authentication sessions. Keep this unencrypted file private.
+- **恢复完整备份** (Restore full backup) validates the archive and replaces the whole roster by
+  internal ID, without merging names. All state files are staged before a single roster commit;
+  quota or write failures leave the active profiles intact. After restoring, use the teacher PIN
+  from the backup. **导出恢复前快照** exports the previous roster and states for rollback.
+  Old generations remain on this device, so restoring requires space for another full copy.
+  An interrupted staging operation can leave unused copies; automatic reclamation is not implemented.
+  Full-roster restore is disabled in isolated cloud tests until identity recovery is available.
 - **JSON** exports the whole current profile. It does not contain the PIN.
 - **导入** replaces the *current* profile with a backup, keeping the current profile's PIN.
   On a new device, create a placeholder profile first, then import.
@@ -510,6 +520,7 @@ date rather than semver.
 | 2026-11-04 | Question generators space out adjacent notes: skill 3 balances B/C/D and never shows C twice in a row (C4 and C4B count as C), and skills 2, 4, 5, 8 and 9 and the daily mix use a shared `spaceOut` pass |
 | 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
+| 2026-11-05 | Teachers can back up and restore the full roster with a recoverable previous snapshot. Failed single-profile imports no longer claim success; missing or duplicate local sync identities pause uploads |
 | 2026-11-05 | Isolated sync tests batch saved answers on a bounded ten-second window, back off on temporary failures, pause on identity/configuration errors, and support remote test pages without publishing a database key |
 | 2026-11-05 | Completed answers save immediately; older records are retained beyond 8000 rows. A separate local test mode checks game-generated answers against Supabase and reports startup audio/network timing |
 | 2026-11-04 | Audit pass: the keyboard sits with the question when it is the stimulus (keyboard → staff); staff choices get a distractor when only one note is checked; phones in landscape use two columns; report and metadata say nine skills |
@@ -754,8 +765,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   tools can read the log.
 - The log is limited by browser storage capacity. Export regularly; a full browser store can
   prevent new saves. Cloud sync is an explicitly enabled isolated test feature and is not enabled for learners.
-- One JSON backup covers one profile. A device with several profiles needs one export per
-  profile; the teacher console's CSV export covers all profiles at once.
+- A profile JSON covers one learner; use the teacher console's full backup for a restorable
+  whole roster. Combined CSV is a research export and does not restore progress or PINs.
 - The test battery is frozen at pre-test. If the child learns new notes before the post-test,
   those notes are not tested, which is the point of a paired comparison but means the post-test
   does not describe the full current note set.

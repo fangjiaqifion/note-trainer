@@ -103,3 +103,19 @@ test('rate limit retains Retry-After despite save storm; permanent errors pause'
 test('corrupt receipts fail closed before sending any answer',async()=>{
  const f=fixture();try{f.storage.setItem(P+'ack','{"broken":true}');await f.m.flush();assert.equal(f.calls.length,0);assert.match(f.messages.at(-1),/已暂停/);}finally{f.m.dispose();}
 });
+
+test('missing profile state and duplicate participant/event IDs pause before any network request',async()=>{
+  for(const corrupt of [
+    f=>f.data.delete(P+'state.p1.v1'),
+    f=>f.data.set(P+'accounts.v1',JSON.stringify({accounts:[{id:'p1'},{id:'p1'}]})),
+    f=>f.data.set(P+'state.p1.v1',JSON.stringify({events:[{id:'duplicate'},{id:'duplicate'}]})),
+    f=>{f.data.set(P+'accounts.v1',JSON.stringify({accounts:[{id:'p1'},{id:'p2'}]}));f.data.set(P+'state.p2.v1',f.data.get(P+'state.p1.v1'));}
+  ]){
+    const f=fixture();try{
+      corrupt(f);await f.m.flush();
+      assert.equal(f.calls.length,0);assert.equal(f.data.has(P+'ack'),false);
+      assert.match(f.messages.at(-1),/同步已暂停/);
+      await f.m.flush();assert.equal(f.calls.length,0);
+    }finally{f.m.dispose();}
+  }
+});

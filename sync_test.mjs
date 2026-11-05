@@ -11,11 +11,15 @@ export function createGameSync({storage, report, fetchImpl=fetch, locks=navigato
   function rows(){
     const accounts=load('accounts.v1',{accounts:[]});
     if(!Array.isArray(accounts?.accounts)) throw Object.assign(new Error('名册格式错误'),{permanent:true});
+    const participants=new Set(), ids=new Set();
     return accounts.accounts.flatMap(a=>{
-      const state=load('state.'+a.id+'.v1',{events:[]});
+      if(!a || typeof a.id!=='string' || !a.id || participants.has(a.id)) throw Object.assign(new Error('学生 ID 缺失或重复'),{permanent:true});
+      participants.add(a.id);
+      const state=load('state.'+a.id+'.v1',null);
       if(!Array.isArray(state?.events)) throw Object.assign(new Error('记录格式错误'),{permanent:true});
       return state.events.map(e=>{
-        if(!e || typeof e.id!=='string' || !e.id) throw Object.assign(new Error('记录缺少稳定 ID'),{permanent:true});
+        if(!e || typeof e.id!=='string' || !e.id || ids.has(e.id)) throw Object.assign(new Error('记录 ID 缺失或重复'),{permanent:true});
+        ids.add(e.id);
         // Explicit allowlist: never upload a name, PIN, account object or auth tokens.
         const payload={v:1};
         for(const k of ['seq','pseq','t','sid','mode','phase','battery','skill','kind','note','letter','value','clef','spot','relation','staffY1','staffY2','higher','ask','target','pair','chosen','diff','first','wrong','ms']) payload[k]=e[k];

@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="34156b64c6">
+<meta name="app-build" content="950868f0bf">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -644,6 +644,10 @@
       <div class="teacher-foot">
         <button class="ghost-btn" id="btnTeacherNew">＋ 新建学生</button>
         <button class="ghost-btn" id="btnTeacherExportAll">导出全部 CSV</button>
+        <button class="ghost-btn" id="btnRosterBackup">完整备份</button>
+        <button class="ghost-btn" id="btnRosterRestore">恢复完整备份</button>
+        <button class="ghost-btn" id="btnPreviousBackup">导出恢复前快照</button>
+        <input type="file" id="rosterFile" accept="application/json,.json" hidden>
         <button class="ghost-btn" id="btnTeacherExit">退出老师</button>
       </div>
       <p class="gate-note">报告和账户管理只在这里出现。家长和学生可以勾选今天练哪些音，<br>但看不到练习报告，也不能新建或删除账户。</p>
@@ -1264,7 +1268,16 @@ function writeJSON(key, val){
   try { localStorage.setItem(key, JSON.stringify(val)); return true; }
   catch(e){ return false; }
 }
-function stateKey(id){ return STATE_PREFIX + id + '.v1'; }
+function stateKey(id, roster = ACCOUNTS){
+  return STATE_PREFIX + (roster.stateGeneration ? roster.stateGeneration + '.' : '') + id + '.v1';
+}
+function currentGeneration(){
+  try{
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    const roster = raw ? JSON.parse(raw) : {};
+    return (roster.stateGeneration || '') === (ACCOUNTS.stateGeneration || '');
+  }catch(e){ return false; }
+}
 
 /* 名册。没有账户时 accounts 为空，启动会落在建账户页。 */
 let ACCOUNTS = readJSON(ACCOUNTS_KEY) || { v:1, accounts:[], currentId:null, legacyImported:false };
@@ -1345,13 +1358,16 @@ function warnStorage(){
   toast('本机存储已满，先导出 JSON 备份', 'bad');
 }
 function saveStore(){
-  if(!CURRENT || !S) return;
+  if(!CURRENT || !S) return true;
+  if(!currentGeneration()){ toast('档案已在其他页面恢复，请刷新后继续', 'bad'); return false; }
   S.updatedAt = Date.now();
   if(writeJSON(stateKey(CURRENT.id), S)){
     storageWarned = false;
     if(SYNC_TEST) window.dispatchEvent(new Event('nt-test-saved'));
+    return true;
   }
-  else warnStorage();
+  warnStorage();
+  return false;
 }
 /* 设置等非答题更新可合并写入；答题记录立即保存，避免退出前丢失。 */
 function saveStoreSoon(){
@@ -1360,10 +1376,11 @@ function saveStoreSoon(){
 }
 function flushStore(){
   if(saveSoonTimer){ clearTimeout(saveSoonTimer); saveSoonTimer = null; }
-  saveStore();
+  return saveStore();
 }
 
 function saveAccounts(){
+  if(!currentGeneration()){ toast('档案已在其他页面恢复，请刷新后继续', 'bad'); return; }
   if(!writeJSON(ACCOUNTS_KEY, ACCOUNTS)) warnStorage();
 }
 function accountById(id){
@@ -5635,6 +5652,104 @@ function exportAllCsv(){
   toast('已导出 ' + (rows.length - 1) + ' 条记录', 'ok');
 }
 
+/* Full-roster archives exclude cloud credentials. Restore stages immutable state keys,
+   then atomically swaps the roster pointer; the previous generation stays recoverable. */
+function validateRosterBackup(data){
+  const object = x => x && typeof x === 'object' && !Array.isArray(x);
+  const fail = () => { throw new Error('完整备份格式不正确、版本不支持或数据不完整'); };
+  if(!object(data) || data.app !== 'note-trainer-roster' || data.version !== 1 ||
+    data.namespace !== (SYNC_TEST ? 'test' : 'normal') || !object(data.roster) ||
+    data.roster.v !== 1 || !Array.isArray(data.roster.accounts) || !object(data.states)) fail();
+  const ids = new Set();
+  function credential(x){ return object(x) && typeof x.salt === 'string' && x.salt.length > 0 && /^fnv1a:[a-f0-9]+$/.test(x.hash); }
+  if(data.roster.teacher && !credential(data.roster.teacher)) fail();
+  if(data.roster.accounts.length && !credential(data.roster.teacher)) fail();
+  for(const acc of data.roster.accounts){
+    if(!object(acc) || typeof acc.id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(acc.id) ||
+      ids.has(acc.id) || typeof acc.name !== 'string' || !credential(acc)) fail();
+    ids.add(acc.id);
+    const st = data.states[acc.id];
+    if(!object(st) || !Number.isInteger(st.v) || st.v < 1 || st.v > SCHEMA_VERSION ||
+      !object(st.progress) || !object(st.stars) || !Array.isArray(st.events) ||
+      st.events.some(e => !object(e)) || !Array.isArray(st.autoHistory) ||
+      !(st.battery === null || (object(st.battery) && Array.isArray(st.battery.items)))) fail();
+  }
+  if(Object.keys(data.states).length !== ids.size) fail();
+  if(data.roster.currentId != null && !ids.has(data.roster.currentId)) fail();
+  // Do not permit imported properties to alter prototypes in later state upgrades.
+  JSON.stringify(data, function(key, value){ if(['__proto__','constructor','prototype'].includes(key)) fail(); return value; });
+  return data;
+}
+function captureRosterBackup(roster = ACCOUNTS){
+  const states = {};
+  for(const acc of roster.accounts){
+    const raw = localStorage.getItem(stateKey(acc.id, roster));
+    if(raw === null) throw new Error('学生存档缺失，已停止备份');
+    states[acc.id] = JSON.parse(raw);
+  }
+  const exportedRoster = JSON.parse(JSON.stringify(roster));
+  delete exportedRoster.previousRoster;
+  return validateRosterBackup({app:'note-trainer-roster', version:1,
+    namespace:SYNC_TEST ? 'test' : 'normal', exportedAt:new Date().toISOString(),
+    roster:exportedRoster, states});
+}
+function exportRosterBackup(previous){
+  if(!TEACHER_MODE) return;
+  try{
+    if(!currentGeneration()) throw new Error('档案已变化，请刷新后导出');
+    if(CURRENT && !flushStore()) throw new Error('当前档案保存失败，已停止操作');
+    const roster = previous ? ACCOUNTS.previousRoster : ACCOUNTS;
+    if(!roster) throw new Error('还没有恢复前快照');
+    const backup = captureRosterBackup(roster);
+    download('note-trainer_roster_' + (previous ? 'previous_' : '') + dayKey(new Date()) + '.json', JSON.stringify(backup), 'application/json');
+    toast('已导出完整备份；包含本地 PIN 哈希，请妥善保管', 'ok');
+  }catch(error){ toast(error.message, 'bad'); }
+}
+function restoreRosterBackup(data, expectedRoster){
+  validateRosterBackup(data);
+  if(SYNC_TEST) throw new Error('隔离云测试不支持恢复名册，避免错配服务器身份');
+  if(localStorage.getItem(ACCOUNTS_KEY) !== expectedRoster) throw new Error('名册已变化，请重新选择备份');
+  // Validate the rollback source too; never substitute blank states for damaged data.
+  captureRosterBackup();
+  const roster = JSON.parse(JSON.stringify(data.roster));
+  roster.previousRoster = JSON.parse(expectedRoster || JSON.stringify(ACCOUNTS));
+  delete roster.previousRoster.previousRoster;
+  roster.stateGeneration = crypto.randomUUID();
+  roster.currentId = null;
+  roster.locked = true;
+  roster.legacyImported = true;
+  const staged = [];
+  try{
+    for(const acc of roster.accounts){
+      const key = stateKey(acc.id, roster);
+      if(localStorage.getItem(key) !== null) throw new Error('恢复目标已存在');
+      localStorage.setItem(key, JSON.stringify(data.states[acc.id]));
+      staged.push(key);
+    }
+    if(localStorage.getItem(ACCOUNTS_KEY) !== expectedRoster) throw new Error('名册已变化，请重试');
+    // This is the commit point. A failure before it leaves every active state intact.
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(roster));
+  }catch(error){
+    for(const key of staged) localStorage.removeItem(key);
+    throw error;
+  }
+  return roster;
+}
+async function restoreRosterFile(file){
+  if(!file || !TEACHER_MODE) return;
+  try{
+    if(SYNC_TEST) throw new Error('隔离云测试不支持恢复名册');
+    if(!currentGeneration()) throw new Error('档案已变化，请刷新后继续');
+    if(CURRENT && !flushStore()) throw new Error('当前档案保存失败，已停止操作');
+    const expected = localStorage.getItem(ACCOUNTS_KEY);
+    const data = validateRosterBackup(JSON.parse(await file.text()));
+    const count = data.roster.accounts.length;
+    if(!window.confirm('用备份中的 ' + count + ' 位学生替换当前名册？按内部 ID 恢复，不按姓名合并。当前档案会保留恢复前快照；恢复后请使用备份中的老师 PIN。')) return;
+    restoreRosterBackup(data, expected);
+    location.reload();
+  }catch(error){ toast('未恢复：' + error.message, 'bad'); }
+}
+
 function exportBackup(){
   if(!CURRENT) return;
   const payload = {
@@ -5650,7 +5765,8 @@ function exportBackup(){
 }
 
 function importBackup(file){
-  if(!file || !CURRENT) return;
+  if(!file || !CURRENT || !TEACHER_MODE) return;
+  if(SYNC_TEST){ toast('隔离云测试不支持覆盖导入，避免破坏稳定记录 ID', 'bad'); return; }
   const reader = new FileReader();
   reader.onload = function(){
     let payload;
@@ -5659,12 +5775,15 @@ function importBackup(file){
     const st = payload && (payload.state || payload);
     if(!st || !st.progress || !st.stars){ toast('这份备份里没有账户数据', 'bad'); return; }
     if(!window.confirm('导入会覆盖「' + CURRENT.name + '」的全部记录、进度和勾选，继续？')) return;
+    if(!currentGeneration()){ toast('档案已变化，请刷新后继续', 'bad'); return; }
+    if(Object.hasOwn(st, '__proto__') || (st.events != null && !Array.isArray(st.events))){ toast('备份数据格式错误', 'bad'); return; }
     upgradeState(st);
+    const previous = S;
     S = Object.assign(newState(), st);
     S.v = SCHEMA_VERSION;
     ensureProgress();
     ensureSelection();
-    saveStore();
+    if(!writeJSON(stateKey(CURRENT.id), S)){ S = previous; warnStorage(); return; }
     renderHome();
     syncSettings();
     renderWho();
@@ -5781,6 +5900,10 @@ function bindAccountUI(){
   $('#btnTeacherSetupSave').addEventListener('click', saveTeacherPin);
   $('#btnTeacherNew').addEventListener('click', function(){ openNewAccount(true); });
   $('#btnTeacherExportAll').addEventListener('click', exportAllCsv);
+  $('#btnRosterBackup').addEventListener('click', function(){ exportRosterBackup(false); });
+  $('#btnPreviousBackup').addEventListener('click', function(){ exportRosterBackup(true); });
+  $('#btnRosterRestore').addEventListener('click', function(){ if(TEACHER_MODE) $('#rosterFile').click(); });
+  $('#rosterFile').addEventListener('change', function(){ restoreRosterFile(this.files[0]); this.value=''; });
   $('#btnTeacherExit').addEventListener('click', exitTeacher);
 
   $('#keypad').addEventListener('click', function(e){
