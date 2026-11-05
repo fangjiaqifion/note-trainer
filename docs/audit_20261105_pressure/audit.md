@@ -1,95 +1,103 @@
-# 本地、数据库压力与远程发布审计
+# Local Reliability, Database Pressure, and Remote Release Audit
 
-日期：2026-11-05。用户已明确授权压力测试、修复、推送及远程复验。
-测试数据库固定为原 Supabase 测试项目，未访问真实学生档案，未修改数据库权限或 schema。
+Last updated: 2026-11-05 (English revision)
 
-## 实际数据库压力
+Historical stage: user authorized pressure tests, fixes, push, and remote revalidation.
+Used the existing synthetic Supabase project, no real student profiles or schema/permission
+changes. Later production identity/backup features are recorded separately; the gaps below
+are stage-specific. No live actions were repeated for translation.
 
-命令：`node scripts/database_pressure_test.mjs --execute`。
-上限：两个独立测试身份、1000 条记录、50 条/批、最多四并发；不是容量极限或 DoS 测试。
-身份保存在 gitignored `.release/pressure_identity.json`，只在本机保留，不提交。
-重复运行复用身份和事件 ID，避免反复新建匿名身份、累加测试记录。
+## Real database pressure
 
-通过：1000 条完整 payload 逐字段读回、四个重叠并发批次幂等、跨身份看不到另一身份的记录、
-冲突 RPC 中前面的有效插入也回滚、既有记录内容不被冲突批次覆盖。
+`node scripts/database_pressure_test.mjs --execute` was bounded at two synthetic identities,
+1,000 records, fifty per batch, four concurrent requests. This was neither a capacity limit
+nor DoS test. Ignored `.release/pressure_identity.json` retains identities/sessions; reruns
+reuse IDs rather than creating identities or accumulating unique records.
 
-| 指标 | 值 |
-|---|---|
-| 唯一测试记录 | 1000 |
-| 初始写入批次 | 20 |
-| 重叠重试批次 | 4 |
-| 总 HTTP 调用（含认证、读回及负例） | 50 |
-| 最大在途请求 | 4 |
-| 响应头耗时 p50 / p95 / max | 207 / 733 / 1366 ms |
+Passed full payload readback, overlapping concurrent idempotency, cross-identity isolation,
+whole-transaction rollback when a later event conflicts, and preservation of existing payloads.
 
-延迟只计 fetch 返回响应头，不含完整响应体解析；本机单次网络观测，不能推论内地/香港/iPad 性能或免费层容量极限。
+| Measure | First round | Second round after deployment |
+|---|---|---|
+| Unique records | 1,000 | Same 1,000 |
+| Initial batches | 20 | Reused IDs |
+| Overlapping retry batches | 4 | Repeated verification |
+| HTTP calls, including Auth/readback/negatives | 50 | 48 |
+| Maximum in flight | 4 | 4 |
+| Header latency p50/p95/max | 207/733/1366 ms | 279/818/859 ms |
 
-## 负载和稳健性改进
+Timing stops at response headers, excluding complete body parsing. These are local-network
+observations, not mainland/Hong Kong/iPad performance or free-tier capacity conclusions.
 
-- 自动发送采用不被后续保存重置的十秒窗口；每批最多 50 条，串行发送。连续保存不再让上传无限推迟。
-- 已同步后的普通检查不读取配置、不登录、不发送空 RPC。显式「启动检测」才发送诊断空 RPC。
-- 「核对服务器」复用认证，无需先发诊断 RPC。无轮询读库、无实时订阅或逐题服务器查询。
-- 临时错误指数退避并加入抖动；尊重 Retry-After，保存通知不取消限流等待。
-- 明确永久性的配置/认证/权限错误暂停自动重试，等待修正后手动重试，减少无效请求。
-- 服务端拒绝 access token 时仅刷新一次，不创建替代身份；已建立身份的会话缺失时停止同步。
-- 本机回执或名册损坏时失败关闭，保留答案，不把格式问题当成功。
-- 异步模块加载前保存的答案通过启动扫描恢复，刷新后无需再答一题才能触发同步。
-- 修复浏览器原生 setTimeout/clearTimeout 的 this 绑定问题。Node 单元测试未暴露，真实浏览器复测发现；已加浏览器回归。
-- 本机即存与服务器确认继续分开：请求失败、丢回执、回执存储失败均保留答案和原始 ID。
+## Reliability fixes
 
-## 自动测试
+- Bounded ten-second batching deadline does not reset under continuous saves; fifty records
+  per serial batch. No synchronized-idle config/Auth/empty RPC requests.
+- Explicit startup diagnostics alone send the empty diagnostic RPC. Server verification
+  reuses Auth without a preliminary diagnostic call; no polling/realtime/per-question reads.
+- Temporary retry uses exponential backoff/jitter and Retry-After, unaffected by save storms.
+  Permanent config/Auth/permission errors pause until correction/manual retry.
+- Refresh rejected access tokens once; do not replace identities or recreate missing established sessions.
+- Corrupt local receipts/rosters fail closed, keeping answers. Scan saved answers after async
+  module startup without requiring another question.
+- Real-browser testing exposed native setTimeout/clearTimeout this-binding failure missed
+  by Node tests; fixed and added browser regression.
+- Local save and server confirmation remain separate. Failed/lost responses and receipt
+  persistence failures retain answers and original UUIDs.
 
-`tests/game_sync.test.mjs`：10000 条积压恰好 200 个非空批次，一次注册，空闲零请求；
-1000 次连续保存只保留一个十秒截止；离线零请求；429 等待不被保存风暴取消；403 暂停；
-损坏回执失败关闭，以及原有丢回执、部分确认、本机写入失败和第 8001 条保留测试。
+## Automated and browser evidence
 
-`tests/sync_browser.mjs`：独立 Chrome context，通过界面建档和答题，模拟 HTTP 断网，刷新后答案保留，
-恢复网络并模拟真实接收后回执丢失，重试无重复，逐字段读回及第二标签页保护。接收端为内存 HTTP fixture，
-与本轮真实 Supabase 压力和 CUA 答题证据分别记录，不混称真实服务。
+`tests/game_sync.test.mjs`: 10,000 pending events → exactly 200 nonempty batches, one
+registration, zero idle requests; 1,000 saves retain one deadline; offline zero requests;
+429 waiting survives save storms; 403 pauses; malformed receipts fail closed. Also lost/
+partial receipts, local write failure, and retention of event 8001.
 
-原完整回归继续检查 45,900 节出题、四视口、缓存隔离、SW 离线恢复及错误回执。
-`NT_REMOTE_TEST_BASE` 可将相同烟雾/出题/缓存测试指向固定 GitHub Pages 部署，使用隔离自动化浏览器名册。
+`tests/sync_browser.mjs`: independent Chrome UI profiles/answers, simulated HTTP outage,
+refresh preservation, dropped successful acknowledgement, deduplicated retry, full readback,
+and second-tab lock. Its in-memory HTTP receiver is distinct from real Supabase/CUA evidence.
+The existing suite retained 45,900 sessions, four viewports, cache isolation, SW offline,
+and error receipts. `NT_REMOTE_TEST_BASE` targets a fixed Pages build with isolated data.
 
-## 远程测试入口
+## Remote isolated entry
 
-普通入口仍不自动上传学生档案。只有明确加 `sync_test=1` 的指定 GitHub Pages 路径启用隔离测试。
-远程不读取 loopback 配置端点，通过文件选择器加载仅含 publishable key 的测试配置；配置只留本页内存，
-不写 GitHub、URL 或日志。RLS、字段白名单、独立存储与单写入页锁保持不变。
-本轮不宣称已完成正式学生身份恢复、完整名册恢复、教师/研究者权限或 iPad 首次声音验收。
+Only explicit `sync_test=1` enabled isolated remote testing at this stage. Ordinary profiles
+did not upload. A file chooser loaded public publishable-key configuration into page memory,
+not GitHub, URLs, or logs; remote pages did not read loopback configuration endpoints.
+RLS, field allowlists, storage separation, and writer locks were retained. This stage did
+not establish production identity recovery, full-roster restore, teacher/researcher roles,
+or iPad first-launch audio acceptance.
 
-## 交付记录
+## Recorded final delivery
 
-最终构建：`34156b64c6`。本地完整测试、推送、远程完整回归与实际浏览器回执结果完成后补记。
+- Feature `661501c` pushed by `npm run release -- --push --no-open --port 8766` to origin/main.
+  Build `34156b64c6`. Full local regression passed after fixes and again before release:
+  23 Node subtests, 45,900 sessions, four viewports, SW/cache/offline and browser sync faults.
+- Remote full smoke passed with `NT_REMOTE_TEST_BASE=https://fangjiaqifion.github.io/note-trainer/`.
+  Settings/meta both showed `34156b64c6`; remote evidence was not substituted with local source.
+- Repeated pressure reused all 1,000 IDs with matching payloads, concurrency deduplication,
+  isolation and rollback. Additional real API negatives: B POST owner=A returned 403;
+  unauthenticated read denied; PATCH/DELETE of nonexistent test IDs returned 403. Existing
+  records were neither updated nor deleted; permissions were not expanded.
+- Local CUA read back existing UI answers 5/5. Remote CUA loaded public config from a file,
+  created an isolated profile, answered C first as D then C, completed D while dropping its
+  success receipt, and verified retry left exactly 2/2 matching complete payloads.
+- CUA observed first Auth+diagnostic RPC 2158 ms, answer confirmation 442 ms, retry 365 ms,
+  readback 362 ms, audio initialization 14 ms. These are a few local-network observations.
+- CUA opened Safari/Chrome for Pages/127.0.0.1:8766/localhost:8766. All three origins matched
+  file hashes; six one-time actual-load receipts matched the build, status ready. No claims
+  were made about unknown servers on other ports.
+- Runtime screenshot: `/private/tmp/note_trainer_remote_audit_proof.png`. Keys, sessions,
+  profile backups, and raw pressure state were not committed.
 
-## 最终结果
+## Final read-only-verification fix and limits
 
-- 功能提交 `661501c` 已由 `npm run release -- --push --no-open --port 8766` 推送到 origin/main。
-- 最终构建 `34156b64c6`。本地完整回归在修复后通过，发布前再次通过；23 个 Node 子测试、45,900 节出题、四视口、
-  SW/缓存/离线回归和新增浏览器同步故障回归全部通过。
-- `NT_REMOTE_TEST_BASE=https://fangjiaqifion.github.io/note-trainer/ node tests/smoke.mjs` 在真实远程部署上全套通过。
-  日志确认页面设置与 meta 的构建均为 34156b64c6，不用本地源码冒充远程。
-- 部署后重复同组 1000 条记录：48 个请求，最大四并发，p50/p95/max 响应头耗时 279/818/859 ms；
-  唯一记录不增加，逐字段、并发去重、跨身份隔离及事务回滚再次通过。
-- 额外真实 API 负例：B 直接 POST owner=A 被 403 拒绝；无身份读取被拒绝；对不存在测试 ID 的 PATCH/DELETE 均 403。
-  没有更新、删除既有记录，没有扩大权限。
-- CUA 在本地最终构建读回原有实际答题 5/5；远程页面通过文件选择器加载仅含公开客户端配置的本机 JSON，
-  新建隔离档案，C 题先答 D 再改 C，随后实际完成 D 题并丢弃成功回执；自动重试后读回恰好 2/2，完整 payload 一致。
-- 远程 CUA 观测首次认证+数据库诊断 RPC 2158 ms，单题确认 442 ms，重试确认 365 ms，最后读回 362 ms，
-  音频引擎初始化 14 ms。这些是本机当前网络的少量观测。
-- CUA 实际打开 Safari/Chrome × 远程/127.0.0.1:8766/localhost:8766 六个清理与加载目标。
-  三个 origin 全部发布文件 SHA-256 再核验通过，六个一次性实际加载回执构建均匹配，完整 `.release/status.json` 为 ready。
-  本轮使用 8766 专用服务器，不冒充对其他端口上未知服务的验证。
-- 运行时截图 `/private/tmp/note_trainer_remote_audit_proof.png`；密钥、会话、测试档案备份和压力原始记录都未入库。
+A final review found `--verify-remote` overwrote six-target ready status with server-verified.
+Fixed preservation and added a regression executing that branch; the old saveReport call
+would fail it. Three release regressions passed; actual remote hash verification preserved
+`.release/status.json` byte for byte, still six-target ready. This script/test-only fix did
+not change runtime files/build, require another cache reset, or repeat database pressure.
 
-## 结论边界
-
-已验证低负载的合批、复用身份、空闲零数据库调用以及上述故障和权限场景。
-不能承诺所有网络条件下绝不失败，或据本轮小规模压力确定免费层最大容量。
-正式学生入口仍未启用云上传；身份恢复、跨设备绑定、全名册恢复、教师/研究者权限、防滥用及 iPad 实机验证仍为后续事项。
-
-### 收尾发现：只读核验覆写验收状态
-
-最后复核发现 `--verify-remote` 会把六目标 ready 状态覆盖为单次 server-verified。
-已修复为保留既有回执报告；新增发布脚本回归运行真实分支，旧实现会因调用 saveReport 而失败。
-发布相关三项回归通过，并实际再次执行远程哈希核验，确认 `.release/status.json` 前后字节完全一致、仍为六目标 ready。
-此收尾只改发布脚本与测试，不改变运行文件或构建；无需重新清除用户缓存或重复数据库压力。
+Evidence establishes bounded low-load batching, identity reuse, zero idle calls, and the
+specific fault/permission cases. It cannot guarantee all networks or determine maximum
+free capacity. Formal learner recovery/binding, full-roster restore, roles, abuse controls,
+and physical iPad acceptance were future work at this historical stage, some completed later.

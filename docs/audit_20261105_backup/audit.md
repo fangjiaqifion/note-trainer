@@ -1,36 +1,50 @@
-# 名册保护与同步扫描审计
+# Roster Protection and Sync-Scan Audit
 
-日期：2026-11-05。读取最近 Git 提交、AGENTS、progress tracker 与上轮压力审计后继续 NT-001。
-未读取真实学生档案；自动化全部使用独立合成账户，未请求真实数据库。
+Last updated: 2026-11-05 (English revision)
 
-## 发现与修复
+Historical NT-001 stage after reviewing Git, AGENTS, tracker, and pressure audit. All
+automation used synthetic accounts, with no real learner access or live database requests.
+Later production work supersedes this stage's no-cloud/no-push limitations.
 
-1. 没有全名册可恢复备份：新增 v1 格式、教师导出与文件恢复，严格区分普通/测试命名空间。
-2. 多键恢复可能部分覆盖：用独立代存储写入全部状态，最后一次 localStorage 名册写入提交；
-   旧名册引用随同提交保留，失败时删除本轮暂存，不修改原档。重名不合并，内部 ID 不变。
-3. 恢复后旧页面可能写回原名册：保存前比较存储代号，不一致时阻止并提示刷新。
-4. 单学生导入容量不足仍修改内存并报成功：写入失败恢复原内存，不渲染成功；隔离同步禁止覆盖导入。
-5. 同步扫描把名册所指缺失存档当作空事件，重复事件 ID 也可被回执过滤：
-   缺失/重复参与者或事件 ID 在联网前判为永久错误，保留数据并暂停自动重试。
+## Findings and fixes
 
-## 设计与边界
+1. Added restorable v1 full-roster backup, teacher export/file restore, and strict
+   separation between ordinary and test namespaces.
+2. Avoid partial multi-key restore: stage every state in a new generation, commit one
+   roster pointer, retain the old roster reference. Failures remove this attempt's staging
+   and preserve the original. Never merge names; internal IDs stay unchanged.
+3. Stale pages compare storage-generation IDs before saving and require refresh after restore.
+4. Failed single-profile quota writes restore prior in-memory state and do not claim success.
+   Isolated sync refuses overwrite imports.
+5. Missing state, missing/duplicate participant IDs, or duplicate event IDs no longer become
+   empty histories or disappear behind receipts. Fail permanently before network, keep data,
+   and pause automatic retry.
 
-备份含本地盐和 PIN 哈希，无明文 PIN、匿名认证会话或密钥；备份不加密。
-恢复后要求备份中的教师 PIN。原始记录、计数、前后测关联不重编号。
-恢复前快照可导出再恢复；旧代不自动清理，需额外容量。意外终止可留下未引用暂存，
-不会把它当作当前数据；回收与 iPad 容量、长期写入耗时仍未实测。
-防旧页面回写不等于解决所有普通并发练习竞争；尚未做跨设备身份绑定或启用学生云上传。
-已拒绝结构缺失、未来版本及危险原型属性，但不宣称完整验证每个题型字段的语义。
+## Boundaries
 
-## 验证
+Backups contain salts/PIN hashes, no plaintext PIN/Auth session/key, and are unencrypted.
+Restore uses the backed-up teacher PIN; events, counters, and battery links are not renumbered.
+Previous snapshots can be exported/restored. Old generations remain and require space.
+Unexpected termination can leave unused staging, never treated as active; reclamation,
+iPad capacity/write time, and ordinary concurrent-practice merging remain unverified.
+Validation rejects missing structure, future versions, and dangerous prototype properties,
+without claiming complete semantic validation of every question field. At this stage no
+cross-device binding or real learner upload was enabled.
 
-- 6 项备份/导入单测：完整往返、同名与改名/重复导入、每个写入点失败、损坏/缺失/未来版本、旧页及单学生容量错误。
-- Chrome 独立 context 实际通过教师入口导出、文件恢复、刷新、再次导出逐字段一致、恢复前快照及旧页面保存阻断。
-- 同步新回归覆盖缺失状态、重复参与者、同/跨学生重复事件；零网络请求、无成功回执。
-- 首次完整回归在未重建清单时被缓存完整性检查拒绝；更新构建清单后重跑，不放宽哈希校验。
-- 最终完整回归通过：31 项 Node 测试、1,144 项排程边界、45,900 节生成审计、13 题型 × 4 视口、报告、SW/离线/缓存、同步及备份浏览器回归。
-- 执行 npm run release -- --local --port 8766，构建 950868f0bf，流水线 ready。
-- 本地 127.0.0.1/localhost 全部发布文件 SHA-256 一致；Safari/Chrome 四个新构建实际加载回执一致。
-- 远程旧构建 34156b64c6 文件核验及两个浏览器回执通过。未推送，未把远程旧版当作本轮新功能验收。
-- 本地测试入口：http://127.0.0.1:8766/index.html?build=950868f0bf 。运行时回执不提交。
-- 本轮测试未新增数据库记录，也未重复既有真实服务压力测试。
+## Recorded verification
+
+- Six backup/import tests: roundtrip, duplicate/changed names and imports, failures at every
+  write point, malformed/missing/future archives, old-page barriers, and single-profile quota.
+- Independent Chrome teacher UI export/restore/refresh/re-export matched field by field,
+  including previous-snapshot export and old-page save denial.
+- Missing state/duplicate participant/same- or cross-profile duplicate events caused zero
+  network requests and no success receipts.
+- An outdated manifest correctly failed initial integrity regression. Regenerated the manifest,
+  reran without weakening checks: 31 Node tests, 1,144 scheduling boundaries, 45,900 sessions,
+  thirteen question types/four viewports, reports, SW/offline/cache, sync and backup browser suites passed.
+- `npm run release -- --local --port 8766`, build `950868f0bf`, ready in its recorded scope.
+  Both local origins matched hashes and four actual Safari/Chrome loads matched the new build.
+- Remote old build `34156b64c6` passed its own files/two browser loads. No push; remote old
+  functionality was not represented as acceptance of the new local backup feature.
+- Historical local link: `http://127.0.0.1:8766/index.html?build=950868f0bf`.
+  Receipts remained ignored; no database records added or previous live pressure repeated.

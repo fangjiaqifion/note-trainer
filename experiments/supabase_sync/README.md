@@ -1,19 +1,32 @@
-# 同步队列试验
+# Synthetic Sync-Queue Experiment
 
-这是与游戏隔离的合成数据原型，不读取或上传学生数据。
-运行 `node --test experiments/supabase_sync/*.test.mjs`。传输层可接收调用者提供的
-公开客户端配置。本机一次真实 HTTP 合成测试已通过，日常自动测试使用模拟网络。
+Last updated: 2026-11-05
 
-队列先持久化再发送，完整确认后才删除已发送项。服务端必须持久化唯一事件 ID，
-并将重复提交作为幂等操作处理；本原型的模拟服务只用于测试，不能代替真实服务验证。
-队列持久化失败、返回不完整回执或网络失败都不能标为成功。
+This isolated prototype explores durable, idempotent upload of synthetic events. It does
+not read or upload learner data and must not be used for real students. Production sync
+now exists separately; this experiment's original limits are not the current game's status.
 
-测试项目已建立受 RLS 限制的批量同步函数，数据库层模拟身份验证通过。未实现：
-游戏事件接入、恢复与备份、跨设备身份映射、
-多标签页并发、设备实测或生产部署。匿名身份只保存在设备上，丢失后不能自动恢复。
-不得用于真实学生数据。
+The queue persists before sending and removes items only after complete acknowledgement.
+The server must persist unique event IDs and treat repeated submissions idempotently.
+Persistence failures, partial receipts, and network failures must never count as success.
+Mock-service results do not substitute for real-service validation.
 
-`live_test.mjs` 已用于真实 API 合成测试，需由用户在环境变量或被忽略的
-`secrets/api_keys.md` 中提供 `SUPABASE_PUBLISHABLE_KEY=...`，只接受项目的 publishable key。
-它只写入虚构记录，创建两个匿名身份，
-验证上传、回执丢失后重试去重与跨身份隔离；这些测试记录保留在测试项目中。
+Run local tests with:
+
+```bash
+node --test experiments/supabase_sync/*.test.mjs
+```
+
+The transport accepts caller-provided public client configuration. A historical real HTTP
+synthetic test passed; routine tests simulate the network. The test project has an
+RLS-restricted batch RPC with database-layer synthetic identity checks.
+
+At the prototype stage, game integration, restore/backup, cross-device identity mapping,
+multi-tab concurrency, device tests, and production deployment were absent. Its anonymous
+identity was device-local and unrecoverable if lost. See the game guide for later work.
+
+`live_test.mjs` historically created two anonymous identities and synthetic records to
+verify upload, lost-receipt deduplication, and cross-identity isolation. Records remain in
+the test project. It accepts only `SUPABASE_PUBLISHABLE_KEY` supplied through the
+environment or ignored `secrets/api_keys.md`. Do not run live writes merely to check docs;
+live execution needs authorization and should avoid unnecessary identity creation.

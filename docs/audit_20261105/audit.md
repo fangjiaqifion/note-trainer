@@ -1,89 +1,98 @@
-# 数据库游戏接入与启动检测审计
+# Game-to-Database Integration and Startup Diagnostics Audit
 
-日期：2026-11-05（Asia/Shanghai）。本轮只接入隔离测试档案，不接入现有学生。
+Last updated: 2026-11-05 (English revision)
 
-## 结果与范围
+Historical stage, 2026-11-05 Asia/Shanghai. Only isolated synthetic profiles were integrated;
+existing learners were excluded. Later implementation supersedes the stage-specific gaps.
 
-Supabase 测试项目固定为 `note-trainer-synthetic-test`（新加坡）；未改权限或数据库结构。
-游戏实际产生的答题记录已通过真实 API 写入与逐字段读回核对。没有上传学生旧档、姓名或 PIN。
-这比上一轮直接构造 payload 的 API 试验前进一步，但不是正式学生云同步上线。
+## Scope and outcome
 
-本机入口：`http://127.0.0.1:8766/index.html?sync_test=1&build=f81186d7a2`。
-测试模式仅允许 loopback，使用独立 `nt.sync-test.*` 名册、状态、认证和回执。
-测试档案用「新建测试档案」「切换测试档案」操作，不使用真实学生登录凭据。
-正常模式仍为本机保存，不自动上传。
+Fixed project: `note-trainer-synthetic-test`, Singapore; no schema/permission changes.
+Actual game-generated answers reached the real API and matched field-by-field readback.
+No old learner histories, names, or PINs were uploaded. This advanced beyond constructed
+API payloads but was not production learner sync.
 
-## 发现与修复
+Historical local entry: `http://127.0.0.1:8766/index.html?sync_test=1&build=f81186d7a2`.
+At this stage test entry was loopback-only, using separate `nt.sync-test.*` roster/state/
+Auth/receipts and explicit test-profile creation/switching. Ordinary mode stayed local.
 
-1. 每题原来延迟 500 ms 保存。改为答对后立即保存；同步只读成功落盘的状态。
-2. 超过 8000 条会静默裁剪。取消自动裁剪，保留早期记录，存储失败继续提示导出。
-   不能恢复之前已被裁掉的记录；整份状态序列化在大量记录时的 iPad 性能仍需实测。
-3. 每条测试记录在答题时分配 UUID，和显示名、序号分离。上传字段使用明确白名单。
-4. 服务器完整确认批次 ID 后才保存本机回执。超时、部分回执、本机回执存储失败都不算成功。
-5. 每批最多 50 条，保存后合并调度，失败指数退避（最多 60 秒），联网后重试。
-6. 认证刷新失败不换新身份。所有网络请求有 8 秒上限，不阻塞本机练习。
-7. 测试游戏使用整页 Web Lock，避免第二个标签页写入同一测试档案；同步另用锁串行化认证及回执。
-   此保护仅用于测试模式，正式学生多标签页冲突仍待解决。
-8. 开发服务器增加只允许 loopback 和正确 Host/Origin 的公开客户端配置端点，拒绝静态读取 secrets。
-   服务端只读 publishable key，不向页面提供 secret/service-role key，不输出 key。
-9. 新增模块纳入发布内容指纹、SHA-256 清单、清理页和 SW 离线包。
-   开发中确实观察到新页面配旧模块，随后通过完整清理和哈希核验排除。
-10. 并行启动检测：同一次点击内唤醒 AudioContext、生成混响并检查中英文声音，同时检查认证+真实空批次 RPC。
-    空 RPC 不插入假练习题。显示分项耗时；音频 4 秒超时，不固定等待。
-    声音列表可用不代表实际播出，保留设置→试听确认。此入口目前只在隔离测试中。
+## Findings and fixes
 
-## 实际操作证据（CUA，内置浏览器）
+1. Replaced the 500 ms answer-save delay with immediate successful-answer persistence.
+   Sync reads successfully persisted state only.
+2. Removed silent trimming above 8,000 events. Cannot restore previously deleted history;
+   large-state serialization/write behavior on iPad remained unmeasured.
+3. Allocate a test UUID per answer, separate from display name/sequence; upload only allowlisted fields.
+4. Require complete batch-ID acknowledgement before local receipts. Timeout/partial receipt/
+   failed receipt storage is not success.
+5. Fifty items per batch, coalesced scheduling, exponential retry up to 60 seconds, online retry.
+6. Failed Auth refresh never creates a replacement identity. Eight-second network limits
+   keep local practice independent.
+7. Whole-page test Web Lock prevents another test writer; sync separately serializes Auth/
+   receipt work. Ordinary multi-tab conflicts were not solved at this stage.
+8. Development configuration endpoint allows loopback and correct Host/Origin only; static
+   secrets are denied. It supplies publishable configuration, never secret/service-role keys.
+9. Added modules to fingerprints, SHA-256 manifests, reset checks, and SW offline bundle.
+   A real new-page/old-module mix was resolved through full cleanup and hash verification.
+10. One gesture resumes AudioContext, builds reverb, checks Chinese/English voices, and
+    separately checks Auth+real empty-batch RPC. No fake answers inserted. Audio checks have
+    four-second timeout/retry and individual timings. Voice availability is not audibility;
+    settings audition remains necessary. At this stage diagnostics were isolated-entry only.
 
-- 从空测试名册点击建立 TEST-1；第 1 关 C 题先点 D，再点 C；随后完成 D 题。
-- 新建 TEST-2，实际完成 B 题。通过服务器读回核对全部 3 条记录的 ID、档案 ID 和完整 payload。
-- 刷新后两个档案仍在，原匿名会话复用；再次读回 3/3 通过。
-- 第二标签页打开同一测试模式时显示「隔离测试已在另一个标签页打开」，不能写入。
-- 在核验构建 f81186d7a2 中安排丢弃下一批成功回执，实际完成 D 题。
-  真正服务器接收后，客户端丢弃回执，显示未完成；自动重试成功，读回恰好 4/4，无重复。
-- 4 条记录分属两个测试档案。服务器只增加测试身份与测试记录，不读真实学生。
-- 截图：`/private/tmp/note_trainer_sync_proof.png`（运行时证据，不提交数据或浏览器会话）。
+## CUA evidence
 
-耗时（少量单次观测，不是地区性能统计）：
+In the in-app browser, created TEST-1, answered C incorrectly as D then correctly, and
+completed D. Created TEST-2 and completed B. Real-server readback matched all three full
+payloads/profile IDs/event IDs. Refresh retained both profiles and reused Auth; readback 3/3.
+A second tab showed an isolated-test lock and could not write.
 
-| 项目 | 观测 |
+On build f81186d7a2, deliberately dropped the next successful acknowledgement and completed
+another D. The server accepted it while the client showed pending; automatic retry left
+exactly four matching events across two profiles. Only synthetic identities/records changed.
+Screenshot: `/private/tmp/note_trainer_sync_proof.png`, runtime evidence, not committed.
+
+| Observation | Time |
 |---|---|
-| 首次配置读取 | 6 ms |
-| 首次匿名认证 + 空批次数据库 RPC | 2646 ms |
-| 刷新后复用身份 + 空批次 RPC | 872 ms |
-| 单题确认上传 | 162、365、781 ms |
-| 读回核对 | 238、261、329、778 ms |
-| AudioContext 恢复及混响初始化 | 10–11 ms |
+| First config load | 6 ms |
+| First anonymous Auth + empty RPC | 2646 ms |
+| Refresh/reused identity + empty RPC | 872 ms |
+| Answer confirmations | 162, 365, 781 ms |
+| Readbacks | 238, 261, 329, 778 ms |
+| AudioContext/reverb | 10–11 ms |
 
-认证和 RPC 当前合并计时，不能解释为纯 SQL 执行耗时。没有测量 iPad、内地直连或香港网络。
+Auth/RPC timing was combined, not pure SQL time. These few observations do not cover iPad,
+mainland direct access, or Hong Kong networks.
 
-## 自动回归
+## Regression and final local release
 
-`tests/game_sync.test.mjs` 增加游戏状态读取/字段白名单/正常空间隔离、51 条分批、丢回执、
-部分回执、本机回执存储失败、真实 recordAnswer 立即保存及第 8001 条保留测试。
-原队列及认证刷新故障测试继续运行。
-完整 `npm test` 曾在旧发布清单下正确失败；重新生成清单后全套通过，包括 45,900 节出题、
-四种视口、缓存隔离、离线恢复与错误回执。最终发布流水线结果另记于 progress_tracker。
-失败网络的自动回归包含模拟故障；没有声称已拔网完成 iPad 实机测试。
+Added state/allowlist/namespace isolation, 51-item batching, lost/partial receipts, failed
+receipt storage, immediate recordAnswer save, and event 8001 retention to game_sync tests.
+Existing queue/Auth-refresh faults remained. The outdated manifest correctly failed the
+first full run; regeneration then passed 45,900 sessions, four viewports, cache isolation,
+offline recovery, and error receipts. Simulated failures were not presented as physical iPad offline tests.
 
-## 仍需完成
+`npm run release -- --local --no-open --port 8766` passed automation, build f81186d7a2.
+Both local origins matched all hashes. CUA opened Safari/Chrome reset pages; four local
+actual-load receipts matched and were recorded in ignored status.json. The remote old
+manifest lacked new modules, so strict validation rejected it; no push and no weakening.
+Full-scope status remained prepared, not six-target ready.
 
-- 全学生名册备份/恢复（目前测试备份仅导出，不提供恢复或认证恢复）。
-- 匿名身份丢失后的恢复、跨设备绑定、教师/研究者权限与防滥用。
-- 正式学生稳定事件 ID、旧档迁移、并发写入策略和本机容量压力测试。
-- iPad 首次声音、后台恢复、语音实际播出及内地/香港网络测试。
-- 真实学生云同步部署仍需上述工作；本轮没有推送或部署。
+Endpoint checks: secrets/.git 404, foreign-Origin configuration 403, mjs JavaScript MIME.
+Automatic approval review rejected a compatibility proposal for the old incomplete manifest;
+it was not executed. Strict integrity/local-versus-remote boundaries were retained.
+CUA typing once lost URL punctuation and opened search; exact paste corrected navigation.
+Only actual game boot counted. Receipt tokens were short-lived loopback navigation values,
+containing no database key, identity session, or student data.
 
-参考：[Supabase 匿名登录](https://supabase.com/docs/guides/auth/auth-anonymous)，
-[行级权限](https://supabase.com/docs/guides/database/postgres/row-level-security)。匿名身份与本机 PIN 是不同层。
+## Gaps at this stage
 
-## 最终发布核验
+Full roster backup/restore, lost-identity recovery, cross-device mapping, teacher/researcher
+permissions, abuse protection, ordinary stable IDs/migration/concurrency/capacity, iPad
+first audio/background audibility, and mainland/Hong Kong testing were still future work.
+No push/deployment occurred in this stage. Read current tracker for later completions.
 
-- `npm run release -- --local --no-open --port 8766` 全部自动测试通过，构建 f81186d7a2。
-- 本地两个 origin 全部发布文件 SHA-256 核验通过。
-- CUA 分别在本机 Safari、Chrome 打开清理页；两个浏览器 × 两个本地 origin 的四个一次性加载回执均 ready，构建完全匹配。
-- 四个目标状态已依据回执服务读取结果登记到 gitignored `.release/status.json`。
-- 远程旧清单缺少新模块，严格校验拒绝；没有放宽校验，没有推送。完整范围 status 仍为 prepared，不声称六目标 ready。
-- 开发端点额外核验：secrets 与 .git 返回 404，外来 Origin 访问测试配置返回 403，mjs 返回 JavaScript MIME。
-- 自动审批拒绝过兼容缺少新模块的旧清单方案；该改法没有执行，改以保持严格校验并明确本地/远程边界完成本轮。
-- CUA 原生键盘 typeText 丢失 URL 标点时误进搜索页，随即改用粘贴准确打开；回执仅在游戏实际加载后才算通过。
-  该回执为短时 loopback 导航令牌，不含数据库 key、身份会话或学生数据。
+Historical service references:
+[anonymous Auth](https://supabase.com/docs/guides/auth/auth-anonymous) and
+[RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
+Anonymous server identity and the local PIN are distinct layers. Links were not rechecked
+for this documentation translation.

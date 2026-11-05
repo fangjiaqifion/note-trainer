@@ -1,136 +1,159 @@
-# Note Trainer 内部进度清单
+# Note Trainer Internal Progress Tracker
 
-更新日期：2026-11-05。入口：项目 `AGENTS.md`。
+Last updated: 2026-11-05
 
-这是下次 session 的当前状态与实施顺序。历史试验见审计记录，不把旧的未接入、未推送或
-prepared 状态当作当前状态。本轮在全名册保护基础上继续实现 NT-003 正式界面与权限、NT-002 普通声音诊断。
+Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
+record. Earlier audits describe their own stages, not current readiness. This English
+revision consolidates the previous tracker against its linked final acceptance evidence;
+it does not report a new release or repeat live tests.
 
-## 当前交付基线
+## Last recorded delivery baseline
 
-正式云功能及普通游戏页已部署并通过虚拟班级验收。最终构建 13d5d3b4a4 已部署，全部发布文件与六个加载回执核验通过。
-
-| 项目 | 当前状态 |
+| Item | Recorded result |
 |---|---|
-| 已推送的主要功能提交 | f320c18（主要交付）；最终验收文档另行提交 |
-| 已完成验收的构建 | 13d5d3b4a4 |
-| 远程文件与加载 | 13d5d3b4a4 全部文件哈希一致，Safari/Chrome × 三 origin 六个回执 ready |
-| 真实服务全流程 | 普通页面新建虚拟师生，2 题完整读回，第二设备恢复、云网络失败刷新、丢回执重试通过 |
-| 真实权限与灾备 | 教师恢复、跨学生读写拒绝、研究者写入 403、码/原始设备撤销、2 题真实灾备到空库逐字段恢复通过 |
-| 完全断网 | 已绑定档案在启用 SW 的独立 context 中完全断网刷新、渲染题目通过，原 2 条记录保留 |
-| 正式学生云同步 | 已有逐学生备份/绑定入口；本轮只接入虚拟班级，真实旧档未自动上传 |
-| iPad 声音 | 用户明确确认首次、后台返回及锁屏返回三声道均正常；未提供系统版本或 Safari/主屏幕模式 |
+| Main delivered feature commit | `f320c18`, pushed to origin/main in the preceding implementation task |
+| Accepted runtime build | `13d5d3b4a4` |
+| Release verification | All files matched across Pages, 127.0.0.1:8766, and localhost:8766; Safari/Chrome six-load receipts ready |
+| Ordinary-page synthetic class | Two completed answers read back field by field; second-device recovery, cloud-request failure refresh, and lost-receipt retry passed |
+| Permissions and disaster recovery | Teacher recovery, cross-student denial, researcher write 403, code/original-device revocation, and two-answer restore into an empty local database passed |
+| Fully offline | Bound profile refreshed with SW enabled and all networking disabled; question rendered and original two records retained |
+| Real learners | Explicit per-learner backup/binding exists; this work did not automatically upload existing real profiles |
+| iPad audio | User confirmed piano/Chinese/letters at first launch, background return, and lock-screen return; OS and Safari/home-screen mode unspecified |
 
-当前说明见 [生产审计](audit_20261105_production/audit.md)、[云端操作](cloud_operations.md)。
-恢复码和 Auth 会话、测试档案及原始回执都不提交。NT-001 的大容量性能与长期档案策略仍保留未完成项，不能称无限容量。
+Evidence: [production audit](audit_20261105_production/audit.md),
+[cloud operations](cloud_operations.md), and [backup audit](audit_20261105_backup/audit.md).
+The prior iPad confirmation was for build `156b85e041`; later changes affected exports,
+sync scope, and module URLs, while synthesis, speech, and diagnostics logic remained
+unchanged. Do not describe this as a fresh iPad test of the final build.
 
-## 事项总览
+The earlier tracker also said that its round had no push. That statement applied to the
+backup-only stage (build `950868f0bf`), not the subsequent production delivery above.
+Documentation commits may now be ahead of the last runtime-delivery commit. This task
+has no push or deployment authorization.
 
-| 编号 | 事项 | 实际状态 | 下次优先动作 |
+## Priorities and remaining work
+
+| ID | Topic | Current status | Next action |
 |---|---|---|---|
-| NT-001 | 本机数据长期保存、完整备份与恢复 | 部分修复，完整方案未完成 | 已实现名册恢复；继续并发、中断及容量实测 |
-| NT-002 | iPad 首次音频与启动就绪 | 普通入口诊断已上线；用户实机确认三场景三声道正常 | 如后续复现，记录系统版本/模式并导出诊断 |
-| NT-003 | 云同步与研究者管理 | 恢复、权限、逐档绑定、真实服务验收已通过 | 小规模明确绑定；持续离线备份，不静默迁移旧档 |
+| NT-001 | Long-term local retention and full backup/restore | Restore implemented and tested; capacity strategy incomplete | Interrupted staging cleanup, iPad write/capacity measurements, deeper semantic validation, ordinary multi-tab concurrency |
+| NT-002 | iPad startup/audio readiness | Ordinary settings diagnostics shipped; three scenarios user-confirmed | If reproduced, record OS/mode, export diagnostics, and test offline/mute/disabled-sound cases |
+| NT-003 | Cloud sync and researcher management | Explicit binding, recovery, permissions, and synthetic live acceptance passed | Controlled binding, continued offline backups, regional networks, service pause recovery, ongoing abuse/capacity review |
 
-## 已完成，勿重复当作待实现
+## Completed, do not rebuild
 
-### 数据保存
+### Local data protection
 
-- 取消超过 8,000 条时静默删除最早记录；已有被裁掉的记录不能因此自动恢复。
-- 每题答对后立即落盘，避免原来的 500 ms 延迟窗口；存储失败提示导出。
-- 修复旧档迁移重置 events、autoHistory、battery 的问题，保留并校正递增计数。
-- 仍是 localStorage 整份状态保存；大量记录下的 iPad 写入耗时和容量压力尚未实测。
+- Removed silent trimming above 8,000 events; already-trimmed history cannot be recovered automatically.
+- Save each completed answer immediately instead of using the old 500 ms delay.
+- Preserve legacy events, autoHistory, battery, and monotonic sequence counters during migration.
+- Full-roster v1 JSON includes accounts, internal IDs, progress, selections, stars, complete
+  events, pre/post batteries and associations, local salt and PIN hashes. No plaintext PINs
+  or cloud Auth sessions. Backups are unencrypted and require private storage.
+- Teacher export/restore validates the archive, stages a new storage generation, then commits
+  the roster once. Failures leave active data intact. Same names are not merged.
+- Restore preserves the previous generation and provides a pre-restore snapshot export.
+  An old page cannot save over a different restored generation.
+- Tests cover full roundtrip, same/changed names, duplicate import, malformed/missing/future
+  versions, failures at each write point, stale pages, and failed single-profile imports.
+  The former unchecked task to validate all these cases was stale; deeper field semantics
+  and real-device interruption/capacity remain open.
 
-### 隔离云同步
+### Sync reliability and isolation
 
-- 普通档案与 `nt.sync-test.*` 测试名册、记录、认证和回执严格分开，不上传真实学生旧档。
-- 测试答案生成稳定 UUID，先落盘后发送；只上传字段白名单，不发送姓名、PIN 或账户对象。
-- 十秒有界合批，每批最多 50 条；连续保存不重置截止时间，已同步时零数据库请求。
-- 回执必须完整匹配批次 ID 后才确认；断网、部分回执、丢回执和本机回执写入失败保留答案。
-- 临时错误指数退避并加抖动，尊重 Retry-After；身份/配置/权限等永久错误暂停自动重试。
-- access token 被拒绝时只刷新一次；已建立身份的会话缺失时不静默创建替代身份。
-- 模块异步加载前保存的答案会在启动后扫描恢复；测试模式使用单写入标签页锁。
-- 修复浏览器原生计时器 this 绑定问题，新增真实浏览器回归，不能仅依赖 Node 测试。
-- 测试表按匿名安装身份隔离，append-only；已验证无身份读取、跨身份插入及更新/删除权限被拒绝。
-- 只读远程核验不再覆盖浏览器验收报告，有拦截原缺陷的回归及实际前后字节比对证据。
+- Isolated `nt.sync-test.*` accounts, state, authentication, and receipts never upload real profiles.
+- Synthetic answers receive stable UUIDs before upload. Only allowlisted fields leave the device;
+  names, PINs, and account objects are excluded.
+- A bounded ten-second window sends at most 50 items per batch. Continuous saves do not
+  postpone the deadline; synchronized idle checks make zero database requests.
+- Complete matching batch receipts are required. Offline, partial/lost receipts, or failed
+  receipt storage preserve local answers and IDs.
+- Temporary failures use exponential backoff/jitter and Retry-After. Permanent identity,
+  permission, or configuration errors pause automatic retry.
+- A rejected access token is refreshed once. Missing established sessions do not silently
+  create replacement identities.
+- Startup scans recover answers saved before asynchronous module initialization. Missing
+  state, duplicate participants, or duplicate event IDs stop before network requests.
+- Real-browser regressions cover native timer binding, lost receipts, refresh, readback,
+  and the isolated single-writer lock. Read-only remote verification preserves prior receipts.
 
-### 启动检测
+### Production identity and authorization
 
-- 隔离测试里，同一次点击并行恢复 AudioContext、初始化混响、检查中英文声音列表和认证/数据库 RPC。
-- 显示真实分项耗时，有超时/重试；数据库失败不阻塞本机练习。
-- 琴声实时合成，无采样文件需要下载；系统声音可用不等于实际出声，仍需「设置 → 试听」。
-- 普通设置已提供独立声道检测、重试与诊断导出；用户已实机确认首次/后台/锁屏三场景正常，未泛化到未测系统。
+- Strong, revocable, expiring recovery codes map separate Auth identities to teacher,
+  student, or readonly researcher permissions. The four-digit local PIN is not server authorization.
+- Cloud-bound profiles use a same-origin single-writer lock and revision conflict checks.
+  Loading cloud progress retains a local snapshot and merges unconfirmed events.
+- Bound profiles reject overwrite imports and research-log clearing. Unbound ordinary
+  profiles still lack automatic multi-tab practice merging.
+- Explicit binding first saves/downloads a complete local snapshot. Real old profiles are
+  never silently migrated. Legacy events without IDs receive stable UUIDv5 values based
+  on cloud-student UUID and canonical fields; existing UUIDs are preserved.
+- Changes to roster/state during asynchronous binding stop overwrite. Cloud management
+  actions are serialized. In-flight requests retain the originating Auth transport.
+- Shared-device queues follow current role: teacher's class, student's own profile,
+  researcher no upload. Local updatedAt alone causes no cloud progress write.
+- Class disaster recovery, empty-database restore, role denials, and revocation have live
+  synthetic evidence. These were stale unchecked tasks in the previous tracker.
+  Historical archives may be restored after code expiry without renewing expired codes.
+- Production ESM uses build-versioned URLs. Old-worker upgrade and full offline module
+  graph regressions preserve storage and avoid stale-module responses.
 
-## 已有证据与测试边界
+### Startup/audio
 
-- [首轮游戏接入审计](audit_20261105/audit.md)：本地两个档案实际答题、读回、刷新及丢回执重试。
-- [压力及远程发布审计](audit_20261105_pressure/audit.md)：本轮发现、修复、测试、发布与限制。
-- 真实 Supabase 两轮测试：同组 1,000 条唯一记录，最多四并发；逐字段读回、并发重试去重、
-  跨身份隔离、冲突整批回滚通过。第二轮复用身份和 ID，不增加唯一记录。
-- 两轮请求数分别为 50/48（含认证、读回及负例）；响应头耗时 p50 为 207/279 ms，
-  p95 为 733/818 ms。不是完整响应耗时、地区网络结论或免费层容量极限。
-- 本地积压测试：10,000 条恰好 200 个非空批次，一次注册；空闲检查零请求。
-- 独立 Chrome HTTP fixture：通过界面答题，断网刷新保留记录，恢复后丢回执重试、读回及标签页锁通过。
-  fixture 不是真实数据库，与上面的真实服务证据分开记录。
-- CUA 本地最终读回 5/5；远程新建隔离档案实际两题，含错答与成功回执丢失重试，读回 2/2 完整一致。
-- 未覆盖：其他 iPad 系统/模式与完整离线/静音场景、内地/香港代表性网络、长期低活动暂停恢复、免费层容量极限及真实旧档迁移。
+- Settings offers separate piano, Chinese speech, and letter diagnostics, retry, gesture
+  resume, voiceschanged handling, bounded checks, and local diagnostic export.
+- Piano is synthesized; there are no sample downloads. Available voices or a running
+  AudioContext do not prove audible sound. Database failure does not block local practice.
+- Diagnostic exports omit student data and credentials and are not uploaded automatically.
 
-## NT-001：下次先完成本机保护
+## Evidence and limits
 
-当前已有单学生 JSON、全学生 CSV 及版本化全名册 JSON 备份/恢复。教师总览提供完整备份、恢复及恢复前快照导出。
-姓名只作显示，内部 ID 才用于识别。PIN 是本地切换保护，不是加密或远程认证。
+- [Initial integration audit](audit_20261105/audit.md): actual game-generated synthetic
+  answers, refresh/readback, and lost-receipt retry on two local profiles.
+- [Pressure/release audit](audit_20261105_pressure/audit.md): real Supabase, 1,000 unique
+  records, at most four concurrent requests, full payload readback, overlapping retry
+  deduplication, cross-identity isolation, and conflict rollback. Second round reused IDs.
+- The two rounds used 50/48 HTTP requests, with header-latency p50 207/279 ms and p95
+  733/818 ms. These are not full-response, regional-network, or free-tier capacity results.
+- A 10,000-event local backlog produced exactly 200 nonempty batches and one registration;
+  idle checks made zero requests. Independent Chrome HTTP fixtures are separate from live
+  database evidence. Earlier CUA readbacks were local 5/5 and remote 2/2.
+- Final recorded full regression: 46 Node tests, 1,144 scheduling boundaries, 45,900
+  generated sessions, four viewports, reports, SW/offline, cloud faults, roster restore,
+  storage barriers, and old-cache upgrade. These tests were not rerun for translation.
 
-- [x] 定义带版本的全名册备份格式，覆盖账户、进度、选音、星星、全部事件、前后测题组及关联。见 [备份与同步审计](audit_20261105_backup/audit.md)。
-- [x] 教师全名册导出/恢复、预检、恢复前快照；分代写入后单次名册提交，失败不部分覆盖，不按同名合并。
-- [ ] 验证同名/改名、重复导入、坏文件、缺字段、旧版本、中断、容量不足及写入失败。
-- [ ] 迁移前保留可回退快照，定义身份字段与本地 PIN 哈希的备份方式，不导出明文凭据。
-- [ ] 明确长期归档与容量策略；实测大量记录的保存耗时，保持不静默删除未备份记录。
-- [ ] 形成教师能操作的收集/备份流程；评估加密与恢复，但不把认证会话或密钥写入仓库。
+Open boundaries: iPad large-history writes/capacity; cleanup after unexpected staging
+termination; full semantic validation; unbound ordinary concurrent practice; representative
+mainland China/Hong Kong networks; long low-activity service pause recovery; all OS/mode,
+fully offline and mute audio scenarios; larger operating scale and ongoing abuse controls.
+No claim of unlimited retention or universal reliability is justified.
 
-验收：备份往返后条数、内容、内部 ID、进度与前后测对应关系一致；失败不破坏原档。
-测试入口的「备份测试档案」只有导出，不代表已实现上述恢复或匿名身份恢复。
+## Next-session workflow
 
-## NT-003：身份、权限与正式接入
+1. Read this guide, the relevant audit, and current Git status. Continue open work rather
+   than rebuilding implemented restore, identity, or permissions.
+2. For device/network issues, reuse existing synthetic identities and recovery codes.
+   Do not rerun passed live pressure tests without a changed implementation or validation goal.
+3. Real learner binding remains explicit and preceded by backup. Check actual use against
+   the approved ethics/notice arrangements before changing data handling; the earlier user
+   reported ethics approval and no institution-specified storage region.
+4. Run targeted checks for each change, update evidence/status, and commit complete units.
+   Run the full release pipeline only when runtime delivery changes.
 
-服务目标仍是 GitHub Pages 静态前端，设备优先落盘，联网可靠批量同步，教师/研究者可按权限汇总。
-用户以中国内地为主、香港为辅；已说明获得伦理批准且机构未指定存储地点，正式数据用途仍需对照批准方案。
+Runtime paths, never print or commit their contents:
 
-- [x] 实现可撤销恢复码、独立 Auth 身份与跨设备归属；本机 PostgreSQL 和第二设备普通界面流程通过，真实线上验收也已通过。
-- [x] 服务端教师/学生/研究者权限与去标识读取已实现，四位 PIN 不作服务器授权；本机及真实服务器权限负例通过。
-- [ ] 完成反滥用措施、数据库备份/恢复及暂停服务后的恢复测试，再考虑真实学生。
-- [ ] 正式学生接入时先备份并确认绑定，保留原 ID/历史/前后测关联；测试模式 UUID 和锁不等于普通档案已迁移。
-- [x] 云绑定档案单写锁、跨设备 revision 冲突保护；覆盖导入/清日志被阻止，载入合并未确认事件。普通未绑定档案多页同时练习不自动合并。
-- [ ] 评估内地/香港真实网络、免费用量和长期维护，并对照伦理/告知内容核验存储和处理安排。
-- [x] 普通页面虚拟班级通过后提供明确逐档绑定，先本机快照；不把云端当唯一副本，不自动迁移真实旧档。
+- `secrets/api_keys.md`: ignored publishable-key configuration; never use secret/service-role keys in the client.
+- `.release/pressure_identity.json`: reusable pressure identity/session.
+- `.release/browser_test_config.json`: public client configuration loaded into an isolated page's memory.
+- `.release/cloud_live/`: synthetic identities, sessions, recovery codes, and live evidence.
+- `.release/status.json`: release receipts; read-only verification must preserve it.
+- `.release/cloud_bootstrap.txt`: one-time live bootstrap credential.
 
-本轮已明确授权独立云表迁移、既有 Pages 发布与虚拟班级验收；另逐项授权虚拟教师恢复、新增第二虚拟学生及撤销虚拟码/设备。以上已执行并通过。真实旧档未获批量自动上传授权，应通过教师明确逐档绑定。
+The synthetic Supabase project is `note-trainer-synthetic-test`, Singapore region;
+isolated table/RPC: `nt_sync_events`/`nt_sync_batch`. Production tables are separate.
+The last dedicated local server used port 8766; check its source fingerprint before reuse
+and never kill an unknown process. `sync_test=1` selects the isolated test entry.
 
-## NT-002：iPad 首次缺音
-
-- [ ] 记录 iPadOS、Safari/主屏幕模式及清缓存首次/再次启动的差异。
-- [x] 普通设置接入三声道诊断、手势内 resume、voiceschanged、超时/重试与本机诊断导出；用户已确认 iPad 首次/后台/锁屏返回三声道正常。
-- [ ] 用户已确认首次/后台/锁屏声道正常，完整离线/静音/关闭声音场景仍未逐项实机记录；超时、重试及无声练习已有实现与自动回归。
-- [x] 用户实机确认后三场景声音正常，采用轻量手势恢复与可重试分项诊断，不以数据库初始化阻塞本机练习。
-
-验收：首题前状态可诊断，实际声道出声正常，失败可重试；Mac 计时结果不能代替 iPad 实测。
-
-## 下次 session 操作入口
-
-1. 先读 `AGENTS.md`、本文件和压力审计；从 NT-001 剩余容量/中断验证与实际运行反馈继续，不重建已完成的名册恢复和同步原型。
-2. 不重建已完成的云身份与权限。后续若有设备/网络问题，复用虚拟身份和恢复码，不盲目新建班级。
-3. 不自动重新跑已通过的真实压力测试；仅代码变化或新的验证目标需要时运行，优先复用已有测试身份。
-4. 每个单元完成后审计、针对性回归、更新本文件并提交；运行构建改变才重新走完整发布和浏览器回执。
-
-配置与运行时文件（不输出/提交其中内容）：
-
-- 固定 Supabase 测试项目 `note-trainer-synthetic-test`，新加坡区；表 `nt_sync_events`、RPC `nt_sync_batch`。
-- `secrets/api_keys.md`：publishable key，已忽略；不要打印或提交，不使用 secret/service-role key。
-- `.release/pressure_identity.json`：压力测试身份与会话，已忽略；不要导出或提交，不删它来反复新建身份。
-- `.release/browser_test_config.json`：仅公开客户端配置，供远程隔离页文件选择器加载，本页内存使用；刷新需重载。
-- `.release/status.json`：运行时发布核验报告，已忽略；`verify:remote` 当前保留它。
-- 本地专用服务器使用 `scripts/local_server.mjs`，上一轮端口 8766；下次先查是否仍运行及源码指纹，不杀未知进程。
-- 远程隔离入口在普通链接增加 `sync_test=1`；普通入口不带此参数。严禁把真实学生数据用于测试。
-
-常用验证命令（按需要运行，不在交接时重复发压）：
+Commands, only as needed:
 
 ```bash
 npm test
@@ -139,28 +162,6 @@ NT_REMOTE_TEST_BASE=https://fangjiaqifion.github.io/note-trainer/ node tests/smo
 node scripts/database_pressure_test.mjs --execute
 ```
 
-游戏仓库独立提交和推送；父仓库仅本地更新 submodule 指针，不推送。
-父仓库原有未跟踪 `.statamcp/` 不属于本任务，保持未动。
-
-## 本轮增量（2026-11-05）
-
-- 完整名册备份恢复已实现；内部 ID、重名、全部状态及 PIN 哈希往返保留，云认证不入备份。
-- 恢复后的旧页面保存被阻止；这不代表普通多页面同时练习的合并已解决。
-- 修复单学生导入写入失败仍报成功；隔离云测试禁止覆盖导入以保护事件 ID 与身份关联。
-- 修复同步扫描将缺失状态当作空记录、重复事件 ID 被已有回执跳过的风险；自动发送前暂停，不增加请求。
-- 尚未完成：意外终止后的暂存回收、iPad 大量记录与容量实测、所有字段的深层语义校验、普通并发练习合并。旧代存档保留会增加容量占用。
-- 本轮无正式学生迁移、无远程推送；交付构建及验证见上述新审计。
-
-正式云功能已采用显式逐学生绑定，未自动迁移旧档；语音组件与实际实机验收必须分开记录。
-
-## 生产验收补充
-
-管理员历史灾备恢复支持过期档案，但不续期过期恢复码；002_archive_expiry.sql 已执行。
-用户实机声音确认与服务器验收分别留证；最终导出字段修复不改声音组件。
-
-旧备份迁移使用按云学生 UUID 命名空间生成的稳定 UUIDv5，复制旧备份重绑不会产生另一套历史事件 ID；迁移期间状态变化会停止覆盖。
-生产模块按构建版本加载，并新增旧 Service Worker 过期模块升级与完整离线图回归。
-
-最终线上入口：https://fangjiaqifion.github.io/note-trainer/index.html?build=13d5d3b4a4 。
-完整回归：46 项 Node 测试、45,900 节出题、四视口、报告、SW/离线、云 UI/故障、存储暂停和旧缓存升级全部通过。
-最后实际线上导出仍复用原虚拟班级，2 条记录及跨设备稳定 workspace/student ID 一致，无新增权限或答题。
+The live pressure command is not part of routine handoff or documentation verification.
+Game commits/pushes belong here; the parent updates its pointer locally and is not pushed.
+The parent's pre-existing untracked `.statamcp/` is unrelated and must remain untouched.

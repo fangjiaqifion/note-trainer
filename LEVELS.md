@@ -1,431 +1,332 @@
-# 技能与音集设计记录
+# Skills and Note-Set Design
 
-更新：2026-11-04
+Last updated: 2026-11-05
 
-这份文件记录游戏现在到底在练什么：九种固定技能、每个音要打开的三个标记、新音怎么
-进来、每天一节课怎么拼，以及哪些内容是故意不考的。先看总览，再往下看细目。
+Internal instructional-design reference, maintained in English. The README introduces
+the product; AGENTS owns technical constraints; the progress tracker owns implementation
+status. Update this record and the implementation together when design changes. If they
+disagree, investigate and reconcile them rather than treating an unimplemented plan as fact.
+This revision corrects stale retention, selected-pool, cache, and cloud statements using
+the existing implementation/acceptance records; it does not introduce a new teaching design.
 
-改设计时先改这里，再改 `index.html`；两处对不上时以这里为准，并把代码补齐。
-`README.md` 面向仓库外的读者，用英文；这份记录面向教学设计与备课，用中文。
+## Overview
 
-## 总览
+The skill axis is fixed at nine cards. The note axis grows through
+B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4. Learned notes can be checked or unchecked.
+A temporary 14-question first lesson introduces each new note and resumes after interruption.
+Per-question logs support descriptive reports and adaptive choices; they are not independent
+measures of mastery. Teachers manage profiles/reports; learners and parents share limited
+practice access. Cloud roles are separately authorized.
 
-这一版把「音」和「练习」拆成了两个轴，又给每个练习者加了独立账户和逐题记录：
-
-- **技能轴是固定的**：找键盘、谱与键、谱号、时值、手指、线与间、两个音、加线加间、易混音。首页永远是九张卡。
-- **音集轴是长的**：B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4。每学一个音，音集变大，菜单不变。
-- **勾选轴是可变的**：已学的音可以勾上或取消；需要音集的六项技能和今日练习只用勾上的音。
-- **新音是临时的**：一段 14 题的新音第一课；可以一次走完，也可以中途退出，下次从下一题续学。走完就并入需要这个音的技能。
-- **记录是个性化的**：逐题记录一次答对率、错误次数和反应时；自动难度和出题权重都读它。
-- **权限是分开的**：老师是超级用户，负责开通账户和看报告；家长和学生只能练习、勾选音和切换自己的账户。
-
-| 模块 | 作用 | 入口 |
+| Module | Purpose | Entry |
 |---|---|---|
-| 我的音 chips | 勾选今天要练的音；显示当前新音、还没学的音 | 首页顶部 |
-| 今日练习 | 10 题：复习 + 找键 + 时值 + 手指 + 谱键 | 首页大按钮 |
-| 九张技能卡 | 单独练某一种技能 | 首页下方 |
-| 新音第一课 | 只练当前新音，一次 14 题 | 点任意还没学的 chip |
-| 单音复习 | 当前音加左右邻居，六题 | 老师报告里每行的「练」 |
-| 下一个音 | 由老师或家长决定什么时候加新音 | 首页页脚 |
-| 老师总览 | 建学生、看每个学生的最近 7 天、打开报告、导出全部 | 选人页「老师入口」 |
-| 家长面板 | 只切换练习者、锁定设备 | 首页页脚「家长」 |
+| My notes chips | Checked pool, learning note, and unlearned notes | Home top |
+| Daily practice | Ten review/key/duration/finger/staff items | Main home button |
+| Nine skill cards | Practice one skill | Home cards |
+| First lesson | Fourteen new-note items | Any unlearned chip |
+| Single-note review | Six items using the note and neighbors | Teacher report review button |
+| Next note | Adult chooses when to expand the set | Home footer |
+| Teacher roster | Create profiles, seven-day summaries, reports, combined export | Profile picker |
+| Parent panel | Switch or lock | Home footer |
 
-## 数据模型
+## Data model and learning flags
 
-### 音符（`NOTES`）
+`NOTES` stores each note's MIDI pitch, clef/staff y, hand/finger (`0` means unspecified),
+keyboard landmark, and key/position hints. `NOTE_ORDER` controls introduction order;
+`BASE_NOTES` are B3/C4/D4. C4B is the alternate bass-clef spelling of C4, not a queue note.
 
-每个音一条，字段见 `index.html` 的配置层注释。最关键的是：
+A3 is bass fifth line, left finger 3 in middle-C position (1=C4, 2=B3, 3=A3), paired
+conceptually with E4/right finger 3. Duplicate A letters show octave subscripts on chips.
+A4 is outside the right-hand C position; the current convention moves the whole hand
+right with finger 5 on A. A dedicated shift lesson remains unresolved. F4/G4 return to
+right-hand C position. The sequence follows the accompanying method book.
 
-| 字段 | 作用 |
+| `S.progress` flag | Meaning | Skills opened |
+|---|---|---|
+| key | Find the letter on any octave of the drawn keyboard | Find key |
+| pos | Connect staff position, clef, and exact octave | Staff/key, clef, duration |
+| fin | Identify the configured hand/finger | Hand/finger |
+
+Flags open in stages during the lesson. Base notes always count as learned.
+Completion flags indicate exposure through the lesson, not demonstrated mastery.
+
+### Legacy state and accounts
+
+The old `bcd-piano-game-v2` state migrates into the first account and is retained read-only.
+Old stars 1–6 map to the first six cards. An old `stars[7]` represented the E lesson:
+upgrade completes E4 flags and removes that star before the new skill 7 is used.
+`S.level7` marks migration; `legacyE4` is temporary. Imported old backups take the same
+upgrade path, including the older `layout !== 2` star migration.
+
+`S.spot` is undefined before initialization, an object during a lesson, or null when
+complete. Missing legacy selection defaults to all learned notes; intentional deselection
+is preserved. Migration now retains events, autoHistory, and batteries and corrects counters.
+
+The roster uses `nt.accounts.v1`; ordinary state uses `nt.state.<id>.v1`, with generation
+storage used by full-roster restore. Every profile owns selections, flags, stars, settings,
+current lesson, frozen battery, and log. Local four-digit PINs use salted FNV-1a hashes:
+they prevent accidental switching, not data access by someone with developer tools.
+One unlocked profile opens directly; otherwise show the picker and require the profile PIN.
+Teacher mode is not persisted. Viewing a learner as teacher does not update lastActiveAt.
+Local teacher controls manage reports/tests/exports; cloud roles use server permissions.
+
+Completed correct answers create one row, including sequence, UTC/local time, session,
+phase, mode, skill/kind, pitch/letter/value/clef/position, difficulty, first-try result,
+wrong attempts, response time, and battery ID. Skill 7 additionally records relation,
+positions, higher note, ask, and target; skill 9 records pair and first wrong choice.
+First-try accuracy = first-try successes / completed questions; error rate = 1 − accuracy.
+Tests are excluded from ordinary accuracy and adaptation. Save immediately after completion.
+There is no longer an 8,000-event trim; capacity and long-term retention remain bounded
+by browser storage. Full-roster backups and explicit cloud binding supplement local storage.
+Infrastructure procedures belong in the cloud/development docs, not this design record.
+
+### Selected notes
+
+Learned chips toggle selection; at least one remains checked. Completing a lesson checks
+the note automatically. A current/unlearned chip opens its first lesson rather than toggling.
+Skills using named notes take checked ∩ learned ∩ required flags. Skill 3 honors selection;
+C4B is the same pitch as checked C4, not an unchecked contrast target. Skills 6–8 use
+abstract positions; skill 9 uses registered pairs among checked notes. A distractor card
+in skill 2 may use a base note when only one target is checked; it does not expand targets.
+
+### Adaptation and scheduling
+
+Auto difficulty uses the last 20 non-test answers at session end: ≥85% moves up one tier,
+≤60% moves down, otherwise unchanged. Require 12 answers before the first decision, eight
+between changes, and 30 before Hard. Freeze difficulty for the session. Log decisions;
+the report shows the last four.
+
+Within eligible pools, weaker notes may receive up to 3× weight; fewer than four observations
+uses weight 1. Coverage caps and feasible spacing take precedence. Skill 1 balances letters;
+skill 3 balances note names. Plan counts before ordering with `spaceOut`. Daily review uses
+least recently practiced notes. One target necessarily repeats; multiple targets should
+not be adjacent when spacing is feasible. Weights cannot manufacture unchecked targets.
+
+## Nine skills
+
+Counts are Easy / Normal / Hard.
+
+| # | ID | Task | Prerequisites/pool | Count |
+|---|---|---|---|---|
+| 1 | findKey | Letter → any matching key | checked key | 8 / 8 / 10 |
+| 2 | staffKey | Staff ↔ exact key/octave | checked key + pos | 8 / 8 / 10 |
+| 3 | clef | Choose clef for named note | checked pos; C4B allowed for C4 | 8 / 8 / 10 |
+| 4 | beats | Read value, find key, hold | checked key + pos | 8 / 8 / 10 |
+| 5 | play | Hand → finger → hold | checked key + pos + fin | 6 / 6 / 8 |
+| 6 | spot | Tap numbered line/space | abstract staff | 8 / 8 / 10 |
+| 7 | twoNotes | Direction and relative height | abstract staff | 8 / 8 / 10 |
+| 8 | ledger | Name ledger position | fixed positions, independent of selection | 6 / 6 / 6 |
+| 9 | contrast | Tap named note in a confusable pair | registered checked-note pairs | 8 / 8 / 10 |
+
+### Skill behavior
+
+1. **Find key:** show a capital letter and keyboard; any matching white key is correct.
+   Balance selected target letters and avoid feasible adjacent repetition. After enough
+   mistakes outline matching keys. `LETTER_SAY` uses `eigh` for A because Apple's voice
+   pronounced `ay` like /aɪ/. Verify /eɪ/ audibly on Mac/iPad when changing speech.
+2. **Staff/key:** half staff→exact octave, half key→staff. Staff examples are quarter
+   notes, not duration tests. Choose three examples, two on Easy, with a base-note
+   distractor if needed. The question keyboard sits above the answer staff cards.
+3. **Clef:** draw no clef initially, name the note, choose treble/bass, reveal after success.
+   C4 permits treble/bass spellings. D/E must both occur when checked, even though both
+   answers are treble. Balance names before spellings; C4/C4B count as the same name for
+   spacing. Do not add unchecked notes just to force both answer categories.
+4. **Duration:** every third item includes a reverse shape question such as identifying
+   a half note. After choosing beats, independently find/hold the key; no target-key
+   highlight or advance beat grid. Release tolerance is 0.3 beat early / 0.62 late.
+5. **Hand/finger/hold:** three stages; quarter, half, and dotted-half values only because
+   whole notes have no stem cue. Stem direction is a game-specific hand convention,
+   not a general notation rule. `balanceHands` includes a left-hand item when eligible.
+6. **Lines/spaces:** first no clef, then a clef as distractor. A tap within 0.18 staff-line
+   spacing counts as a line; other taps are spaces. Error hints identify actual and target
+   positions, avoiding the former fourth-space/fifth-line misclassification.
+7. **Two notes:** whole-note heads within the five staff lines, no ledgers. Three ordered
+   groups introduce one condition at a time: direction (up/down/repeat once each, using
+   line-arrow icons); higher/lower without clef; then higher/lower with alternating clefs.
+   Alternate asks and balance sides. Tap either staff half, not only the notehead. With
+   clef, tapping plays pitch; after two mistakes play the pair low-to-high. Correct feedback
+   is visual confetti/green heads only, with `quiet:true` also stopping ongoing speech.
+   Never name the clef in the higher/lower prompt. Center the pair in available staff space.
+   Eight items split 3+2+3; ten split 3+3+4. Direction always has three options. Pool is
+   `'none'`. This skill is absent from daily practice and the frozen pre/post battery.
+8. **Ledger positions:** four dropdowns: clef, above/below, number 1–8, line/space. Judge
+   after all are selected and rejudge any change without locking wrong answers. Ask
+   position, not pitch name; play the pitch calculated from position. Read the full correct
+   sentence after success. Easy/Normal use up to two ledger lines, Hard three. Six items
+   with no duplicate clef+position. Untaught pitch locations can appear. Placement by tapping
+   a requested ledger location is future work.
+9. **Confusable notes:** two whole notes on one clef, tap the named target. Registered
+   `CONTRAST_PARTNERS` include adjacent, third, ledger-count, and mirror relationships;
+   `CONTRAST_POS` supplies alternate spellings so both fit one staff. B3–C4 and B3–A3
+   use bass, others treble. Ask each direction and randomize sides. Save pair and first
+   wrong note for reports. The new-note finale differs: target is always the new note,
+   each learned comparison note once, up to six, without requiring it to be checked.
+
+## Note queue
+
+| Note | Keyboard landmark | Staff position | Hand/finger | Comparison notes |
+|---|---|---|---|---|
+| B3 | Right of three black keys | Bass space above | Left 2 | C4 |
+| C4 | Left of two black keys | Treble first ledger below | Right 1 | B3, D4 |
+| D4 | Between two black keys | Treble space below | Right 2 | C4, E4 |
+| E4 | Right of two black keys | Treble first line | Right 3 | D4, F4 |
+| A3 | Between black keys 2–3 of a three-key group | Bass fifth line | Left 3 | B3, C4 |
+| A4 | Between black keys 2–3 | Treble second space | Right 5 after hand shift | G4, B4 |
+| F4 | Left of three black keys | Treble first space | Right 4 | E4, G4 |
+| G4 | Between black keys 1–2 | Treble second line | Right 5 | F4, A4 |
+
+Listed comparison relationships do not authorize adding unlearned/unchecked targets.
+
+## New-note first lesson
+
+`SPOT_STEPS` defines fourteen items: three key, two staff/key, two clef, two duration,
+two hand/finger, and three mixed review items.
+
+| Step | Task | Exposure/flag |
+|---|---|---|
+| 0 | Local keyboard black-key group and landmark | partial key exposure |
+| 1 | Full keyboard, any octave matching letter | key exposure |
+| 2 | Find another octave; preserve prior checked key | key exposure |
+| 3 | Staff + capital letter → exact keyboard pitch | key exposure |
+| 4 | Keyboard → staff, new note and learned neighbors | pos exposure |
+| 5 | New-note clef | pos exposure |
+| 6 | Learned note in opposite clef | pos exposure |
+| 7–8 | Quarter/half duration and hold | key + pos |
+| 9–10 | Hand/finger and quarter/half hold | fin exposure |
+| 11–13 | Mixed staff/key, new note and neighbors | integration |
+
+After steps 0–7, open key/pos; after fourteen completed items, open fin and select the note.
+`recordAnswer` advances the saved step each time; completion is saved before the result
+screen. Flags reflect completed exposure, without a first-try accuracy gate.
+
+In step 2, tapping the already-found key prompts another key without counting an error.
+Only a resumed step without a previous found key names the exact octave. Step 3 keeps
+the letter as a scaffold but asks the learner to follow the score; step 4 removes it.
+The local keyboard shows one black-key group at normal key proportions: 3/15 or 4/15
+of full-keyboard width. A3 uses F3–B3, A4 F4–B4. Do not stretch keys to fill the screen.
+Speech puts letter before landmark, joins short clauses with commas, and strips isolated
+punctuation to avoid speaking a full-stop character. Display text is unchanged.
+
+The incomplete new note is not inserted into checked-note skills or daily practice.
+`spotlightPool` explicitly includes it and neighbors for mixed lesson steps. The optional
+finale compares it once with each learned comparison note, at most six, without repeating
+one pair to fill a quota. Any unlearned chip can start its lesson out of queue order.
+
+## Daily practice
+
+| Block | Count | Source |
+|---|---|---|
+| Review | 2 | Least recently practiced checked notes, staff/key |
+| Find key | 2 | Checked letters |
+| Duration | 2 | Checked notes with positions |
+| Hand/finger/hold | 1 | Checked notes with fingering |
+| Staff/key | 3 | Eligible checked notes with error weighting |
+
+Total ten. Without eligible fingering replace that item with staff/key. With one checked
+note there is one review item plus an extra staff/key item. Keep review first and plan
+note counts across the whole session before assigning/mixing question types. `staleNotes`
+uses `S.lastSeen`; a larger note set does not lengthen the session. Never insert a current
+unlearned note automatically.
+
+## Reports and home interaction
+
+Teacher-only report entries: roster report button, teacher panel inside a learner profile,
+and pre/post results. Ordinary parent/learner panels expose only switch/lock, practice,
+selection, and settings; teacher mode exposes reports, tests, exports, backup, and clearing
+where permitted. Bound-cloud logs cannot be cleared or overwritten by profile import.
+
+Report range is 7/14/30 days or all, default seven; tests/adaptation remain all-time.
+Time is summed question response time including retries/holds, excluding gaps. Accuracy
+is first-try success/completed questions; errors sum retries. Trend compares chronological
+halves with at least three questions each. These are descriptive, not significance tests.
+
+Sections: summary, date×skill matrix, per-skill/per-note tables, skill-7 pairs, confusable
+pairs, practice modes, pre/post and adaptation. Learning notes appear and can resume at
+saved steps. Skill-7 clef pairs resolve to pitches; no-clef pairs remain positions. Skill-9
+reports direction-specific first wrong choices. Print outputs only the current report.
+The local roster summarizes this device; authorized cloud reports are separate. Stable
+workspace/student/event UUIDs are required for cross-device joins, not display names.
+
+Home order: My notes → daily button → nine cards. Wide screens use three columns,
+tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
+daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
+footer requires adult initiation. Current learner opens picker or teacher roster by role.
+Question and answer stay together below the prompt; unused space remains below them.
+Short landscape under 520px uses question-left/answer-right with width-scaled notation.
+
+## Regression checklist
+
+Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functions.
+
+1. Nine home cards/chips/daily/settings render without console errors.
+2. Find-key uses checked letters, correct session count, advancement, and result/stars.
+3. Staff/key supports both directions, exact octave, question-before-answer layout, and
+   at least two staff options with one target checked.
+4. Clef mixes checked D/E without adding B; checked C allows C4/C4B; feasible adjacent
+   names differ, while one-target repetition is allowed. Reveal clef after success.
+5. Duration values, key finding, hold window, and results work.
+6. Hand→finger→hold advances correctly under session-token cleanup.
+7. Line/space tapping, fourth-space boundary, and corrective hints work with/without clef.
+8. All fourteen lesson steps advance/save; key/pos open after eight, fin after fourteen;
+   resume, second-octave feedback, letter scaffold removal, opposite-clef step, and finale work.
+9. Daily is exactly ten, honors selection, and does not import the current unlearned note.
+10. Teacher single-note review uses target/neighbors, six items; next-note resets spotlight.
+11. Legacy migrations preserve flags/stars/history/selection and run only once.
+12. Settings, auto/three fixed tiers, sound/speech/test, and star-only reset work.
+13. Teacher creation, learner PIN errors, switching/locking, refresh picker, profile isolation,
+    and teacher-only reports/tests/exports work without treating PIN as encryption.
+14. Reports render all sections/ranges, summed time, learning-note continuation, and print.
+15. CSV headers/counts/combined roster, profile JSON, full-roster restore, and write-failure
+    paths match documented semantics; bound-profile overwrite is refused.
+16. iPad/phone portrait/landscape fit; short landscape is two-column; reports scroll.
+17. Skill 7 covers direction once each, higher/lower alternating asks and sides, both clefs,
+    wide tap regions, audio, silent success, hints, and skill-7 stars without E4 migration.
+18. New-note order is E4→A3→A4→F4→G4; chips can start each directly. A3 is left 3/bass
+    fifth line/F3–B3; A4 right 5/F4–B4. Completed lessons join eligible named-note skills.
+19. Use the release pipeline for SW versions, file hashes, actual load receipts, and offline
+    upgrade. Never manually increment the cache version or erase learner storage.
+20. Skill 8 covers both clefs/above/below, fixed 1–8 choices, editable answers, six unique
+    positions, one/two/three ledgers by tier, full-sentence speech, and no pitch-name question.
+21. Skill 9 covers registered selected pairs, both directions/random sides, clef spellings,
+    feedback/hints/log fields, and one-per-learned-comparison new-note finale.
+22. A chips disambiguate octaves; A speech is /eɪ/, not /aɪ/.
+
+## Code map
+
+| Area | Symbols |
 |---|---|
-| `midi` | 发声和键盘定位 |
-| `clef` / `y` | 谱号与谱面位置 |
-| `hand` / `finger` | 手与指法；`finger:0` 表示还没定 |
-| `landmark` | 键盘地标，新音第一步说出来 |
-| `keyHint` / `posHint` | 错够次数后的提示 |
-
-队列顺序在 `NOTE_ORDER`，现在是 B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4。E 之后先学 A，
-是因为游戏配合教材的次序，学生在家的练习要跟上教材进度。A4 在右手 C 手位之外，暂时按
-「整只手往右移，5 指落在 A」处理；专门的移手课以后可以再加。
-
-A3 是左手在 middle C 手位里的第三个音（1=C4、2=B3、3=A3），谱面是低音谱号的第五线。
-它插在 E4 之后、A4 之前，和 E4 凑成一对：右手 3 指对左手 3 指。音集里因此有两个 A，
-首页 chip 会自动补一个小八度（A₃、A₄），不会只写两个 A。
-
-C4B 不在队列里，只给谱号关用。
-
-### 学习进度（`S.progress`）
-
-每个音三个标记，存在本机 `localStorage`：
-
-| 标记 | 含义 | 打开哪些技能 |
-|---|---|---|
-| `key` | 任意八度能找到这个键 | 找键盘 |
-| `pos` | 谱面位置、谱号、具体八度对得上 | 谱与键、谱号、时值 |
-| `fin` | 知道用哪只手、哪根手指 | 手指 |
-
-三个标记由新音导入逐段打开，不是一次性全给。基础三个音 B3、C4、D4 永远是已学状态。
-
-### 旧存档迁移
-
-- 旧版单账户存档 `bcd-piano-game-v2` 在第一次建账户时整份迁入，之后只读不写。
-- 旧版星星 1–6 直接沿用，作为前六张技能卡的星星。
-- 旧版第 7 关就是 E 的完整一课。旧存档里的 `stars[7]` 不能留给新的第 7 关
-  「两个音」：升级时先把 E4 的三个标记补满，再删掉这颗星星；`S.level7` 记录
-  这次迁移已经做过，`legacyE4` 只在升级当次使用。导入旧备份走同一条升级路径。
-- 旧版 `layout !== 2` 的星星编号迁移保留，防止更早的存档错位。
-- `S.spot` 三态：`undefined` 还没建过，对象表示导入进行到第几步，`null` 表示当前新音学完。
-- 旧存档没有 `selected`，第一次读入时按已学音全选；用户主动清空的情况不会发生（至少留一个）。
-
-### 账户、老师权限与逐题记录
-
-名册存在 `nt.accounts.v1`，每个账户的状态存在 `nt.state.<id>.v1`。账户之间完全分开：
-勾选、进度、星星、设置、当前新音、前测题组、逐题记录都跟着账户走。
-
-- 4 位密码只在这台设备上校验，用 FNV-1a 加盐哈希保存。它不是加密，只挡住误入别人
-  账户；能打开开发者工具的人仍然能读到记录。
-- 只有一个账户且没锁定时，启动直接进入首页；多个账户或上次按了「锁定」时，先选人再
-  输密码。
-- **老师是超级用户**：选人页的「老师入口」第一次设置老师密码，之后每次进入都要输。
-  老师能新建学生、查看这台设备上所有学生的最近 7 天摘要和详细报告、导出全部 CSV。
-- **家长和学生同权限**：进入自己的账户后只看到练习界面、勾选音和设置；账户面板里只有
-  「切换」和「锁定」，没有报告、测验、导出和清空记录。这些入口由 `body.teacher-mode`
-  控制，老师登录后才出现。
-- 老师模式不写进存档。刷新页面后回到普通登录；老师要重新从「老师入口」进。
-- 老师查看报告不算学生练习：`enterAccount(id, {teacher:true})` 不更新学生的
-  `lastActiveAt`，只读存档和记录。
-- 旧版单账户存档 `bcd-piano-game-v2` 在第一次建账户时整份迁入，之后只读不写。
-
-逐题记录只在**答对**时写一条，字段包括：序号、时间（UTC 与本地日期）、会话号、模式、
-阶段（前测/后测）、技能、题型、音、音名、时值、谱号、线/间、难度、是否一次答对、
-错误次数、反应时、题组号；第 7 关另有关系（上行/下行/重复）、两个音的谱面 y 坐标、
-哪一个是更高的音、这一问问的是更高还是更低（`ask`），以及这一问的正确答案
-（`target`）。
-
-一次答对率 = 一次答对的题 / 总题数；错误率 = 1 − 一次答对率。记录上限 8000 条，
-超过时删最旧的；老师面板显示当前条数。前测后测的记录不参与日常正确率与自动难度。
-
-### 勾选音集（`S.selected`）
-
-首页「我的音」的每个已学 chip 是勾选框：
-
-- 勾上：进入今日练习、技能 1–5，以及第 9 关可组成的易混音对。
-- 取消：所有用到「已学音」的关卡都不再出这个音。
-- 至少留一个音；取消最后一个会被拒绝，并提示「至少留一个音」。
-- 刚学完的新音自动勾上，家长不用再点一次。
-- 当前新音（未学完）不是勾选框，点它进入 14 题的新音第一课。
-- 其他还没学的音也点得动：点一下把它设为当前新音，从第一步开始导入。
-
-用音名的关卡取「勾选 ∩ 已学 ∩ 该关需要的标记」。第 3 关严格遵守勾选，
-C4B 只是中央 C 的另一种写法；不为了凑谱号加入未勾选音。第 6–8 关考抽象位置，
-不受选音影响；第 9 关只取勾选音中已登记的易混对子。
-
-### 自动难度
-
-默认「自动」。每节课结束看最近 20 道非测验题的一次答对率：≥85% 升一档，≤60% 降一档，
-中间不动。至少 12 题才判断，两次改档至少隔 8 题，累计 30 题才允许进挑战档。一节课
-里的难度在开始时固定，不会中途换档。每次改档记下时间、依据和前后档位，报告显示最近
-四条。
-
-### 出题权重
-
-同一个音池里，一次答对率低的音权重高，最多 3 倍；记录少于 4 题的音按 1 倍算。今日
-练习的复习块仍按「最久没练」先抽。这样错误率高的音会出现得多一点，但每个音最多出现 ceil(n / 池子大小) 次，
-再由 `spaceOut` 把相邻两题隔开，不会连续刷同一个音。
-
-## 九种技能
-
-| # | id | 练什么 | 需要标记 | 音池 | 题量 |
-|---|---|---|---|---|---|
-| 1 | findKey | 给音名找键，任意八度 | key | 勾选 ∩ 已学音 | 8 / 8 / 10 |
-| 2 | staffKey | 谱 ↔ 键双向，必须对上八度 | key + pos | 勾选 ∩ 已学音 | 8 / 8 / 10 |
-| 3 | clef | 这个音该用高音还是低音谱号 | pos | 勾选音；C4 可用 C4B 同音写法 | 8 / 8 / 10 |
-| 4 | beats | 读时值、找键、按住 | key + pos | 勾选 ∩ 已学音 | 8 / 8 / 10 |
-| 5 | play | 判手 → 判指 → 按住 | key + pos + fin | 勾选 ∩ 已学音 | 6 / 6 / 8 |
-| 6 | spot | 点出第几条线、第几间 | 不用音 | 无 | 8 / 8 / 10 |
-| 7 | twoNotes | 两个全音符的方向与高低 | 不用音 | 无 | 8 / 8 / 10 |
-| 8 | ledger | 上加/下加，第几线、第几间 | 不用音 | 固定加线位置 | 6 / 6 / 6 |
-| 9 | contrast | 两个音里点出目标音 | 不用音 | 当前已学音的对 | 8 / 8 / 10 |
-
-### 每关的具体行为
-
-**第 1 关 · 找键盘。** 屏幕上方一个大写字母，键盘紧接在下面。题干直接问「A 音在键盘哪里？」，
-点任意同名白键都对，不限八度。字母按 `LETTER_WEIGHT` 加权，C、B 两个锚点出现得多一点；
-相邻两题不重复同一个音。错够次数后所有同名键加橙色虚线框。只出勾选音。
-
-字母的朗读拼写写在 `LETTER_SAY`。A 用 `eigh`，不能用 `ay`：苹果的英文声音把 `ay` 读成
-`eye`（/aɪ/），孩子听到的是「I」。改完要在 Mac 和 iPad 上各听一遍「试听」。
-
-**第 2 关 · 谱与键。** 一半「谱 → 键」，一半「键 → 谱」。谱 → 键必须点中具体音高，
-D4 不能点成 D5；键 → 谱的选项从勾选音里抽三张（轻松档两张），勾选不足两个时用基础音
-补一张干扰项。谱例统一画四分音符，不考时值。键 → 谱的键盘是题干，放在上方；谱例是选项，
-放在下方，和谱 → 键共用「题目在上、回答在下」的同一条阅读顺序。
-
-**第 3 关 · 谱号。** 谱表不画谱号，题干给音名，二选一。音池是勾选里学过谱位的音；
-勾了 C4 会自动带上它的低音写法 C4B。只选 D、E 时就只混合 D、E，不补未勾选音。
-两者正确答案同为高音谱号，但音符内容不同。先按音名均分，再放回具体写法，
-有多个音名且能错开时相邻不重复；只勾一个音时允许必要重复。答对后补进谱号。
-
-**第 4 关 · 时值。** 每三题插一道「哪个是二分音符」的反向题。答对拍数后不亮键、
-不排拍子格，孩子自己在键盘上找音并按住。时长窗口是早 0.3 拍、晚 0.62 拍。
-
-**第 5 关 · 手、指与拍数。** 一题三段：判手、判指、按住。时值只用四分、二分、附点
-二分；全音符没有符杆，判不了手。`balanceHands` 保证池子里有左手音时至少出一道，
-避免孩子学会「看到 B3 就选左手」。
-
-**第 6 关 · 线与间。** 空白五线谱，问第几条线、第几间。前半段不加谱号，后半段加
-高音或低音谱号作干扰。点在谱面上，先判断落在线上还是间里：离某条线不超过 0.18 个
-线距才算线，其余都算间。这样点第四间的中间不会被当成第五线，点线也不会被算成间。
-点错时提示说清「点到了第几间，要找的是第几线」，孩子知道手该往哪边挪。
-
-**第 7 关 · 两个音。** 一关三组，按顺序出，后一组只比前一组多一个条件：
-
-1. **走向。** 两个全音符，不加谱号，三选一「上行、下行、重复音」；三种关系各一题。
-   题干问「这两个音的走向？」，选项是一条带箭头的直线：向右上是上行，向右下是下行，
-   水平线是重复音。不识字的孩子也能先看走向，不靠比对两个音头。
-2. **谁更高 / 谁更低。** 不加谱号，直接问「选出更高的音」或「选出更低的音」，
-   点那两个音里的一个。两种问法交替出现，避免孩子只记住「点上面那个」。
-   上下行对半打乱，正确的一侧不会整组都落在同一边，所以也不能靠「总点左边」过关。
-   点按区铺满谱表，中线左边算第 1 个音，右边算第 2 个音，孩子不用瞄准音头。
-3. **加谱号。** 每题只出现高音或低音谱号，但题干**不点名谱号**，仍然只说
-   「选出更高的音」或「选出更低的音」。谱号只画在谱表上，点哪个音就发哪个音，
-   谱号与音高的对应当场听得到；答错两次后的提示把两个音从低到高弹一遍。
-   **答对只爆礼花、音头变绿，不弹「对！」的提示，也不念任何语音**；`quiet: true`
-   同时会停掉还在念的题干。
-
-两个音固定一左一右，不出加线，只在五条线以内。不加谱号时两个音在整条谱表居中；
-加谱号时让出左边的谱号，在剩余空白里居中。两种谱号交替，避免孩子靠上一题猜。
-题量 8 是「走向 3 + 高低 2 + 加谱号 3」，挑战 10 是「3 + 3 + 4」。
-走向题固定三选一，不随难度减选项；难度只改题量。
-音池是 `'none'`：这一关练谱面几何，不需要学过任何音就能开始。
-这一关**不进入今日练习，也不进入前测后测**，见「待定」。
-
-**第 8 关 · 加线与加间。** 只认位置，不考音名。一个带谱号的谱表，一个加线上的音；
-题干是「这个音在（高/低）谱号的（上/下）加（数字）（线/间）」，
-四个括号都是下拉：高音/低音、上加/下加、第几、线/间。数字下拉固定一到八，不随正确位置缩短。选满才判，
-改任意一个都重新判，判错不会把选择锁死。谱表外的实际音高由位置算出来，
-但不让孩子回答音名：没学过的音认不出来，问了只能靠猜。
-答对后把整句话读一遍（「这个音在高音谱号的下加一线」）。轻松、标准到两条加线，挑战到
-三条。位置池固定，不依赖音集，所以 A3、E6 这些没学过的位置也能出现。题量固定 6 题。
-**放位置**（题干说「放到高音谱号的上加三线」，孩子在谱面上点）是下一步，还没做。
-
-**第 9 关 · 易混音。** 一条谱表放两个全音符，题干只说「点出 C」，孩子点那个音。
-两个音只差半格或一格，必须看谱号、数加线，不能靠「点上面那个」过关。
-配对按 `CONTRAST_PARTNERS` 固定：相邻、三度、加线计数、大谱表镜像。
-每对正反各问一次，左右随机，所以同一对不会总落在同一侧。
-位置表 `CONTRAST_POS` 允许一个音有两种写法；同一次对比用同一种谱号，
-两个音才画得进同一条谱表。B3–C4、B3–A3 用低音谱号，其余用高音谱号。
-两个入口：首页第 9 张卡（用当前音集，按固定配对正反各问一次）；
-新音第一课结算页的「和邻居比一比」只用这个新音，对比音从所有已学音里取，
-不要求勾选，每个对比音只问一次，最多 6 题。新音始终是答案，所以不会把同一对
-连问六遍。记录里存 pair 和第一次点错的音，报告有一张「易混音：哪些对容易混」的表。
-
-## 音符队列
-
-| 阶段 | 序 | 音 | 键盘地标 | 谱面 | 指法 | 对比音 |
-|---|---|---|---|---|---|---|
-| 1 | 1 | B3 | 三个黑键右边 | 低音上加一间 | 左 2 | C4 |
-| 1 | 2 | C4 | 两个黑键左边 | 高音下加一线 | 右 1 | B3, D4 |
-| 1 | 3 | D4 | 两个黑键中间 | 高音下加一间 | 右 2 | C4, E4 |
-| 2 | 4 | **E4** | 两个黑键右边 | 高音第一线 | 右 3 | D4, F4 |
-| 2 | 5 | **A3** | 三个黑键 2-3 之间 | 低音第五线 | 左 3 | B3, C4 |
-| 3 | 6 | A4 | 三个黑键 2-3 之间 | 高音第二间 | 右 5（整只手右移） | G4, B4 |
-| 4 | 7 | F4 | 三个黑键左边 | 高音第一间 | 右 4 | E4, G4 |
-| 4 | 8 | G4 | 三个黑键 1-2 之间 | 高音第二线 | 右 5 | F4, A4 |
-
-E4 之后先学 A3，再学 A4。A3 是左手在 middle C 手位里的第三个音（1=C4、2=B3、3=A3），
-和 E4 凑成一对（右手 3 指对左手 3 指）。A4 是教材的下一个音，出了右手 C 手位，暂时用
-「整只手往右移、5 指落在 A」的方式处理；这不算完整的移手课，但音本身、谱面位置、
-键盘地标和对比音都齐了。F4、G4 排在 A4 之后，仍然落在右手 C 手位里。
-
-## 新音第一课
-
-一次 14 题，走完就把这个音的三个标记打开。步骤定义在 `SPOT_STEPS`。
-这一课把第 1–5 关各取一点，配额是找键盘 3、谱与键 2、谱号 2、时值 2、手和指 2，
-最后 3 题混合复习。学完的音直接进入所有需要它的技能。
-
-| 步 | 练什么 | 翻开的标记 |
-|---|---|---|
-| 0 | 局部键盘：露出新音所在的整个黑键组，说出地标 | key（半） |
-| 1 | 完整键盘：任意八度，只认字母 | key |
-| 2 | 完整键盘：第 1 步已找一个八度时，打勾并再找一个；续学时才点名八度 | key |
-| 3 | 谱面 + 大写音名 → 键盘 | key |
-| 4 | 键盘 → 谱面，选项只在新音和已学邻居之间 | pos |
-| 5 | 谱号：新音用高音还是低音谱号 | pos |
-| 6 | 谱号：一个已学音，谱号与新音相反 | pos |
-| 7–8 | 读时值、找键、按住（四分、二分） | key + pos |
-| 9–10 | 判手 → 判指 → 按住（四分、二分） | fin |
-| 11–13 | 混合：新音和邻居，谱面 ↔ 键盘 | — |
-
-第 1 步只认字母，点哪个八度都对。第 2 步如果第 1 步已经点过一个八度，
-就把那个键打勾标出，改问「再找一个 A」，点打勾的键只提示换一个、不算错；
-只有从第 2 步续学、还没有已找过的键时，才问带八度的「找到 A3」。
-第 3 步保留大写音名：谱面决定「是这一个八度」，音名是给识字前的脚手架；
-题干说「按谱面上的这个音」，避免只看字母；第 4 步撤掉音名。
-
-第 0 步的局部键盘只画三或四个白键，但不把键拉满整块屏。键盘宽度按 15 个白键的比例
-取（3 键 = 20%，4 键 ≈ 27%），上限也是完整键盘的同一比例，所以键宽与完整键盘一致，
-黑白键的比例正常；范围仍只覆盖一个黑键组，不会为了填满而多露三个黑键。A3 在中央 C
-以下，按 F3–B3 取，不能再从 C4 起。
-
-题干先念音名，再念位置，两个短句用逗号连接。朗读前会把句号换成逗号并削掉分段两端的
-标点，避免系统声音把孤立的「。」念成「句号」；屏幕上的文字不受影响。
-
-前 8 题（第 0–7 步）走完先打开 key 与 pos；走满 14 步再补 fin，音才自动勾上，
-进入所有需要它的技能。**标记按练习次数打开，不按对错卡**：四岁的孩子需要的是接触次数，
-掌握程度由家长看结算页、报告和星星判断。
-
-新音在勾上之前不进技能 1–6，也不进今日练习：这 14 题就是习得阶段。这样「今天只练
-B C D」不会被还没学完的新音打断。第 11–13 步用 `spotlightPool` 显式把新音和邻居放进来，
-所以课内仍然有混合练习。
-
-结算页在音学完后多一个「和邻居比一比」：对比音从所有已学音里取，不要求勾选，
-每个对比音只问一次，最多 6 题。新音始终是答案，所以每一题都是和不同的音比；
-已学音少于 6 个时，这一节就相应变短，不重复同一对。
-
-## 每日练习
-
-| 块 | 题数 | 来源 | 目的 |
-|---|---|---|---|
-| 复习 | 2 | 最久没练的勾选音，谱 ↔ 键 | 保持 |
-| 找键盘 | 2 | 勾选音的字母 | 键盘熟练 |
-| 时值 | 2 | 勾选音 + 四种时值 | 读谱与按住 |
-| 手、指、按住 | 1 | 学过指法的勾选音 | 技术 |
-| 谱 ↔ 键 | 3 | 勾选音，按错误率加权 | 辨别 |
-| 合计 | 10 | | |
-
-没有学过指法的勾选音时，手/指那一题换成第 4 道谱 ↔ 键，总数仍是 10。复习块固定在
-最前，其余块打乱。`staleNotes` 按 `S.lastSeen` 轮换；音集长大以后单次练习仍然只覆盖
-几个音，不会越练越长。
-
-**今日练习不自动塞入当前新音。** 要学新音，点「我的音」里那个音的 chip 进 14 题的新音第一课；
-点哪个音就学哪个，不必按顺序等「下一个音」。
-这样「只勾 B C D」就是真的只练 B C D。新音学完后自动勾上。
-
-## 报告与老师权限
-
-报告只给老师看。入口有三个：选人页「老师入口」→ 学生总览的「报告」；老师进入学生
-账户后从「老师」面板打开；前测/后测结算页的「看报告」。
-
-- **时间范围**：最近 7 天 / 14 天 / 30 天 / 全部，默认 7 天。范围只影响练习统计；
-  前测后测和自动难度仍按全部时间显示。
-- **口径**：答题用时 = 每题从出现到答对的时间之和，含重试和按住，不含题间停顿；
-  一次答对率 = 第一次就答对的题 / 总题数；错误次数 = 同一题内重试次数之和；
-  趋势 = 时间窗内按时间对半，比较前后两半的错误率，每半至少 3 题。
-- **八块内容**：顶部摘要（练习天数、用时、题数、正确率、最需要练、趋势、音集）、
-  每天 × 每关矩阵、每关表、每个音表、第 7 关比较对、易混音对表、练习形式、
-  前测后测与自动难度。
-- **每个音**：已学音和「学习中」的音都列出。学习中 = 至少打开一个标记，或它是当前
-  新音；可以点「继续学」从存档的步数接着走，不会打回第一步。
-- **比较对**：第 7 关有谱号的题能还原成具体音对（如 C4–E4）；无谱号的题只有谱面位置
-  （如 第 1 间–第 2 线），报告里分开列。
-- **易混音对**：按字母对合并（如 A3 / C4），列出题数、一次答对、错误次数和第一次点错的
-  是哪一个音。同一对正反各问一次，所以能看出是 A→B 多还是 B→A 多。
-- **打印**：报告底部「打印 / 存为 PDF」，打印时只输出打开的那张报告，隐藏按钮和
-  范围切换。
-- **老师总览**：每个学生一行，显示最近 7 天的练习天数、用时、题数和一次答对率；
-  「报告」直接打开该学生报告，「进入」进入学生首页。
-- **数据边界**：报告只读本机 `localStorage`；同一台设备上的多个学生都能看，跨设备
-  要导出 CSV 再汇总。老师密码忘记后没有找回。
-
-## 首页
-
-```
-我的音   [B✓] [C✓] [D✓] [E*] [A₃] [A₄] [F] [G]
-              [ 今日练习 ]
-[找键盘] [谱与键] [谱号] [时值] [手指] [线与间]
-[两个音] [加线加间] [易混音]
-```
-
-- 已学音的 chip 是勾选框：点一下加入/移出音池；至少留一个。
-- 当前新音的 chip 脉动，点进去是新音第一课。
-- 还没学的音也点得动：点一下就把这个音设为当前新音，从第 0 步开始。
-  这样 A、F、G 不必等「下一个音」按钮出现才学得到；家长点谁就学谁。
-- 当前新音学完、后面还有音时，页脚出现「下一个音：A4」。由老师或家长按，游戏不自动加音。
-- 九张技能卡：宽屏三列，iPad 竖屏两列，手机一列；奇数张时最后一张横跨并居中。
-- 技能卡的星星按 id 存；每日练习和新音第一课不覆盖技能星星。
-- 页脚有「家长」：普通账户只切换练习者、锁定设备；老师登录后同一位置显示「老师」，
-  面板里才出现报告、前测后测、导出、备份和清空记录。
-- 右上角是当前练习者；普通模式点它回到选人页，老师模式点它回到学生总览。
-
-## 回归检查清单
-
-这一版改动了配置、出题和首页，下面是每次改完必须走一遍的检查。浏览器控制台里可以用
-`window.__dbg` 看 `G`、`S`、`SKILLS`、`activeNotes`、`currentSpotlight`。
-
-1. 首页九张卡、chips、今日练习、设置都能显示，控制台无报错。
-2. 第 1 关：8/8 或 10/10，一次答对能进下一题，结算正常；只出勾选的字母。
-3. 第 2 关：谱 → 键和键 → 谱两个方向都能答对，谱例不串音；键 → 谱时键盘作为题干在上、谱例选项在下；只勾一个音时仍有至少两张谱例。
-4. 第 3 关：勾 D、E 时八题里 D 和 E 都要出现，不能整节只剩 D；勾 C4 时 C4 和 C4B 都能出；勾选音全在同一谱号时补一个相反谱号的对比音，高音、低音两种答案都要出现；答对后谱号补上；相邻两题的音名不重复，C4 和 C4B 不连着出。
-5. 第 4 关：拍数选对后能按住，时长窗口正常，结算正常。
-6. 第 5 关：手 → 指 → 按住三段都能推进；改了 `G.session` 的顺序以后不再卡第一段。
-7. 第 6 关：线、间都能点中；点第四间的中间不会再被判成第五线；点错时提示说清点到了第几间或第几线；谱号只作干扰。
-8. 新音第一课：14 题，配额 3 找键盘 + 2 谱与键 + 2 谱号 + 2 时值 + 2 手和指 + 3 混合；前 8 题（第 0–7 步）走完 key/pos 打开，走满 14 步 fin 打开，`S.spot` 变 null；学完自动勾上。每题答对后保存步数，中途按返回，下次从下一题接着走。第 0 步的局部键盘只露一个黑键组，键宽与完整键盘一致；第 1 步任意八度；第 2 步把第 1 步点过的同字母键打勾，改问「再找一个」，点打勾的键只提示、不算错，续学时才点名八度；第 3 步同时有谱面和大写音名，题干说「按谱面上的这个音」，第 4 步撤掉音名；第 5–6 步是两个谱号题（新音 + 一个谱号相反的已学音）；7–8 时值、9–10 手/指/按住、11–13 混合都能推进。
-9. 今日练习：10 题，含复习、找键、时值、手指、谱键；只出勾选音，不自动带新音。
-10. 单音复习：老师报告里点「练」出 6 题，只含这个音和邻居。
-11. 下一个音：当前音学完后出现，点了之后新音 chip 脉动、`S.spot` 重置。
-12. 旧存档：第一次建账户把旧进度迁进来；旧 `stars[7]` 把 E4 补满并从星星里删掉；`level7` 只迁移一次；`layout` 迁移不报错。
-13. 设置：难度四档（含自动）、声音、语音、试听、清空星星都正常；清空星星不清进度。
-14. 账户：老师入口第一次设老师密码；老师建学生后回到总览；学生用自己密码进入；密码错误、切换、锁定、刷新后多人显示选人页；两个账户数据互不影响。
-15. 权限：普通账户的家长面板只有「切换」和「锁定」，看不到报告、测验、导出、清空；老师进入同一学生后才出现这些行。
-16. 报告：时间范围 7/14/30/全部能切；摘要、每日 × 每关矩阵、每关、每个音、比较对、易混音对、练习形式、前测后测都显示；用时是 sumMs，不是平均；学习中音有「继续学」；打印只输出报告。
-17. 导出：单账户 CSV 有表头、行数等于记录数；老师「导出全部 CSV」包含所有学生；JSON 能读出 `state`；导入后当前账户被替换。
-18. 布局：iPad 竖屏、横屏、iPhone 竖屏都不溢出；手机横放（高度 520 以下）改成题目在左、回答在右的两栏，谱面和键盘都不被裁掉；题目在上、回答在下，两块紧接题干自上而下排，多余空间留在最下面，键盘不单独贴屏幕底边；报告表格在手机宽度下可横向滚动。
-19. 第 7 关：走向 3 题（上行/下行/重复各一），选项是带箭头的直线；高低 2 题、加谱号 3 题，题干只说「选出更高的音」或「选出更低的音」，**不出现「高音谱号」「低音谱号」**；点谱表左/右半边都能判；加谱号题两种谱号都出现，点音有声音；答对只爆礼花、没有提示语和语音；错两次出现橙色虚线圈和「上面的音更高」或「下面的音更低」；结算后 `S.stars[7]` 增加，且不会把 E4 补成已学。
-20. 新音：E 之后的下一个音是 A3，再下一个是 A4；A3、A4、F、G 的 chip 都能直接点开；A3 第一次的局部键盘是 F3–B3，指法是左 3；A4 的局部键盘是 F4–B4，指法是右 5；走完 14 题后自动勾上并进入技能 1–5。找键题第 1 步选过的八度会在第 2 步打勾；第 2 步改问「再找一个 A」，点打勾的键只提示换一个，不算错。只有从第 2 步续学、还没有已找过的键时，才问带八度的「找到 A3」。
-21. 离线：改完 `index.html` 把 `sw.js` 的缓存名 +1，iPad 上刷新后是新版。
-22. 第 8 关：高音/低音、上加/下加四种组合都能出；四个下拉（谱号、上下加、数字、线/间）选满才判，改任意一个都重新判，判错不会锁死；数字固定一到八，不会因为正确位置是第三线就只给三个数；一关固定 6 题；答对后整句话出现并读一遍；一条加线、两条加线、挑战三条都能画出来；A3、E6 这类没学过的位置也能出，但不问音名。
-23. 第 9 关：一条谱表两个音，题干「点出 X」；左右随机，正反各问一次；B3–C4、B3–A3 用低音谱号，其余高音谱号；点对音头变绿，点错音头变红；错两次把目标音圈出来并弹一遍；记录里有 `pair` 和第一次点错的音。新音结算页的「和邻居比一比」从所有已学音里取对比音（不要求勾选），每个对比音只问一次，最多 6 题，新音始终是答案，不再把同一对连问六遍。
-24. A3：chip 显示 A₃；低音第五线；左手 3 指；导入的谱号题答案是低音；学完出现在技能 1–6 和今日练习。
-25. A 音朗读：第 1 关题干是「A 音在键盘哪里？」，试听里 A 读 /eɪ/，不是「I」。
-
-## 代码位置
-
-| 内容 | 位置 |
-|---|---|
-| 音符注册表 | `NOTES`、`NOTE_ORDER`、`BASE_NOTES` |
-| 技能注册表 | `SKILLS` |
-| 新音步骤 | `SPOT_STEPS`、`spotlightQuestions` |
-| 账户与存档 | `ACCOUNTS`、`CURRENT`、`S`、`TEACHER_MODE`、`newState`、`enterAccount`、`createAccount` |
-| 老师角色 | `syncRoleUI`、`openTeacherEntry`、`saveTeacherPin`、`showTeacher`、`teacherRoster`、`renderTeacherList`、`openTeacherLearner`、`exitTeacher` |
-| 进度与勾选音集 | `blankProgress`、`ensureProgress`、`ensureSelection`、`selectedNotes`、`activeNotes`、`noteComplete` |
-| 出题 | `makeFindKey` / `makeStaffKey` / `makeClef` / `makeBeats` / `makePlay` / `makeSpot` / `makeTwoNotes` / `makeLedger` / `makeContrast`、`buildQuestions`、`weightedRepeatTo`、`spaceOut` |
-| 第 3 关音池 | `clefPool`、`makeClef` |
-| 谱面 | `staffPairSVG`、`staffPairBlock`、`ledgerBlock`、`pairIcon`、`staffPitch`、`qPairDirection`、`qWhichHigher`、`alternateAsks`、`higherSpecs` |
-| 第 8 关 | `ledgerSpots`、`qLedgerName`、`staffSpotLabel`、`positionLabel` |
-| 第 9 关 | `CONTRAST_POS`、`CONTRAST_PARTNERS`、`contrastPairFor`、`contrastPool`、`qContrast`、`makeContrast`、`makeContrastFor` |
-| 每日练习 | `buildDailySession` |
-| 流程 | `startSession`、`startLevel`、`startDaily`、`startSpotlight`、`startNoteImport`、`startNoteContinue`、`startNoteReview`、`startContrastNote`、`advanceSpotlight` |
-| 记录 | `recordAnswer`、`practiceEvents`、`noteStats`、`evaluateAuto` |
-| 旧存档升级 | `upgradeState`、`loadAccountState`、`migrateLegacyState` |
-| 测验 | `makeBattery`、`batteryQuestions`、`startTest` |
-| 报告 | `REPORT_DAYS`、`practiceList`、`rangeStart`、`halfTrend`、`pairGroups`、`dailyMatrix`、`skillTable`、`noteTable`、`comparisonTable`、`contrastTable`、`modeTable`、`renderReport` |
-| 导出 | `CSV_HEAD`、`csvEventRows`、`exportCsv`、`exportAllCsv`、`exportBackup`、`importBackup` |
-| 首页 | `renderChips`、`noteName`、`noteNameHTML`、`renderDaily`、`renderNextNote`、`renderHome`、`renderWho` |
-
-## 待定
-
-1. A4 的移手课还没单独立项：现在按「整只手右移、5 指落 A」处理，以后要决定
-   是 5 指移手还是 1 指穿指，以及按哪本教材补一节课。
-2. 左手音是否增加。现在有 B3 和 A3，第 5 关的判手仍然偏右手。
-3. 第 3 关在 F、G 加入后是否还单独存在，还是并进第 2 关。
-4. 第 6 关什么时候从「第 2 线在哪」升级成「第 2 线是 G」。
-5. 新音第一课是否要按一次答对率决定是否进入下一步，还是保持现在的「练完就打开」。
-6. 账户是否要支持删除、改名、重置学生密码、修改老师密码；现在老师只能建学生，
-   学生只能切换，老师密码忘了没有找回。
-7. 记录上限 8000 条是否够研究用；如果要长期追踪，需要导出提醒或改用 IndexedDB。
-8. 自动难度的 85% / 60% 阈值是否合适；拿到真实数据后再定。阈值在 `evaluateAuto` 里。
-9. 第 7 关、第 9 关要不要进今日练习：现在只在技能卡里，10 题里加一题会挤掉已有的复习或
-   谱键块；等孩子能稳定判断高低、能分辨易混对后再定。
-10. 前测后测要不要加第 7 关：固定 12 题会变成 13 题，或者替换一道 spot；这关的题型
-    与其他关不同，混进同一套题组前要先确认测量目的。
-11. 第 7 关第三组加谱号后，题干仍然只说「选出更高的音 / 更低的音」，谱号只画不点名。
-    下一步可以做两行谱表（一行高音、一行低音）比较，或加入加线与跨谱表的题。
-12. 第 8 关的「放位置」还没做：现在只有认位置和音名。下一步是题干说「放到高音谱号的上加三线」，
-    孩子在谱面上点，谱表的加线区要能接受点击并判 y。
-13. 第 9 关现在只做单谱表。大谱表的镜像对（E4 对 A3、D4 对 B3）还没做；做了以后
-    「两条内线」「两个内间」的对称关系才看得见。
-14. A3 的高音谱号写法（下加二线）还没教。对比练习里 C4–A3 用的是高音谱表的 A3，
-    孩子第一次见会靠相对位置推；以后可以在导入里补一步「同一个音，两种写法」。
-15. 老师总览目前只读同一台设备上的账户；跨设备汇总还没有做。现在的办法是老师导出
-    全部 CSV，或每个学生导出 JSON 后交给老师。要不要做云端同步，是另一个项目。
+| Notes/skills | NOTES, NOTE_ORDER, BASE_NOTES, SKILLS |
+| First lesson | SPOT_STEPS, spotlightQuestions, advanceSpotlight |
+| Accounts | ACCOUNTS, CURRENT, S, TEACHER_MODE, newState, enterAccount, createAccount |
+| Teacher UI | syncRoleUI, openTeacherEntry, saveTeacherPin, showTeacher, teacherRoster, renderTeacherList, openTeacherLearner, exitTeacher |
+| Progress/selection | blankProgress, ensureProgress, ensureSelection, selectedNotes, activeNotes, noteComplete |
+| Generators | makeFindKey, makeStaffKey, makeClef, makeBeats, makePlay, makeSpot, makeTwoNotes, makeLedger, makeContrast, buildQuestions, weightedRepeatTo, spaceOut |
+| Clef | clefPool, makeClef |
+| Pairs/geometry | staffPairSVG, staffPairBlock, ledgerBlock, pairIcon, staffPitch, qPairDirection, qWhichHigher, alternateAsks, higherSpecs |
+| Ledger | ledgerSpots, qLedgerName, staffSpotLabel, positionLabel |
+| Contrast | CONTRAST_POS, CONTRAST_PARTNERS, contrastPairFor, contrastPool, qContrast, makeContrastFor |
+| Daily/entry | buildDailySession, startSession, startLevel, startDaily, startSpotlight, startNoteImport, startNoteContinue, startNoteReview, startContrastNote |
+| Logs/adaptation | recordAnswer, practiceEvents, noteStats, evaluateAuto |
+| Upgrade/tests | upgradeState, loadAccountState, migrateLegacyState, makeBattery, batteryQuestions, startTest |
+| Reports | REPORT_DAYS, practiceList, rangeStart, halfTrend, pairGroups, dailyMatrix, skillTable, noteTable, comparisonTable, contrastTable, modeTable, renderReport |
+| Export | CSV_HEAD, csvEventRows, exportCsv, exportAllCsv, exportBackup, importBackup |
+| Home | renderChips, noteName, noteNameHTML, renderDaily, renderNextNote, renderHome, renderWho |
+
+## Open instructional decisions
+
+- Dedicated A4 shift lesson: whole-hand shift versus thumb passage and method-book sequence.
+- More left-hand notes; current B3/A3 still leave skill 5 right-hand heavy.
+- Whether clef identification remains separate as F/G join, and when staff-position naming
+  should progress to pitch naming.
+- Exposure-based lesson advancement versus a justified performance criterion.
+- Validate auto-difficulty 85%/60% thresholds against suitable evidence; do not treat defaults
+  as established optimal teaching thresholds.
+- Whether skills 7/9 belong in daily practice and whether skill 7 belongs in the fixed
+  12-item battery. Clarify measurement purpose before replacing or adding items.
+- Skill 7 cross-staff/ledger comparisons; skill 8 requested-position placement.
+- Skill 9 grand-staff mirror pairs E4/A3 and D4/B3; currently single-staff only.
+- Teach A3's treble second-ledger spelling before relying on it in contrast.
+
+Account management, long-term retention, and cloud operating limits are infrastructure
+items in the progress tracker. The old 8,000 cap and “cloud is another project” notes
+are superseded; optional cloud has been implemented, while long-term/device limits remain.

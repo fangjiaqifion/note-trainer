@@ -1,60 +1,88 @@
-# Note Trainer 开发与交付
+# Note Trainer: Internal Development Guide
 
-继承上级 AGENTS.md。此目录是独立仓库，只在这里提交游戏代码；上级仅提交 submodule 指针。
+Last updated: 2026-11-05
 
-## 项目上下文与继续工作
+This is an independent repository, registered as a submodule in the music-materials
+workspace. When nested there, inherit the parent and `games/AGENTS.md`; when cloned
+alone, this file remains the canonical technical guide. Commit game changes here;
+the parent records only the submodule pointer and is never pushed implicitly.
 
-- 内部待办、未决方案和跨 session 交接统一维护在 [进度清单](docs/progress_tracker.md)。新 session 先读该清单，再按用户指定的事项继续。
-- README 面向外部读者，说明当前功能、使用、开发与发布方式；本文件维护 agent 的上下文、约束和工作流程。
-- 待办的步骤、验收条件、优先顺序、阻塞与实施证据放在进度清单，不把 README 当作内部任务板。完成后同步受影响的功能介绍。
+## Documentation and continuation
 
-## 出题不变量
+- Write all project-owned documentation in English, including this guide, README,
+  LEVELS, technical docs, audits, and trackers. Conversation may be English or Chinese.
+  Preserve UI labels, quoted wording, identifiers, and bilingual learning content.
+  English supports future communication, academic work, and sharing.
+- `README.md` introduces the game, audience, capabilities, usage, limitations, and product
+  direction. It is not the internal task board or release runbook.
+- Read [docs/progress_tracker.md](docs/progress_tracker.md) before continuing implementation.
+  It owns priorities, acceptance criteria, unresolved issues, and evidence links.
+- [LEVELS.md](LEVELS.md) owns instructional design, not deployment or data infrastructure.
+  Keep design, code, affected user documentation, and architecture comments consistent.
+  A planned design change is not an implemented feature.
+- [docs/development.md](docs/development.md) owns development, tests, and release mechanics;
+  [docs/cloud_operations.md](docs/cloud_operations.md) owns cloud operation and recovery.
+- Keep dated audits as historical evidence; use the current tracker for current status.
+  Record findings, fixes, rounds, evidence, and limits in `docs/audit_<date>/`.
+  Do not mark work complete from a chat conclusion alone.
+- Documentation-only edits do not change the runtime build and do not require a release,
+  database pressure test, browser-cache reset, or deployment.
 
-- 第 1–5 关和今日练习以勾选且满足学习条件的音为目标池。不得为凑谱号而加入未勾选音。
-- 第 3 关允许勾选 C4 使用相同音高的 C4B 写法。D/E 同为高音谱号时仍应混合出 D/E。
-- 第 6–8 关考抽象位置，不受选音限制；第 9 关只使用勾选音中登记的易混对子，无合法对子可以为空。
-- 先安排整节音的数量，再安排顺序。只有一个可考目标时重复不可避免；有多个目标且可以错开时不得连出同一目标。
-- 今日练习全节统一规划 10 题，不独立抽取小块后期待洗牌修复数量失衡。
-- 新音导入、单音复习、前后测另有教学目的，不把技能关的随机规则套到这些入口。
+## Question-generation invariants
 
-## 每次交付的流水线
+- Skills 1–5 and daily practice target only checked notes that meet learning prerequisites.
+  Do not add unchecked target notes to manufacture clef variety.
+- Skill 3 may use C4B as the same pitch as checked C4. D/E must both appear when checked,
+  even though both answers are treble clef.
+- Skills 6–8 concern abstract positions and ignore selected notes. Skill 9 uses only
+  registered eligible pairs among checked notes and may be empty if no pair is available.
+- Plan note counts before ordering. One eligible target necessarily repeats; with multiple
+  targets, avoid adjacent repeats whenever feasible.
+- Plan the entire ten-item daily session, rather than shuffling independently sampled blocks.
+- New-note lessons, single-note review, and pre/post tests have distinct instructional
+  purposes; do not apply skill-card randomness indiscriminately.
 
-1. 修改 → 审计 → 修复 → 再验证；新增回归须能拦截相应旧缺陷。
-2. 运行 `npm run release -- --local`，默认包括 `npm test`；完整交付不得自行跳过测试。
-3. 构建号由脚本覆盖 index、manifest、图标、Service Worker、清理页；不手改 sw.js 的缓存号。
-   `release.json` 记录全部发布文件的 SHA-256；`.nojekyll` 保证 Pages 不改写文件。
-4. 每次交付清理本 Mac Safari、Chrome 的远程地址，以及本地 `127.0.0.1:8765`、`localhost:8765`。
-   保留 localStorage 中账户、选音、进度与记录。不同主机名是独立存储。
-5. 必须验证服务器全部文件哈希，再由清理页核验并打开目标构建；游戏实际加载后通过一次性 loopback 导航回执确认。
-   不依赖 AppleScript 读取标签页，不开启浏览器 JavaScript 自动化权限；不能用固定延时或仅清理页标题当作完成。
-   缺失文件、混合部署、版本错误或超时必须使完整流水线失败。禁止批量关闭无关标签页。
-   清理 API 每步有超时和失败回执，核验临时页不注册 SW，正式游戏页再注册。逐个目标核验，避免后台标签页延迟。
-   原子锁禁止并行发布或清缓存；不覆盖另一条运行中的状态。
-   `.release/status.json` 是机器状态记录，不提交；`--no-open` 仅 prepared，`--local-only` 必须明示远端未核验。
-6. 浏览器交互遵循当前工具约束；允许用户请求的脚本时直接运行流水线。若当前只允许 CUA，用 `--no-open` 准备发布，
-   再用 CUA 打开带回执的链接；用本地回执状态核实，不能把未打开的链接算完成。
-   本地服务器必须是 `scripts/local_server.mjs`，禁 HTTP 缓存并核对服务端源码指纹；不杀未知端口进程。
-7. 未推送：必须交付本地 `index.html?build=<构建号>`，并核对页面设置里的构建号。
-   已获明确推送授权时才运行 `npm run release -- --push`，确认远程构建一致后交付远程链接。
-   Pages 超时应报发布未验证，不把旧远程链接当成新版本交付。
-   最终答复分别说明本地提交、远程推送、部署文件验证、浏览器加载验证是否完成；commit 不等于 push。
-8. `npm run pages:refresh` 默认只读；`--execute` 才重建远程已有 main。它不是 CDN purge，也不是推送。
-   不删除 GitHub Actions 缓存冒充清理 Pages；不改 Pages 发布设置。远端新清单/清理页须经授权部署一次后生效。
-9. 发布前先提交功能改动；`--push` 只自动提交 index.html、sw.js、release.json，拒绝夹带其他工作。
-   在游戏仓库提交完整单元；回上级仅提交本子模块指针，不夹带用户其他改动，不推送上级。
+## Runtime delivery requirements
 
-## 验证范围
+1. Implement, audit, fix, and verify. New regressions must intercept the original defect.
+2. For runtime delivery run `npm run release -- --local`, including `npm test`; do not
+   skip the full required tests. Commit feature changes before a release push.
+3. The release script derives the build and SW cache version; never edit cache versions
+   manually. `release.json` hashes all release files; `.nojekyll` preserves Pages bytes.
+4. Verify all server file hashes, then clear only this game's SW scope and caches, keeping
+   learner localStorage. Verify actual game boot through one-time loopback navigation
+   receipts for Safari/Chrome across remote, `127.0.0.1`, and `localhost` origins.
+   The default local port is 8765; use the explicitly selected port for that run.
+5. All targets in the declared scope must acknowledge the correct build. Missing files,
+   mixed deployments, wrong builds, timeouts, or failed reset steps fail the pipeline.
+   `.release/status.json` is ignored runtime state. `--no-open` means `prepared`;
+   `--local-only` proves only local readiness. Never turn prepared into ready by assertion.
+6. Do not read browser tabs using AppleScript, enable browser JavaScript automation,
+   close unrelated tabs, or substitute fixed delays for receipts. Respect active browser
+   tool restrictions; when necessary prepare with `--no-open` and open targets via CUA.
+7. Use `scripts/local_server.mjs`, its no-store responses and source fingerprint. Never
+   kill an unknown port process. Respect the atomic release/cache lock.
+8. Deliver a local build URL for an unpushed runtime version. Run
+   `npm run release -- --push` only with explicit push authorization; verify deployment
+   and actual browser loads before handing over a new remote test link.
+9. `npm run pages:refresh` is read-only by default; `--execute` rebuilds existing remote
+   main. It is not a push or CDN purge. Do not delete Actions caches or alter Pages
+   settings to simulate freshness. Check deployment and file hashes first.
+10. `--push` auto-commits only generated index.html, sw.js, and release.json. Keep complete
+    feature commits separate, then update the parent's pointer locally. Final reports
+    distinguish local commit, push, server verification, and browser-load verification.
 
-`npm test` 包括 255 个非空勾选集合 × 三档难度 × 两种答题历史 × 三个固定随机种子 × 九关与今日练习，合计 45,900 节。
-另测四种视口、单音选项、续学结算、报告列、启用 SW 后清缓存与离线恢复、HTTP 错误回执、其他缓存及 localStorage 保留。
-自动化使用独立测试账户，禁止改真实学生数据。Chrome 自动化通过不等于 Safari 全功能回归通过。
-每次系统审计在 `docs/audit_<日期>/` 留下发现、修复、轮次、证据和边界。
+## Data and verification boundaries
 
-## 文档维护约定
+Use synthetic accounts and isolated contexts. Never modify real student records for tests,
+print/commit credentials or recovery codes, or silently upload existing learners.
+Cloud binding is explicit per learner and preceded by a full local backup. A local PIN
+is neither encryption nor server authorization. Reuse existing synthetic identities for
+necessary live checks; do not rerun passed pressure tests without a new validation need.
 
-- README 面向外部读者，用英文；保留项目介绍、当前功能、使用方式、开发／发布命令、公开限制和产品方向。
-- 内部任务与实施状态只维护在 `docs/progress_tracker.md`，入口只放在本文件；README 不放 session 交接、排查步骤或内部进度链接。
-- README 的产品 Roadmap 保留方向性描述，不作为实施 checklist。功能完成后更新对应介绍与用户可见的 changelog。
-- 保持 README 的章节结构；功能细节放到对应章节，不在文末不断追加。changelog 每条描述用户可见变化。
-- 教学设计和备课说明维护在中文 `LEVELS.md`；代码配置或行为改变时同步相关说明及 index.html 的架构注释。
-- 审计／测试记录保留在 `docs/audit_*/`，清单完成项链接相应证据。不能仅凭聊天结论标为完成。
+The generation matrix covers 255 nonempty checked sets × three difficulties × two
+answer histories × three seeds × nine skills and daily practice, totaling 45,900 sessions.
+Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
+backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
+Chrome automation does not establish full Safari/iPad behavior. Current evidence and
+unverified capacity, regional-network, and device scenarios are listed in the tracker.

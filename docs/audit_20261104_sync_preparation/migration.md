@@ -1,13 +1,20 @@
-# 云同步准备：旧记录迁移检查
+# Cloud Preparation: Legacy-Record Migration
 
-旧版 `migrateLegacyState` 在首次建立账户时清空逐题记录、难度历史和前后测题组。
-现改为保留存在的字段，并以记录中最大序号修正计数器，避免后续生成重复序号。
-缺失字段仍使用空默认值；原有旧存档本身不被删除。
+Last updated: 2026-11-05 (English revision)
 
-验证：`tests/legacy_migration.test.mjs` 使用合成旧档检查记录、历史、题组和序号，
-也覆盖缺失字段。`npm test` 通过，包括生成矩阵、布局、续学、报告和缓存检查。
-最初直接运行测试时发布清单尚未更新，缓存检查按预期拒绝文件哈希不一致；
-执行 `npm run build` 后完整测试通过。
+Historical stage record, 2026-11-04. Later implementation is recorded in the current
+progress tracker; the limitations below describe this stage only.
 
-边界：这不是完整迁移备份或失败恢复方案。8000 条裁剪、存储容量保护、
-Supabase 登录、权限、同步和真实设备验证均尚未完成。
+The old `migrateLegacyState` cleared per-question events, difficulty history, and pre/post
+batteries when creating the first account. The fix preserves existing fields and adjusts
+the counter to the largest recorded sequence, preventing duplicate future sequences.
+Missing fields retain empty defaults; the original legacy save is not deleted.
+
+`tests/legacy_migration.test.mjs` checked synthetic events/history/battery/counters and
+missing fields. The full suite passed, including generation, layout, continuation, reports,
+and cache checks. Initially, cache integrity correctly rejected an outdated release manifest;
+after `npm run build`, the full suite passed without weakening integrity checks.
+
+At this stage there was no full migration backup/failure recovery, removal of the 8,000
+trim, capacity protection, Supabase identity/permissions/sync, or physical-device acceptance.
+These historical gaps must not be read as the current feature list.

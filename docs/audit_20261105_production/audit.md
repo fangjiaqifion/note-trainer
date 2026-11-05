@@ -1,101 +1,140 @@
-# 云端受控发布候选审计
+# Controlled Cloud Release Audit
 
-日期：2026-11-05。继上一轮全名册保护继续 NT-003 与 NT-002。用户选择高强度恢复码，
-并明确批准在既有 Supabase 项目执行独立新表迁移、发布 GitHub Pages 与虚拟账户线上验收。
-未自动上传或读取真实学生，未修改原 `nt_sync_events`。
+Last updated: 2026-11-05 (English documentation revision)
 
-## 实现与审阅
+Historical implementation and acceptance record for NT-003/NT-002 after roster protection.
+The user selected strong recovery codes and explicitly authorized separate-table migration
+in the existing Supabase project, Pages publication, and synthetic online acceptance.
+No real learner profiles were automatically read/uploaded; old `nt_sync_events` was unchanged.
+This translation does not execute or repeat those actions.
 
-- 新增 `cloud_client.mjs`、`cloud_ui.mjs`，复用既有认证传输层，保持游戏题型与教学随机规则。
-- 管理员一次性开通，教师本班管理，学生单人读写，研究者班级只读；RLS 与受控 RPC 均校验身份。
-- 高强度恢复码只存 SHA-256 哈希；每码一年、最多十台有效设备，支持码及设备撤销，包括原始开通设备。
-- 每个恢复码用独立 Auth 身份，防止同浏览器从教师切到学生后复用高权限 JWT。
-- 设备先落盘、十秒窗口、50 条合批、完整回执确认、稳定 UUID 与幂等重试，空闲不读库。
-- 进度用 revision CAS，丢回执同内容可重试；并发进度冲突保留本地并暂停，明确选择后才载入云端。
-- 绑定前完整快照与下载；跨设备载入保留旧名册快照，并合并未确认的本地事件，相同 ID 内容冲突则停止。
-- 已绑定档案禁止覆盖式单学生导入与清日志；同 origin 云档案取得单写入 Web Lock 后才进入游戏。
-- 本机写入失败暂停换题，允许导出内存备份和重试，不重复计题；关闭页面前给未保存提示。
-- 云班级灾备在单一 MVCC 快照导出，管理员事务恢复拒绝覆盖现有班级；恢复码哈希足以让新 Auth 身份找回归属。
-- 普通设置增加琴声/中文/字母独立诊断、bounded resume/voiceschanged、后台返回重试及本机诊断导出。
-- 发布临时页等待新增模块加载，模块失败返回失败回执；不取得云写锁、不触发同步、不改学生数据。
+## Implementation and review
 
-## 已发现并修复的回归
+- Added cloud_client.mjs/cloud_ui.mjs using existing authenticated transport without
+  changing question types or instructional randomization.
+- Administrator bootstrap, class-scoped teacher, single-student access, and readonly
+  researcher roles are enforced by RLS and checked RPCs.
+- Recovery codes store SHA-256 hashes, last one year, allow ten active devices, and support
+  code/device revocation including the original device. Each code uses a distinct Auth
+  identity, preventing teacher JWT reuse after switching roles.
+- Local-first persistence, ten-second/fifty-item batching, full receipts, stable UUIDs,
+  idempotent retry, and zero idle database reads.
+- Progress revision CAS supports lost-receipt same-content retries; concurrent conflicts
+  pause without discarding local state. Cloud load is explicit.
+- Snapshot/download before binding; preserve previous roster and merge unconfirmed events
+  on another device. Same-ID conflicting payload stops. Bound profiles reject overwrite
+  imports/log clearing and require a same-origin writer Web Lock.
+- Local save failure pauses advancement, allows in-memory export/retry without double
+  counting, and warns before leaving.
+- Class disaster export is one MVCC snapshot; administrator transactional restore refuses
+  existing classes. Recovery hashes let new Auth identities recover ownership.
+- Ordinary settings gained separate piano/Chinese/letter diagnostics, bounded gesture
+  resume/voiceschanged handling, background retry, and local diagnostic exports.
+- Release verification waits for modules; failed imports return failure receipts. Temporary
+  verification pages neither take cloud writer locks nor sync or modify learner state.
 
-- 新学生设备尚无本地教师 PIN 时，完整名册校验曾错误拒绝恢复；已允许这种合法名册。
-- SQL 参数与列同名导致歧义，在真实 PostgreSQL 本机回归中发现并修正。
-- 设备撤销后，持未撤销恢复码的显式恢复可重新授权；有效设备总数仍受十台限制。
-- 保存过程中新增答案的通知不会因同步在途而永久丢掉；计时器版本记录确保后续扫描。
-- 异步云组件未加载也收到成功发布回执的风险已新增失败注入回归。
+## Regressions found and fixed
 
-## 数据库执行
+1. Roster validation incorrectly rejected a new student device without a local teacher PIN.
+2. SQL parameter/column ambiguity was found through real local PostgreSQL-engine tests.
+3. Explicit restore with a nonrevoked code can reauthorize a revoked device, still respecting
+   ten active devices.
+4. Saves during in-flight sync no longer lose their rescan notification; timer versions track it.
+5. Failure injection prevents successful release receipts before asynchronous modules load.
 
-通过已登录 Supabase SQL Editor 执行迁移，界面确认 `Success. No rows returned`。
-迁移文件 SHA-256：`8d8fa5c9155bf034ea179a09981093f7a4d1b7b5026e97d8641fe05cf4e45227`。
-首次测试开通码由用户在控制台生成，受控下载到忽略的本机目录，没有打印或提交凭据。
-该脚本为单次迁移；将来的数据库修复应另建增量迁移，不能把修改文件冒充远端已执行。
+## Database execution and initial validation
 
-## 验证证据
+The logged-in Supabase SQL Editor reported `Success. No rows returned` for the migration.
+Executed migration SHA-256:
+`8d8fa5c9155bf034ea179a09981093f7a4d1b7b5026e97d8641fe05cf4e45227`.
+The user generated the first bootstrap code in the console and downloaded it to ignored
+local storage without printing/committing credentials. Future database fixes need new
+incremental migrations; editing an executed file does not change the server.
 
-- 真实本机 PostgreSQL（PGlite）：同/异身份、角色负例、直接写表拒绝、码/设备撤销、整批回滚、
-  UUID 幂等、版本冲突、相同状态丢回执重试、灾备恢复至空库、新身份用原教师码找回、恢复权限与拒绝覆盖。
-- 普通网页（无 sync_test、无 localStorage 伪造答案）：通过界面创建教师与学生、开通、绑定、实际答题上传，
-  第二独立浏览器 context 恢复同一学生，离线答题刷新保留，接收成功后丢回执再试，研究者只读报告。
-  接收端为真实本机 PostgreSQL 的受限 HTTP adapter，不能称为真实 Supabase 验收。
-- 音频单测：手势内同步 resume、多次检查合并、超时、声音列表延迟和重试；不代表实际扬声器出声。
-- 本题保存失败回归：不调度下一题，重试只续接一次、不重复记答案。
-- 最终完整回归、GitHub 部署与真实 Supabase 的结果，在执行后追加。
+Real local PostgreSQL (PGlite) covered same/cross identities, role negatives, direct-table
+write denial, code/device revocation, whole-batch rollback, UUID idempotency, revision
+conflicts, same-state lost receipts, empty-database restore, original-code/new-identity
+recovery, restore permissions, and overwrite denial.
 
-## 仍需诚实保留的边界
+Ordinary-page synthetic UI tests created/bound profiles, answered questions, restored in
+another context, retained offline answers across refresh, retried dropped success receipts,
+and displayed readonly researcher reports. The receiver was a restricted HTTP adapter over
+real local PostgreSQL, distinct from real Supabase. Audio unit tests covered gesture resume,
+coalescing, timeout, late voices, and retry, not physical sound. Save-failure tests blocked
+advancement and resumed only once without duplicate events.
 
-- 本机日志仍在 localStorage，达到浏览器容量会停练并要求备份；不宣称无限容量或 IndexedDB 分片已实现。
-- 旧代快照和云绑定前快照保留，需额外容量；意外终止暂存回收、iPad 大量记录写入耗时仍未完成。
-- 浏览器灾备限 50,000 题/25 MiB 事件 payload；免费项目没有可下载的托管备份，整项目运维备份需要另行安排。
-- 本机保存的教师会话和恢复码不是加密保险箱，不应用于不可信共用设备。PIN 不加密，也不作为服务器授权。
-- iPadOS 实际设备、Safari/主屏幕首次与后台/锁屏/静音的真实试听、内地/香港网络及长期暂停恢复，仍需现场证据。
-- 不将本机/模拟环境通过写成已经完全 production ready。现有档案必须教师明确选择、备份与绑定后才上传。
+## Live and manual acceptance
 
-## 真实线上与人工验收结果
+- Feature commit `94a9585` was pushed; build `156b85e041` matched all thirteen release
+  files and six actual Safari/Chrome loads across three origins.
+- Ordinary Pages, no sync_test and no fabricated answers: created synthetic teacher/student.
+  Real Supabase core flow used 29 HTTP requests. Two answers matched field by field;
+  second-device recovery, refresh with cloud requests blocked, lost-success retry,
+  researcher readonly reports and write 403 passed.
+- Separate full-network-offline check reused that student with SW allowed, refreshed,
+  opened a question, and refreshed again, preserving the same two answers. No additional
+  answers; cloud-request failure alone was not presented as full offline testing.
+- Automatic approval review initially rejected later permission changes because general
+  synthetic-testing authorization did not cover specific additions/revocations. Only after
+  explicit itemized user authorization: recovered a new synthetic teacher with the existing
+  code, added QA-SECONDARY, verified cross-student denials/researcher 403, revoked a researcher
+  code and original teacher device, and confirmed old access failed.
+- Live class archive held two synthetic students/two events. Restored into a separate empty
+  PostgreSQL database, preserving IDs, associations, and payloads; the original valid teacher
+  code recovered permissions for a new Auth identity. No active Supabase class was deleted/restored.
+- User explicitly confirmed piano, Chinese, and letter audio on iPad first launch, background
+  return, and lock-screen return. No iPadOS or Safari/home-screen mode supplied; evidence is
+  physical-device feedback but does not generalize to all devices.
 
-- 主要功能提交 94a9585 已推送。构建 156b85e041 全部 13 个发布文件哈希一致，三 origin × Safari/Chrome 六个实际加载回执 ready。
-- 通过普通 GitHub Pages 页面创建虚拟教师与学生，未使用 sync_test、不伪造答案。真实 Supabase 本轮核心流程 29 个 HTTP 请求，
-  两题逐字段读回一致；第二设备恢复、阻断云请求后刷新、丢弃已成功响应再重试、研究者只读报告与写入 403 通过。
-- 追加完整网络离线验证：复用该虚拟学生，允许 SW 后完全断网刷新、打开题目、再次刷新，仍保留相同两条答案。
-  此阶段不新增答题，不把云端故障模拟冒充完整网络离线。
-- 自动审批一度拒绝后续权限变更，认为通用虚拟测试授权不覆盖具体新增/撤权。用户随后逐项明确授权，才执行下列步骤：
-  新虚拟教师用已有码恢复；新增 QA-SECONDARY；跨学生读写拒绝、研究者写入 403；撤销研究者码及原教师设备后旧权限失效。
-- 真实班级灾备包含 2 位虚拟学生、2 条答题。导出后恢复到独立空 PostgreSQL，事件 ID/学生关联/payload 全部相同，
-  用原有效教师码可在新 Auth 身份恢复权限。没有删除或还原真实 Supabase 上的活跃班级。
-- 用户明确反馈：iPad 首次、后台返回与锁屏返回，琴声、中文、字母三条声道均正常。
-  未提供 iPadOS 版本与 Safari/主屏幕模式；不是本机模拟，也不泛化到所有设备。
+## Final fixes and build sequence
 
-## 收尾修复与边界
+- URL.pathname encoded spaces/Chinese and put four browser-session evidence files in the
+  wrong local directory. fileURLToPath fixed this. A manifest plus SHA-256/bytes verified
+  moving four files, 88,392 bytes, back into .release; source emptied, no credential exposure.
+- Expired teacher codes previously blocked historical archive restoration. Incremental
+  `002_archive_expiry.sql` updated only the administrator restore function, leaving API
+  execution denied. Historical data can restore without renewing old credentials; new
+  authorization still requires ownership verification. Executed in the real console.
+  SHA-256: `c28521c9fb794bdb12eef314173ecb6a3879dcd72ac05665233e6a90c48dd783`.
+- CSV gained cloud_workspace/cloud_participant/event_id while retaining participant; cloud
+  JSON gained workspace_id/student_id, preventing local-ID differences and repeated P001
+  labels across classes from corrupting joins. Export-fix build `df08b997fd` initially had
+  five receipts and remote Safari timeout: incomplete, not ready.
+- Role-filtered shared-device queues restrict teacher to class, student to self, researcher
+  to no upload. In-flight requests retain their starting Auth transport. Scope-fix build
+  `0d74cfd3df` subsequently passed all six loads.
+- Local updatedAt-only changes no longer cause cloud writes/revision churn; server updated_at
+  still tracks actual writes. Added zero-request regression; intermediate build `1d0c66e2f6`.
+- Legacy events without IDs use UUIDv5 from cloud-student UUID plus canonical fields. Existing
+  UUIDs remain; field order does not create duplicates. Binding aborts if roster/state changes.
+  Serialized management UI prevents concurrent identity restores from repeated taps.
+- Versioned production ESM prevents stale-worker module mixing. Old-cache fixtures deliberately
+  injected unusable modules, then verified online upgrade and complete offline graph with
+  storage markers preserved. Cached Response.url initially lost version parameters; synthetic
+  responses retaining request URLs fixed the offline dependency failure. Fault routes match
+  version query parameters too.
+- Final build `13d5d3b4a4`: synthesis, speech, and diagnostics logic unchanged, module URLs
+  versioned. The manual iPad evidence remains for `156b85e041`, with missing system details.
 
-- 发现保存浏览器会话使用 URL.pathname，空格/中文编码导致四份本机测试证据落错目录。改为 fileURLToPath，
-  写清单后逐文件按 SHA-256 与字节核对搬回 .release，4 件共 88,392 bytes，源目录搬空；凭据未输出、未提交。
-- 发现旧灾备所有教师码过期时无法恢复历史数据。新增 002_archive_expiry.sql，只更新管理员恢复函数并维持 API 无执行权，
-  可恢复过期档案但旧码仍被拒绝；需管理员核实后单独新授权。真实控制台执行成功。
-  SHA-256：c28521c9fb794bdb12eef314173ecb6a3879dcd72ac05665233e6a90c48dd783。
-- 本机 CSV 追加 cloud_workspace/cloud_participant/event_id，保留旧 participant 列；云报告 JSON 带 workspace_id/student_id，
-  防止跨设备本机 ID 不同、跨班 P001 重名影响研究合并。新增回归，导出修复构建 df08b997fd；最后同步范围修复构建 0d74cfd3df。
-- iPad 用户确认针对 156b85e041；收尾只改导出字段和报告文字，声音模块/声音交互代码保持相同。
-- 完整运营暂停恢复、内地/香港网络代表性、iPad 容量/长期耗时仍没有现场证据。当前支持受控小规模启用，不能声称无限容量或所有环境可靠性已证实。
+## Final recorded delivery and limits
 
-- 共享设备多档案队列按当前角色过滤：教师只处理本班、学生只处理自己、研究者不上传；新回归通过。请求绑定发起时的 Auth 传输实例，身份切换不改变在途请求的认证上下文。
-- df08b997fd 首次交付五个回执通过，Safari 远程超时，状态为 incomplete，没有冒充 ready；末轮交付将重新核验。
+Commit `f320c18` pushed to origin/main, build `13d5d3b4a4`. Full regression passed:
+46 Node tests, 1,144 scheduling boundaries, 45,900 generated sessions, four viewports,
+reports, original sync faults, roster restore, actual-game storage failures, and old-SW
+module upgrade/offline. All Pages/127.0.0.1:8766/localhost:8766 file hashes matched and
+six Safari/Chrome load receipts matched, status ready.
 
-- 0d74cfd3df 全部六个加载回执已重新通过。另修复本机 updatedAt 导致无效云写入与版本扰动：云进度忽略本机保存时间，服务器 updated_at 仍记录实际更新；新增仅时间戳变化零请求回归。最终构建 1d0c66e2f6。
+The final ordinary-page export reused the recovered synthetic teacher and P001's original
+two answers. Workspace/student IDs matched the second device. No new class, permission,
+or answers were created. Screenshot remained ignored at
+`.release/cloud_live/final_export_report.png`; sessions/codes remained unprinted/uncommitted.
+The parent only records the submodule locally and is not pushed.
 
-- 旧备份跨设备迁移：缺失 ID 的历史记录按云学生 UUID + 规范化字段生成 UUIDv5，已有 UUID 原样保留；同备份不同字段顺序得到相同 ID，不制造重复研究记录。绑定异步期间名册/原状态变化会中止，不覆盖新练习。
-- UI 管理操作串行，防止重复点击并发恢复身份。
-- 生产 ESM 依赖带构建参数，旧 worker 不会拿过期模块响应新图；新 worker 用当前图离线响应并保留 import.meta.url 的版本。真实浏览器升级 fixture 在旧缓存故意投放不可用模块，在线新图与更新后完整离线均通过，存储标记保留。
-- 升级 fixture 发现缓存 Response.url 抹去版本参数造成离线依赖失败，已以保留请求 URL 的合成响应修复并回归；故障注入路由同步匹配版本查询参数。
-- 当前最终构建 13d5d3b4a4。声音合成、朗读和诊断逻辑不变，仅模块加载 URL 带版本；iPad 人工证据仍记录原构建与未提供的系统信息。
-
-## 最终交付
-
-- 提交 f320c18 已推送至 origin/main；构建 13d5d3b4a4。完整流水线再次通过全部 46 项 Node 测试、1,144 项排程边界、45,900 节生成审计、四视口、报告、原同步故障、全名册恢复、真实游戏存储故障和旧 SW 模块升级/离线回归。
-- GitHub Pages、127.0.0.1:8766、localhost:8766 全部发布文件 SHA-256 一致；Safari/Chrome 六个实际加载回执均匹配 13d5d3b4a4，状态 ready。
-- 最终版本另复用已恢复的虚拟教师身份，普通线上界面导出 P001 的原两条答题，workspace_id/student_id 与第二设备档案完全一致；没有重建班级、新增权限或新增答题。
-- 最终只读报告截图保存在忽略的 .release/cloud_live/final_export_report.png；所有会话与恢复码都在忽略目录，未输出、未提交。
-- 后续父仓库只本地提交游戏 submodule 指针，不推送父仓库。
-- 可以按操作说明受控逐学生启用；真实旧档本轮未自动上传。长期容量、低活动暂停/地区网络的运行边界保持如上，不把未测场景写成已验证。
+Controlled per-learner activation is supported; real old profiles were not automatically
+uploaded. localStorage capacity remains finite; failed saves stop practice. Retained old
+and binding snapshots consume extra space. Interrupted-stage cleanup and iPad large-history
+write/capacity measurements remain open. Browser archive caps remain 50,000 events/25 MiB;
+class backup is not whole-project backup. Teacher sessions/codes in local storage are not
+encrypted and require trusted devices. Mainland/Hong Kong representative networks,
+low-activity service pause recovery, broader iPad modes, mute/offline sound, and long-term
+operating performance remain unverified. Do not claim universal production readiness.

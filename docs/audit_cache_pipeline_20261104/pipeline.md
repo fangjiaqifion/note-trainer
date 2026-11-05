@@ -1,70 +1,73 @@
-# 缓存与发布核验流水线
+# Cache and Release Verification Pipeline Audit
 
-本记录保留初次本地构建时的结果；后续是否已推送以 git 远端和当次发布状态为准。
+Last updated: 2026-11-05 (English revision)
 
-日期：2026-11-04。最终构建：29280ef61b（前期演练构建为 65da7cc46a）。
+Historical first-local-build record, dated 2026-11-04. Final build `29280ef61b`, earlier
+rehearsal `65da7cc46a`. Remote status below is historical; use current tracker and actual
+release state for later delivery. No remote work was repeated during translation.
 
-## 状态与命令
+## Commands and meaning
 
-| 命令 | 作用 | 成功的含义 |
-|---|---|---|
-| `npm run build` | 生成构建号与 release.json | built，仅构建 |
-| `npm run release -- --local` | 测试、起本地服务、核验两浏览器三地址 | ready，全部六个浏览器/地址目标收到实际加载回执 |
-| `npm run release -- --local --local-only` | 明确限定本地两个地址 | ready，仅四个本地目标；远端未核验 |
-| `npm run cache` | 不重建，重复清理/加载核验 | 六个目标全部 ready |
-| `npm run cache -- --local-only` | 只核验本地缓存与加载 | 四个目标 ready |
-| `npm run verify:remote` | 线上文件与本地 release.json 比较 | server-verified，不等于浏览器已刷新 |
-| `npm run pages:refresh` | 只读查看重建计划 | 不发生远程修改 |
-| `npm run pages:refresh -- --execute` | 重建远程已有 main 并核验文件 | 不推送本地代码，不代表浏览器已清理 |
-| `npm run release -- --push` | 经授权推送、等待文件一致、六目标核验 | ready 后才交付远程测试链接 |
+| Command | Meaning of success |
+|---|---|
+| npm run build | built: stamp build/manifest only |
+| npm run release -- --local | ready only after six browser/origin actual-load receipts |
+| npm run release -- --local --local-only | Four local targets ready; remote unverified |
+| npm run cache | Repeat six-target reset/load without rebuilding |
+| npm run cache -- --local-only | Four local targets only |
+| npm run verify:remote | server-verified files, not browser freshness |
+| npm run pages:refresh | Read-only rebuild plan |
+| npm run pages:refresh -- --execute | Rebuild existing remote main and verify files; no local push/browser cleanup |
+| npm run release -- --push | Authorized push, wait for files, six loads; remote handoff only after ready |
 
-`--no-open` 只准备链接，状态 prepared；不能报浏览器已刷新。
-完整核验缺任何目标都会非零退出。运行明细保存在 gitignored `.release/status.json`。原子运行锁禁止并行发布/清缓存；
-已退出进程留下的锁可自动回收，活进程锁不抢占。并行 build 的负向演练已明确拒绝。
-该文件有本轮短效令牌，不能提交。未知端口进程不会被自动终止。
+--no-open means prepared. Missing any target fails/nonzero. Ignored .release/status.json
+holds runtime detail/short-lived tokens, never committed. Atomic locks reject concurrent
+release/cache/build work; dead-process locks can be reclaimed, live locks cannot. Negative
+parallel-build rehearsal was rejected. Unknown port processes are never automatically killed.
 
-## 三层保障
+## Three verification layers
 
-1. **本地服务**：Node 专用服务器对成功/错误响应统一使用 no-store。
-   源码 SHA-256 作为服务指纹，防止继续使用旧 Python 服务或旧版 Node 服务。
-   文件路径经 realpath 校验，禁止 .git 等隐藏路径。回执接口只收 loopback 请求。
-2. **服务器文件**：清单列出 index、SW、清理页、manifest、图标八个文件的 SHA-256。
-   CLI 每次带新查询参数取回核验，浏览器再用 reload 取回并核验。
-   `.nojekyll` 避免 GitHub Pages 构建改变字节。CDN 混合新旧文件必须失败，不靠延时猜测。
-3. **浏览器实际加载**：清理页只注销本游戏 scope 的 SW、删本游戏缓存，保留 localStorage。
-   全部文件通过哈希检查后打开带 build 的游戏。游戏拒绝构建不符的链接，实际 boot 后才
-   导航到一次性 localhost 回执地址，再由服务器跳回游戏。令牌随机、每浏览器/地址不同、
-   内存保存十分钟。不读浏览器标签页、不需要 AppleScript 或 JS 自动化授权。
-   各浏览器/地址逐个等待回执，避免 Safari 延迟后台标签页；核验用的临时游戏页不注册 SW，
-   跳回正式游戏后才注册，避免注册与回执跳转竞态。清理步骤有独立超时，失败步骤也回执。
+1. Dedicated Node server sends no-store on success/error, fingerprints its source by SHA-256,
+   rejects hidden paths using realpath, and accepts receipt API requests only on loopback.
+   An old Python/Node server cannot pass as the current implementation.
+2. At this stage release.json hashed eight index/SW/reset/manifest/icon files. CLI uses fresh
+   query URLs; browsers reload and hash. .nojekyll preserves bytes. Mixed CDN deployment
+   fails rather than waiting a guessed fixed delay. Later module additions expand the manifest.
+3. Reset unregisters only this game's SW scope/cache and retains localStorage. After file
+   verification, open index?build=...; reject mismatches. Actual boot navigates to one-time
+   loopback receipt, then returns to game. Each browser/origin has a distinct random token,
+   stored in memory ten minutes. No tab reading or AppleScript/JS automation permissions.
+   Verify targets sequentially to avoid Safari background delays. Transient verification
+   pages defer SW registration until normal return; each reset step has timeout/failure receipt.
 
-回执使用顶层导航，避免远程 HTTPS 页面后台 fetch 到本地时的 CORS/混合内容/本地网络权限问题。
-远端到本地的实际浏览器路径仍须在授权部署新文件后完成实测，不能把本地通过写成远端通过。
+Top-level navigation avoids background HTTPS-to-loopback CORS/mixed-content/local-network
+fetch problems. Local success was not treated as remote success before authorized deployment.
 
-## GitHub Pages
+## Historical Pages inspection
 
-已只读核实：仓库 fangjiaqifion/note-trainer，Pages build_type=legacy，main 分支、根目录。
-线上 main 仍是 dc501ef，尚不含新清理页和发布清单；release.json 返回 404。
+Read-only inspection found fangjiaqifion/note-trainer using legacy main/root Pages, remote
+main `dc501ef`, without reset/manifest; release.json 404. The reviewed Pages API had rebuild/
+status operations, not a documented site-CDN purge. The script verifies account/publishing
+mode, new build timestamp/commit/built state, then actual hashes. It does not delete Actions
+caches, change publishing settings, or push unauthorized code.
+Historical reference: [GitHub Pages API](https://docs.github.com/en/rest/pages/pages),
+not independently rechecked in this documentation audit.
 
-官方没有公开的站点 CDN purge 接口。本项目的替代是可选重建 + 实际文件一致性校验，
-不会删除 Actions 缓存冒充刷新网站，不改站点配置，也不会为了刷新远端而推送未授权代码。
-重建命令校验 GitHub 账户和发布模式，等待新构建的时间戳、commit 和 built 状态，再核验线上文件。
-说明依据：[GitHub Pages 官方接口](https://docs.github.com/en/rest/pages/pages)。
+## Verification rounds
 
-## 验证轮次与结果
+- Round 1: independent mixed deployment, old manifest, old SW bytes, 404/503 tests all intercepted failures.
+- Round 2: physical browsers loaded the new build but AppleScript title reading timed out;
+  correctly failed, then replaced title reading with one-time navigation receipts.
+- Round 3: no-store, hidden-path denial, unready/wrong/correct-build receipts; browser reset
+  auto-open, wrong-build refusal, and HTTP error failure. Existing 45,900 generation,
+  1,144 scheduler boundary, layout/continuation/report/offline checks passed.
+- Round 4: complete local release/tests, Safari/Chrome × localhost/127.0.0.1 four loads ready,
+  rehearsal `65da7cc46a`. Later repeat exposed intermittent hanging Safari SW APIs.
+- Round 5: closed only this task's Safari pages, added per-step timeout/failure receipts and
+  deferred SW registration. Final `29280ef61b` four-local-target release ready
+  (local_release.log); final_validation.log recorded repeat and never-returning-SW regression.
+- Remote end-to-end still failed 404/nonzero because files were not deployed. This was neither
+  a question-generation defect nor full-pipeline success.
 
-- 第一轮：为混合部署、旧清单、SW 旧字节、404、503 增加独立测试，均可拦截。
-- 第二轮：实机原方案能够加载新构建，但 AppleScript 标题读取超时，明确返回失败。
-  因此移除标题读取依赖，改用一次性 loopback 导航回执。
-- 第三轮：服务器测试覆盖无缓存响应、隐藏目录拦截、回执未就绪/错误构建/正确构建状态。
-  浏览器回归覆盖清理后自动打开目标构建、旧构建拒绝进入、HTTP 错误不报成功。
-  原游戏 45,900 节生成检查、1,144 种排题边界、布局/续学/报告/离线回归全部通过。
-- 第四轮：完整本地 release（含全部测试）实机执行，Safari/Chrome × localhost/127.0.0.1
-  四个目标均回执 ready，前期构建为 65da7cc46a。随后复测暴露 Safari 的 SW API 偶发挂起。
-- 第五轮：关闭本次创建的 Safari 测试页，增加逐步超时与失败回执，核验跳转页不注册 SW。
-  构建 29280ef61b 完整本地 release 四目标均 ready（`local_release.log`）。
-  最终重复验证见 `final_validation.log`，并新增模拟 SW API 永不返回的自动化断言。
-- 远端完整流程：因新清单尚未部署，目前不能成功。负向演练必须报告远端 404 并非零退出；
-  不将其标为代码出题错误，也不将本地通过标为全流程通过。
-
-本次未执行远程重建、未推送、未修改 Pages 设置。远端相关代码已准备，首次部署后才可端到端验证。
+No remote rebuild, push, or Pages-setting change occurred in this stage. Remote code was
+prepared for later authorized deployment; later audits record its acceptance.

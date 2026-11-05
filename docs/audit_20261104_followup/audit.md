@@ -1,68 +1,66 @@
-# 选音、随机出题与交付缓存审计
+# Selected Notes, Scheduling, and Delivery-Cache Audit
 
-日期：2026-11-04。基线：游戏仓库 `8a259f6`。本次未推送。
+Last updated: 2026-11-05 (English revision)
 
-## 结论与根因
+Historical audit dated 2026-11-04, baseline `8a259f6`, no push. Read the current tracker
+for later releases; this record preserves what was observed and changed at this stage.
 
-反复出现的现象有代码与交付两条来源。历史固定谱号池将 D/E 截成 D 的缺陷已在
-`4e9233a` 修过，任务开始的 HEAD 已包含该修复。因此不能把当前全部问题仍归因于
-那个旧交集。当前 HEAD 新生成 D/E 时会带入未勾选的 B，仍违反用户的选音预期。
-本机 Chrome 实际打开的页面甚至只有四张技能卡，证明旧页面确实仍在干扰测试。
-不能仅凭旧页面的现象断言当前 HEAD 也会八题全部出 D。
+## Conclusions and causes
 
-| 问题 | 证据 | 修复 |
+The fixed clef-pool bug that dropped E from D/E had already been repaired in `4e9233a`.
+However, the baseline still added unchecked B to force clef variety. Chrome actually had
+an older four-card page open, so stale delivery also interfered with testing. An old page
+could not establish that current HEAD still produced eight D items.
+
+| Issue | Evidence | Fix |
 |---|---|---|
-| 第三关为了补另一谱号加入未勾选音 | 新组合审计跑旧 HEAD 时，B-only 每轮出现 4 个未勾选 C | 严格选音；C4B 仅作为同音高写法保留。D/E 只出 D/E，同谱号允许答案相同 |
-| 第 1 关权重让少量音数量失衡 | 对旧 HEAD 的固定种子测试得到 B6/E2，预期 B4/E4 | 均衡数量，再安排随机顺序 |
-| `spaceOut` 没有接收 `shuffle(candidates)` 返回值 | `shuffle` 返回副本，不修改参数；回溯始终按原顺序找首个解 | 按剩余数量分组排题，同数量随机，避免无解时枚举排列后原样退回 |
-| 今日练习独立抽小块 | 局部均衡不保证整节均衡，找键题无 noteId 又逃过旧相邻断言 | 整节统一规划 10 个音，保留最久未练的复习前缀，再分配题型 |
-| SW 激活删除同域全部缓存 | 原 activate 对所有 `k !== CACHE` 执行 delete | 限游戏前缀与 scope；保留其他应用与其他游戏路径 |
-| 清理页被写入首页离线缓存 | 原导航分支将任意导航响应存到 index.html | 清理页不拦截；仅成功的游戏首页响应能写首页缓存 |
-| 注销后刷新会重建缓存 | 第二轮真实控制器测试失败：clear-cache 后仍存在游戏缓存 | 重置请求标记绕过新控制器，最后再清一次，兼容旧控制器仍控制当前页的情况 |
-| 三秒等待就宣布成功、HTTP 错误也成功 | 原发布脚本固定 sleep；清理页 fetch 不检查 HTTP 状态 | 每轮唯一 token 的成功/失败标题回执；超时明确未核验；HTTP 500 不报告成功 |
-| 缓存号未覆盖所有运行文件 | 原哈希缺 sw.js 和清理页 | 哈希覆盖这些文件，忽略生成号以保持稳定 |
-| 远程未更新也给远程测试链接 | 原等待超时仅警告仍继续交付链接 | 等待失败则发布命令失败，不交付未确认的新版本远程链接 |
-| 只识别一个本地 origin | 原清理只用 127.0.0.1 | 同时处理 localhost 与 127.0.0.1 |
+| Unchecked clef target | B-only baseline audit produced four unchecked C per session | Strict target selection; C4B only as checked C4's alternate spelling; D/E stay D/E |
+| Skill-1 imbalance | Fixed seed gave B6/E2 instead of B4/E4 | Balance counts before order |
+| Ignored shuffle return | shuffle returned a copy, leaving backtracking in original order | Schedule by remaining-count groups, randomize ties, avoid unsolvable permutation enumeration |
+| Independent daily blocks | Local balancing failed globally; find-key lacked noteId and escaped old assertion | Plan ten note targets globally, keep stale-review prefix, then assign types |
+| SW deleted all origin caches | activate deleted every key except CACHE | Restrict game prefix and scope, retain other apps/scopes |
+| Reset page polluted index offline cache | Any navigation response could be stored as index | Bypass reset page; cache only successful game-index responses |
+| Unregister/reload recreated cache | Second real-controller test found cache after cleanup | Reset marker bypasses replacement controller; final cleanup handles old controlling worker |
+| Fixed three-second success/HTTP errors accepted | Script slept; fetch ignored status | Unique success/failure receipt token, timeout remains unverified, HTTP 500 fails |
+| Incomplete fingerprint | SW/reset files omitted | Include them while ignoring generated IDs for stability |
+| Unverified remote link after timeout | Wait warned and continued | Fail release and withhold new remote test link |
+| One local hostname | Only 127.0.0.1 reset | Cover localhost too |
 
-## 分轮验证
+## Verification rounds
 
-1. 阅读历史审计、生成器、选音与学习条件、技能注册、今日练习、发布与 SW 全路径。
-   原烟雾测试大多只检查有限集合，且单一目标可能让相邻断言直接跳过。
-2. 修复出题与整节数量，扩展至全部 255 个非空选音集合、三档难度、两种错误历史、
-   三个固定随机种子、九关和今日练习，共 45,900 节生成检查。
-   D/E 的第三关样本为 `D4,E4,D4,E4,D4,E4,D4,E4` 与相反起点。
-   仅两个目标且要求相邻不同，顺序必然交替；随机性体现在起点及有更多目标时的顺序。
-3. 把新增审计跑回旧 HEAD，旧烟雾通过后新增检查失败，证明能拦截未勾选音。
-   对旧 HEAD 的 B/E 固定种子测试还复现了 6:2 失衡。
-4. 启用真实 Service Worker，测试激活保留其他缓存、同游戏其他 scope、实际受控页面的
-   注销与刷新、离线重载、HTTP 500 失败回执、localStorage 保留。
-   此轮发现并修复注销后重建缓存的竞态，复验通过。
-5. 对公共排题器另做 1,144 种数量/前题边界组合，验证保留全部题目、可行时无相邻重复。
-   B/E 100 轮固定种子每节均为 4:4。
-6. 完整本地 release 跑测试、写构建号、验证服务可用。浏览器操作依当前工具约束以
-   `--no-open` 准备发布，再通过 CUA 在真实 Safari/Chrome 分别执行两个本地 origin 的清理。
+1. Read history, generators, selection/flags, skill registry, daily planning, SW, and release
+   paths. Old tests covered few sets; single-target adjacency assertions could skip problems.
+2. Expanded to all 255 nonempty checked sets × three difficulties × two histories × three
+   seeds × nine skills/daily: 45,900 sessions. D/E clef examples alternated D4/E4 and the
+   opposite start. With exactly two nonadjacent targets, order must alternate; randomness
+   lies in start and larger-pool ordering.
+3. Ran new checks against old HEAD: old smoke passed, new selection check failed. B/E
+   fixed seed also reproduced the 6:2 imbalance, establishing regression sensitivity.
+4. Real SW tests retained other apps/scopes, exercised controlled unregister/reload, offline,
+   HTTP 500 failure, and localStorage. Found/fixed the post-unregister recreation race.
+5. Shared scheduler passed 1,144 count/prior-target boundaries, preserving every item and
+   feasible spacing. B/E had 4:4 counts in all 100 fixed-seed sessions.
+6. Full local release ran tests/build/server. Under CUA-only browser constraints it prepared
+   with --no-open, then reset both local origins in Safari/Chrome via actual UI.
 
-## 本次交付与实机结果
+## Recorded delivery
 
-构建：`71877f3fc3`。
+Build `71877f3fc3`. Safari both local origins displayed reset success. Chrome 127.0.0.1
+unregistered one old SW and removed recreated caches after reload; localhost succeeded.
+Before this, Chrome showed only four skills. Both browsers then opened the new local
+build with the My notes account entry. No real account was created/modified to inspect
+settings; isolated automation verified the settings build.
 
-- Safari：127.0.0.1 与 localhost 清理页均显示成功回执。
-- Chrome：127.0.0.1 注销 1 个旧离线服务，删除旧缓存，并在刷新后再清除重建缓存；
-  localhost 清理成功。Chrome 操作前实际是四关旧版页面。
-- 两浏览器打开本次带构建号的本地地址，显示新版「我的音」账户入口。
-  没有为了查看设置而新建/改动真实账户；设置构建显示由独立自动化测试账户验证。
-- 远程 `https://fangjiaqifion.github.io/note-trainer/clear-cache.html` 返回 404。
-  因尚未推送清理页，远程缓存本次未清理，发布脚本明确报告不可用。
-  后续经用户授权推送此版本，远程清理页可用后才可通过同一流水线自动完成远程清理。
-- 自动化浏览器回归使用本机 Chrome 独立上下文，不把它当成 Safari 全功能回归。
+Remote clear-cache.html returned 404 because it had not been pushed. Remote cleanup was
+not completed and the script reported unavailable. A later authorized deployment was
+required before remote end-to-end validation. Independent Chrome automation was not
+represented as full Safari regression.
 
-## 持续规则与边界
+The first title-receipt approach depended on macOS AppleScript authorization. This audit
+used CUA and observed reset receipts without shell-driven browser UI automation. Unverified
+automation was not called verified; timeout/failure retained pages and reported the reason.
+Later pipeline records supersede that receipt mechanism.
 
-项目 `AGENTS.md` 已记录每次交付的构建、测试、缓存、链接规则。
-`README.md` 同步实际行为。`npm test` 包含两份新审计及原交互/布局/续学/报告检查。
-单选一个音时重复必要；第 6–8 关考抽象位置；第 9 关只练已登记的易混对子，
-无合法对子时为空，不为凑题加入未勾选音。新音导入、单音复习和测验有各自教学顺序。
-
-自动 Safari/Chrome 标题回执的 AppleScript 读取受 macOS 自动化授权影响。
-本次遵守 CUA 限制，实际验证了清理页回执；未通过 shell 执行浏览器 UI 自动化。
-未经实机授权验证的自动化读取不会被写成已验证。失败/超时会保留页面并打印未核验原因。
+One selected target necessarily repeats. Skills 6–8 are abstract; skill 9 uses only eligible
+registered checked pairs and can be empty. New-note lessons/review/tests keep separate
+instructional sequences. Current rules are owned by AGENTS/LEVELS/development docs.

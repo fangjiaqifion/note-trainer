@@ -1,66 +1,113 @@
-# 云端账户、收集与恢复
+# Cloud Accounts, Collection, and Recovery
 
-普通入口仍可不联网使用。只有教师逐个备份、绑定的档案会同步，姓名和本地 PIN 不上传。
-研究者只能读取授权班级的参与者编号、进度与答题记录。云端 JSON 导出保留 workspace_id/student_id，
-本机 CSV 追加 cloud_workspace/cloud_participant/event_id；跨设备合并使用这些稳定字段，旧 participant 列仍表示本机档案 ID。云角色由服务器验证，不由本机 PIN 决定。
+Last updated: 2026-11-05
 
-## 教师开通
+Internal operating reference. Ordinary practice can remain offline. Only profiles explicitly
+backed up and bound by the teacher synchronize; names and local PINs are not uploaded.
+Researchers read authorized participant codes, progress, and answers only. Cloud JSON
+retains workspace_id/student_id; local CSV adds cloud_workspace/cloud_participant/event_id.
+Use those stable fields for cross-device joins; legacy participant remains a local-profile ID.
+Server authorization is separate from the local PIN.
 
-1. 本机老师入口设置/输入本地 PIN，新建学生。
-2. 云端管理中加载管理员提供的公开客户端配置文件，输入一次性班级开通码。
-3. 开通后立即下载教师恢复码，放到与练习设备分开的安全位置。
-4. 输入 P001 等参与者编号，点击“备份并绑定学生”。完整本机快照先保存并下载，之后才创建绑定。
-5. 重新进入云端管理，生成每位学生的恢复码。不要把教师码交给学生，或把恢复码放入公开链接。
+## Teacher setup
 
-恢复码是高强度随机凭据，服务器只存哈希；一年有效，每码最多十台有效设备。不同恢复码使用不同 Auth 身份，
-教师切换为学生时不会复用教师令牌。本地 PIN 只是本机切换保护，不能代替恢复码。
-在多人共用且不可信的设备上，不应保存教师或研究者的恢复码/认证会话；本机存储不是加密保险箱。
+1. Open the local teacher entry, set/enter its PIN, and create the learner.
+2. In cloud management (`云端管理`), load the administrator-provided public client
+   configuration file and enter the one-time class bootstrap code.
+3. Immediately download the teacher recovery code and keep it safely off the practice device.
+4. Enter a participant code such as P001 and choose backup/bind (`备份并绑定学生`). A complete
+   local snapshot is saved and downloaded before binding is created.
+5. Generate each learner's recovery code in cloud management. Never give a learner the
+   teacher code or put a recovery code in a public link.
 
-## 第二设备与冲突
+Codes are high-entropy credentials; the server stores hashes only. They expire in one year
+and permit up to ten active devices per code. Different recovery codes use different Auth
+identities, preventing reuse of teacher tokens when switching to a student role. Local PINs
+are switching guards only. Do not retain teacher/researcher credentials or sessions on
+untrusted shared devices; local storage is not an encrypted vault.
 
-1. 打开普通游戏页，选择“云端恢复”，粘贴恢复码或选择恢复码 JSON 文件。
-2. 学生只会看到自己的档案；教师看到本班，研究者只有只读报告与去标识导出。
-3. 设置一个四位本地 PIN，然后载入学生。载入前保留当前名册快照，同一学生的本机未确认答题记录会合并保留。
-4. 同一旧备份的历史记录使用稳定 UUIDv5 去重，已有事件 ID 不变。迁移时若名册或记录变化，会停止覆盖并要求重试。
-5. 新设备开始前，先确认旧设备已同步。离线答案先落盘，再最多每十秒合批发送，每批最多五十条。
-6. 两台设备同时修改进度时，版本冲突会暂停同步，不自动覆盖。先导出本机备份，再明确选择载入云端进度；
-   两边答题记录按稳定 UUID 合并，相同 ID 内容冲突时停止而不猜测。
+## Second device and conflicts
 
-本地保存失败时暂停换题，可导出内存中的未保存备份并重试。关闭浏览器仍可能失去未保存内存，不能忽略暂停提示。
-已绑定档案不支持覆盖导入单学生旧 JSON 或在游戏里清空研究日志。云端事件只追加，不以删除本机档案作为同步删除指令。
-普通全名册恢复保留云绑定 ID，但不包含云认证；新设备需要另用恢复码取得权限。
+1. Open the ordinary game and choose cloud recovery (`云端恢复`); paste a code or select
+   its JSON file.
+2. Students see only themselves; teachers their class; researchers readonly reports and
+   deidentified exports.
+3. Set a four-digit local PIN and load a student. Preserve the current roster snapshot
+   first; merge that student's locally unconfirmed answers.
+4. Legacy history from the same backup uses stable UUIDv5 deduplication; existing IDs stay
+   unchanged. Roster/state changes during migration abort overwrite and require retry.
+5. Confirm the old device has synchronized before starting another. Save offline answers
+   locally first; send at most 50 per batch on a bounded ten-second schedule.
+6. Concurrent progress revisions pause sync rather than overwrite. Export local backup,
+   then explicitly load cloud progress. Merge event UUIDs; stop if the same ID has conflicting
+   content instead of guessing.
 
-## 撤销与找回
+Failed local saves pause advancement and allow emergency in-memory export/retry. Closing
+the browser can still lose unsaved memory. Bound profiles reject overwrite imports of old
+single-profile JSON and research-log clearing. Cloud events are append-only; deleting a local
+profile is not a cloud-delete command. Full-roster restore retains binding IDs but excludes
+Auth sessions, so a new device still needs a recovery code.
 
-“查看或撤销授权”撤销恢复码及通过该码恢复的全部设备；“查看或撤销设备”可以撤销单台设备，包括首次开通设备。
-仅撤销设备后，持有效恢复码仍可再次恢复；丢失凭据时应撤销对应恢复码。轮换教师码前，先生成、下载并确认另一份有效教师恢复码，再撤销旧码，避免把自己锁在班级之外。
-恢复码和所有已授权设备都丢失时，需要数据库管理员核实归属后处理，游戏不能凭同名或四位 PIN 找回云数据。
+## Revocation and recovery
 
-## 备份与灾难恢复
+Code revocation (`查看或撤销授权`) revokes that code and all devices recovered through it.
+Device revocation (`查看或撤销设备`) can revoke one device, including the original bootstrap
+device. A valid code can authorize a new device after device-only revocation, so revoke a
+lost credential's code too. Before rotating the teacher code, generate/download/confirm
+another valid teacher code, then revoke the old one to avoid lockout.
 
-- 本机完整名册 JSON 与云端班级灾备是两种备份，应分别保存到设备外。
-- 教师“导出班级云端灾备”输出同一数据库快照中的班级、学生、事件、进度及恢复码哈希；没有明文恢复码或认证令牌。
-- 浏览器导出上限为 50,000 题及 25 MiB 事件 payload。超限会明确失败，不截断；规模更大时由管理员执行数据库转储。
-- 灾备恢复由管理员调用 `nt_private.restore_snapshot(jsonb)`，只接受不存在的班级，不覆盖活跃数据，失败整批回滚。
-  恢复后可用仍有效且未撤销的教师恢复码绑定新身份，旧 Auth 用户和会话不需要写进备份。
-  过期的历史灾备仍可恢复数据，但不会续期旧凭据；所有教师码过期时，管理员核实归属后须另发新的教师恢复码。
-- 免费项目没有可下载的托管数据库备份。应定期离线导出并做恢复演练，另外备份 schema、配置与运维记录；
-  需要托管备份及更高可用性时，先确认预算再升级，不能把应用班级备份当作整个 Supabase 项目的备份。
-- 当前每班最多 500 位学生、每学生每日最多 20,000 条新增事件。达到限制会停止而非删除历史，需管理员评估后调整。
+If all codes/devices are lost, a database administrator must verify ownership and arrange
+recovery. Display names and four-digit PINs cannot recover cloud access.
 
-## iPad 验收
+## Backups and disaster recovery
 
-设置中展开“启动与声音诊断”，点击检测，再分别试听琴声、中文和字母并勾选实际听到的声道。
-导出的本机诊断含构建号、系统/主屏幕模式、分项检测与人工试听结果，不含学生数据或云凭据，且不会自动上传。
-清缓存后首次、再次启动、后台返回、锁屏返回及离线均应分别验证。引擎 running 或 Mac/模拟设备通过不能替代 iPad 实际出声。
+- Keep full local-roster JSON and cloud class archives separately, both off-device.
+- Teacher cloud disaster export (`导出班级云端灾备`) includes class, students, events,
+  progress, and recovery-code hashes from one database snapshot; no plaintext codes/tokens.
+- Browser export caps: 50,000 answers and 25 MiB event payload. Exceeding limits fails
+  explicitly without truncation; use an administrator database dump for larger archives.
+- Administrator `nt_private.restore_snapshot(jsonb)` accepts only absent classes, refuses
+  to overwrite live data, and rolls back the transaction on failure. Still-valid teacher
+  codes can map new Auth identities after restore; old Auth users/sessions need not be backed up.
+  Historical archives can restore after credential expiry but do not renew old codes.
+  If every teacher code is expired, an administrator verifies ownership and issues a new one.
+- The prior service review recorded no downloadable managed database backups for the free
+  project. Recheck service terms before changing an operating plan. Export offline and
+  rehearse restore; separately retain schema/configuration/operations records. A class archive
+  is not a full Supabase project backup. Confirm budget before any paid upgrade.
+- Current application limits: 500 students per class and 20,000 new events per student/day.
+  Limits stop new work rather than delete history; administrator review precedes adjustment.
 
-## 开发与验收入口
+## iPad acceptance
 
-- SQL 迁移按顺序执行：`scripts/migrations/001_cloud.sql`、`002_archive_expiry.sql`。单事务、独立新表，不改原隔离测试表。
-- `npm test` 包含真实本机 PostgreSQL 权限/事务/灾备测试及普通页面的界面全流程测试，全部是合成数据。
-- 明确授权后，`NT_CLOUD_LIVE=1 node tests/cloud_pipeline.mjs` 使用普通 GitHub Pages 与真实 Supabase。
-  开通码只从 gitignored `.release/cloud_bootstrap.txt` 读取；使用 `.release/browser_test_config.json` 的公开客户端配置。
-  身份、恢复码与会话保存在 `.release/cloud_live/`，不得输出或提交；已有身份时脚本拒绝盲目重建班级。
-- 真实现场验收未完成前，只能称受控试用或候选发布，不能写成已完全 production ready。
+In settings open startup/audio diagnostics (`启动与声音诊断`), run checks, then audition
+piano, Chinese, and letters separately and confirm channels actually heard. Local exports
+include build, OS/home-screen mode, timings, and manual audition results, excluding student
+data/credentials; nothing uploads automatically.
 
-服务行为依据：[Supabase 匿名认证](https://supabase.com/docs/guides/auth/auth-anonymous)、[RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)、[数据库函数权限](https://supabase.com/docs/guides/database/functions)、[备份](https://supabase.com/docs/guides/platform/backups)。
+Test cache-cleared first launch, relaunch, background return, lock-screen return, and offline
+separately. A running engine or passing Mac/emulator test is not proof of iPad audibility.
+The recorded user confirmation and its missing OS/mode details are in the progress tracker.
+
+## Development and acceptance entry points
+
+- Ordered migrations: `scripts/migrations/001_cloud.sql`, then `002_archive_expiry.sql`.
+  They are transactional and separate from the isolated test table.
+- `npm test` includes real local PostgreSQL-engine permissions/transactions/restore tests
+  and ordinary-page synthetic UI workflows.
+- Only with explicit live-test authorization, run
+  `NT_CLOUD_LIVE=1 node tests/cloud_pipeline.mjs`. It uses ordinary Pages and real Supabase.
+  Bootstrap comes only from ignored `.release/cloud_bootstrap.txt`; public configuration
+  from `.release/browser_test_config.json`. Identities/codes/sessions remain in ignored
+  `.release/cloud_live/`, never printed or committed. Existing identities prevent blind
+  creation of another class.
+- Do not describe local implementation as universal production readiness. Existing live
+  synthetic acceptance supports controlled use within the documented limits; regional,
+  long-term, and broader device scenarios remain unverified.
+
+Service reference links retained from the earlier operating review:
+[anonymous authentication](https://supabase.com/docs/guides/auth/auth-anonymous),
+[RLS](https://supabase.com/docs/guides/database/postgres/row-level-security),
+[function permissions](https://supabase.com/docs/guides/database/functions), and
+[backups](https://supabase.com/docs/guides/platform/backups).
+These pages were not rechecked during the documentation-only audit.
