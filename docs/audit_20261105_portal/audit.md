@@ -102,3 +102,31 @@ local-only delivery boundary above; it does not retroactively convert fixture te
   handoff before allowlisting and personally entering the first TOTP verification code.
 - Final native Safari/Chrome receipts across Pages/127.0.0.1/localhost remain pending.
   This is not a claim of completed administrator activation or end-to-end live registration.
+
+## Completed administrator activation and browser acceptance
+
+The owner confirmed account creation, and the newly created email-based Auth identity was
+identified in the dashboard. The owner-maintenance grant SQL was generated and reviewed,
+then applied through the existing project-owner SQL Editor. Its readback returned
+`enabled = true`. No password, TOTP seed, or one-time code was entered by the agent or
+written to project documentation. The administrator identity/email is intentionally omitted.
+
+The owner personally completed password login and authenticator enrollment/verification.
+CUA observed the published management dashboard, `已更新管理数据。`, usable controls,
+and both invitation/teacher-account views. The lists were empty; no test invitation or
+new teacher was created merely to populate the production interface. The owner clarified
+that MFA is appropriate for the sole super administrator; no authentication weakening
+was implemented. Teachers continue to use username/key access without an authenticator.
+
+Fresh release receipts were prepared with `--cache-only --no-open --port 8771`. CUA
+opened the six issued URLs in native Safari and Chrome across Pages, 127.0.0.1, and
+localhost. After each game boot, a separate verifier checked every asset hash against
+`release.json`, all six expected app/origin pairs, each one-time receipt, and build
+`29d4243781` before recording ready. The signed-in administrator tab was preserved and
+returned to the invitation list. No learner localStorage was cleared.
+
+This completes the requested migration, publication, administrator activation, health
+workflow setup, and declared browser-load scope. The first reusable invitation remains
+an operator action. Teacher registration/login retains local PostgreSQL/browser-fixture
+evidence, not an additional live class; the documented device, regional-network,
+free-service availability, and long-term capacity limitations remain unchanged.

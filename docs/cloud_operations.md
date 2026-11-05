@@ -13,7 +13,9 @@ Server authorization is separate from the local PIN.
 
 The invitation/username/key implementation and its activation boundary are documented in
 [Teacher Portal and Administrator Operations](teacher_portal.md). Migration 003 and Pages
-publication are complete; initial administrator setup and final browser acceptance remain pending. New teacher keys have
+publication, initial administrator password/TOTP setup, and six native-browser load checks
+are complete. Teacher registration acceptance remains isolated-fixture evidence; no real
+learner was enrolled automatically. New teacher keys have
 no fixed annual expiry; existing student/researcher and legacy keys retain their prior policy.
 
 ## Legacy teacher setup

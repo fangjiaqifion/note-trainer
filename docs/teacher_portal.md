@@ -6,8 +6,11 @@ Last updated: 2026-11-05
 
 Migration 003 has been applied to the existing Supabase project, and build `29d4243781`
 has been pushed and its Pages file hashes verified. The GitHub database-health workflow
-passed its first live run. Initial administrator creation/MFA and final native-browser
-release receipts remain pending the owner credential-entry handoff.
+passed its first live run. The owner created the dedicated application account, it was
+allowlisted, and the owner completed password/TOTP login. Both live management views
+and all six Safari/Chrome release receipts are verified. Teacher registration/login
+was exercised in isolated local browser fixtures; no real teacher or student was enrolled
+as part of activation.
 Consult the progress tracker and release audit for actual verification status. Do not treat
 a local browser fixture as a live Supabase acceptance result.
 
