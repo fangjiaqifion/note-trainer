@@ -65,3 +65,11 @@ test('shared-device learner queue excludes other learners, other classes and rea
  assert.equal(canSyncAccount({role:'teacher',workspace:'class-b'},own),false);
  assert.equal(canSyncAccount({role:'researcher',workspace:'class-a'},own),false);
 });
+
+test('local save timestamps do not generate progress writes or cross-device revision churn',async()=>{
+ const f=fixture(),state={v:3,progress:{},stars:{},events:[],updatedAt:1};
+ await f.client.push(sid,state,f.client.meta(sid));const before=f.calls.length;
+ await f.client.push(sid,{...state,updatedAt:999},f.client.meta(sid));
+ assert.equal(f.calls.length,before,'opening or viewing the same progress must not issue a write');
+ assert.equal(statePayload(state).updatedAt,undefined);
+});

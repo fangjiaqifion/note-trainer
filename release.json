@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "build": "0d74cfd3df",
+  "build": "1d0c66e2f6",
   "files": {
-    "index.html": "2eaf8bc2441278c378697afc20d0a6c456a2725fddb949f2694fc06886d1ee1e",
-    "sw.js": "1f8601532bac8e09edb3580af356b8292bb4cc28b64785a45c1426720a1b5b62",
+    "index.html": "0b66392f5cb939c742468d2d1d54bc11c58bb5470de8747b718e058e56756e62",
+    "sw.js": "ab9a6015b34c6bd84c87dd05b01522c73d527d3da69d65beb4b54f6dca43dd51",
     "clear-cache.html": "500d30c3694eecf60edafad0a278386ecc37e51bc1ed746724aa4d367e5f4b54",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
-    "cloud_client.mjs": "6b3cda9e88bf38f39eded146d86107f6f25ddf1adc1310552e855cfa471afa3f",
+    "cloud_client.mjs": "7999d512475ff021e2ece134de4d0ae681a07557bb7778096d1f32cc0baa70d2",
     "cloud_ui.mjs": "703a5538edd2697ce6ad41f653442a2032ac7916f89ff77e87bbf41b754253c1",
     "audio_readiness.mjs": "cc4c74974c85a02ec2c351c34924ef1e6bc9d489a99bb12cab9c3c507db88ede",
     "sync_test.mjs": "787aed3ce8df77f5f0fec4d10a556fabe12b94a8c7a3df6c0ff09ec94e862eb8",

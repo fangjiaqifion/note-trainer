@@ -4,7 +4,7 @@ export const CLOUD_URL='https://pokrwqirkjcjlworttvk.supabase.co';
 const KEY='nt.cloud.';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const EVENT_FIELDS=['id','seq','pseq','t','sid','mode','phase','battery','skill','kind','note','letter','value','clef','spot','relation','staffY1','staffY2','higher','ask','target','pair','chosen','diff','first','wrong','ms'];
-export const STATE_FIELDS=['v','layout','stars','progress','selected','spot','focus','lastSeen','eventSeq','practiceSeq','autoHistory','battery','level7','legacyE4','createdAt','updatedAt','sound','speech','labels','decor','difficulty','autoLevel'];
+export const STATE_FIELDS=['v','layout','stars','progress','selected','spot','focus','lastSeen','eventSeq','practiceSeq','autoHistory','battery','level7','legacyE4','createdAt','sound','speech','labels','decor','difficulty','autoLevel'];
 export function publicConfig(config){
  if(config?.url!==CLOUD_URL || typeof config.publishableKey!=='string' || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)) throw Error('云服务配置不匹配');
  return {url:CLOUD_URL,publishableKey:config.publishableKey};
