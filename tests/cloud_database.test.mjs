@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {readFile} from 'node:fs/promises';
 import {randomUUID,randomBytes,createHash} from 'node:crypto';
-const migration=await readFile(new URL('../scripts/migrations/001_cloud.sql',import.meta.url),'utf8');
+const migration=(await readFile(new URL('../scripts/migrations/001_cloud.sql',import.meta.url),'utf8'))+'\n'+(await readFile(new URL('../scripts/migrations/002_archive_expiry.sql',import.meta.url),'utf8'));
 const teacher=randomUUID(),learner=randomUUID(),researcher=randomUUID(),stranger=randomUUID(),otherTeacher=randomUUID();
 const hash=x=>createHash('sha256').update(x).digest('hex');
 test('real PostgreSQL: enrolment, recovery, RLS, scoped roles, revocation, immutable batches and CAS',async()=>{

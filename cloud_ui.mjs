@@ -62,7 +62,7 @@ export function mountCloudUI(host){
     const events=await client.readEvents(student.id),box=$('cloudReadReport');box.replaceChildren();
     const heading=document.createElement('p');const first=events.filter(e=>e.first).length;
     heading.textContent=student.code+'：'+events.length+' 题；首次正确率 '+(events.length?Math.round(100*first/events.length)+'%':'暂无数据');box.append(heading);
-    const b=document.createElement('button');b.className='secondary-btn';b.textContent='导出去标识记录';b.onclick=()=>download('note-trainer_'+student.code+'.json',{participant:student.code,events});box.append(b);
+    const b=document.createElement('button');b.className='secondary-btn';b.textContent='导出去标识记录';b.onclick=()=>download('note-trainer_'+student.code+'.json',{schema_version:1,workspace_id:student.workspace_id,student_id:student.id,participant:student.code,events});box.append(b);
    });
    if(client.access.role!=='researcher')button('载入本机 / 云端进度',async()=>{
     const pin=$('cloudLocalPin').value;if(!/^\d{4}$/.test(pin))throw Error('请先填写四位本地 PIN');

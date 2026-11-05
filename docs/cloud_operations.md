@@ -1,7 +1,8 @@
 # 云端账户、收集与恢复
 
 普通入口仍可不联网使用。只有教师逐个备份、绑定的档案会同步，姓名和本地 PIN 不上传。
-研究者只能读取授权班级的参与者编号、进度与答题记录。云角色由服务器验证，不由本机 PIN 决定。
+研究者只能读取授权班级的参与者编号、进度与答题记录。云端 JSON 导出保留 workspace_id/student_id，
+本机 CSV 追加 cloud_workspace/cloud_participant/event_id；跨设备合并使用这些稳定字段，旧 participant 列仍表示本机档案 ID。云角色由服务器验证，不由本机 PIN 决定。
 
 ## 教师开通
 
@@ -41,6 +42,7 @@
 - 浏览器导出上限为 50,000 题及 25 MiB 事件 payload。超限会明确失败，不截断；规模更大时由管理员执行数据库转储。
 - 灾备恢复由管理员调用 `nt_private.restore_snapshot(jsonb)`，只接受不存在的班级，不覆盖活跃数据，失败整批回滚。
   恢复后可用仍有效且未撤销的教师恢复码绑定新身份，旧 Auth 用户和会话不需要写进备份。
+  过期的历史灾备仍可恢复数据，但不会续期旧凭据；所有教师码过期时，管理员核实归属后须另发新的教师恢复码。
 - 免费项目没有可下载的托管数据库备份。应定期离线导出并做恢复演练，另外备份 schema、配置与运维记录；
   需要托管备份及更高可用性时，先确认预算再升级，不能把应用班级备份当作整个 Supabase 项目的备份。
 - 当前每班最多 500 位学生、每学生每日最多 20,000 条新增事件。达到限制会停止而非删除历史，需管理员评估后调整。
@@ -53,7 +55,7 @@
 
 ## 开发与验收入口
 
-- SQL 迁移：`scripts/migrations/001_cloud.sql`。单事务、独立新表，不改原隔离测试表。
+- SQL 迁移按顺序执行：`scripts/migrations/001_cloud.sql`、`002_archive_expiry.sql`。单事务、独立新表，不改原隔离测试表。
 - `npm test` 包含真实本机 PostgreSQL 权限/事务/灾备测试及普通页面的界面全流程测试，全部是合成数据。
 - 明确授权后，`NT_CLOUD_LIVE=1 node tests/cloud_pipeline.mjs` 使用普通 GitHub Pages 与真实 Supabase。
   开通码只从 gitignored `.release/cloud_bootstrap.txt` 读取；使用 `.release/browser_test_config.json` 的公开客户端配置。

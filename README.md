@@ -102,7 +102,8 @@ decor) remain available to the learner.
 Teachers can open **云端管理** to enroll a class with an administrator-issued one-time code,
 back up and bind a learner, and issue recovery codes. Students can restore only their own
 profile; researchers receive readonly class access. Roles are checked by database permissions.
-The server stores recovery-code hashes, not the codes or local PINs. Codes expire after a year,
+Cloud report JSON exports include both workspace and learner UUIDs, so identical participant
+codes in different classes remain distinct. The server stores recovery-code hashes, not the codes or local PINs. Codes expire after a year,
 can be revoked, and permit up to ten devices. Individual device access can also be revoked.
 
 Completed answers are saved locally before bounded batches of up to fifty records are uploaded.
@@ -124,7 +125,8 @@ contains:
 
 | Field | Meaning |
 |---|---|
-| `event_seq` | Monotonic counter, survives trimming |
+| `event_seq` | Local monotonic counter, survives trimming |
+| `cloud_workspace`, `cloud_participant`, `event_id` | Stable cloud class, learner and answer IDs for cross-device joins; empty for older unbound records |
 | `datetime_iso`, `date_local` | UTC timestamp and local date |
 | `session_id` | Groups the questions of one session |
 | `phase` | `pre`, `post`, or empty for practice |
@@ -199,8 +201,9 @@ battery stays at 12.
 These are teacher-only. A normal learner profile does not show them.
 
 - **CSV** exports the current learner's log, one row per question, with a UTF-8 BOM so Excel
-  opens Chinese correctly. `participant` is the internal profile id; `display_name` is the
-  profile name. For sharing, use participant codes as names, or drop the name column.
+  opens Chinese correctly. `participant` is the local profile id; `display_name` is the
+  profile name. Cloud-bound exports add `cloud_workspace`, `cloud_participant`, and `event_id`
+  for stable cross-device joins and deduplication. For sharing, use participant codes as names, or drop the name column.
 - **导出全部 CSV** (teacher console) combines every learner on the device into one file with
   the same columns and a `participant` value per learner.
 - **完整备份** (Full backup) in the teacher roster exports every learner, internal ID, settings,

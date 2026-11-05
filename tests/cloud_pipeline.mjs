@@ -4,6 +4,7 @@ import {PGlite} from '@electric-sql/pglite';
 import {chromium} from 'playwright-core';
 import {spawn} from 'node:child_process';
 import {readFile,mkdir,writeFile,access,chmod} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
 import {randomUUID,randomBytes,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const LIVE=process.env.NT_CLOUD_LIVE==='1';
@@ -19,6 +20,7 @@ await db.exec(`create role anon;create role authenticated;create schema auth;cre
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
 await db.exec(await readFile(new URL('../scripts/migrations/001_cloud.sql',import.meta.url),'utf8'));
+  await db.exec(await readFile(new URL('../scripts/migrations/002_archive_expiry.sql',import.meta.url),'utf8'));
 }
 const bootstrap=LIVE?(await readFile(new URL('../.release/cloud_bootstrap.txt',import.meta.url),'utf8')).trim():randomBytes(32).toString('hex');
 const config=LIVE?JSON.parse(await readFile(new URL('../.release/browser_test_config.json',import.meta.url),'utf8')):{url:'https://pokrwqirkjcjlworttvk.supabase.co',publishableKey:'sb_publishable_fixture'};
@@ -76,7 +78,7 @@ async function pin(page,value){for(const n of value)await page.locator('#keypad 
 async function teacher(page){await page.locator('#btnGateTeacher').click();await pin(page,'1234');await page.locator('#btnTeacherCloud').waitFor({state:'visible'});await page.locator('#btnTeacherCloud').click();}
 async function answer(page){await page.locator('#promptText').waitFor();const text=await page.locator('#promptText').innerText(),letter=text.match(/[BCD]/)[0];await page.locator('#answer [data-midi="'+({B:59,C:60,D:62}[letter])+'"]').click();}
 async function waitStatus(page,fragment){await page.waitForFunction(text=>document.querySelector('#cloudStatus').textContent.includes(text),fragment,{timeout:20000});}
-async function checkpoint(stage){run.stage=stage;if(LIVE){for(let i=0;i<contexts.length;i++){const path=new URL(['teacher.json','learner.json','researcher.json'][i]||('device'+i+'.json'),liveDir).pathname;await contexts[i].storageState({path});await chmod(path,0o600);}await writeFile(new URL('status.json',liveDir),JSON.stringify(run,null,2),{mode:0o600});}}
+async function checkpoint(stage){run.stage=stage;if(LIVE){for(let i=0;i<contexts.length;i++){const path=fileURLToPath(new URL(['teacher.json','learner.json','researcher.json'][i]||('device'+i+'.json'),liveDir));await contexts[i].storageState({path});await chmod(path,0o600);}await writeFile(new URL('status.json',liveDir),JSON.stringify(run,null,2),{mode:0o600});}}
 async function serverRows(page){return page.evaluate(async()=>{
  const cfg=JSON.parse(localStorage.getItem('nt.cloud.config')),key=JSON.parse(localStorage.getItem('nt.cloud.authKey')||'"nt.cloud.auth"'),session=JSON.parse(localStorage.getItem(key));
  const student=window.__dbg.ACCOUNTS.accounts.find(a=>a.cloudStudent).cloudStudent;
@@ -127,9 +129,14 @@ try{
  const third=await context(),r=await third.newPage();await r.goto(base);await r.locator('#btnGateCloud').click();await r.locator('#cloudRecovery').fill(researcherRecovery);await r.locator('#cloudLocalPin').fill('3333');await r.locator('#cloudRecover').click();await waitStatus(r,'研究者只读');
  assert.equal(await r.locator('#cloudRoster button').filter({hasText:'载入本机'}).count(),0);
  await r.locator('#cloudRoster button').filter({hasText:'只读报告'}).click();await r.getByText('P001：2 题',{exact:false}).waitFor();
+ const exporting=r.waitForEvent('download');await r.locator('#cloudReadReport button').click();const exported=await exporting;
+ const exportData=JSON.parse(await readFile(await exported.path(),'utf8'));
+ assert.equal(exportData.participant,'P001');assert.equal(exportData.events.length,2);
+ assert.equal(exportData.student_id,await q.evaluate(()=>window.__dbg.CURRENT.cloudStudent));
+ assert.equal(exportData.workspace_id,await q.evaluate(()=>window.__dbg.CURRENT.cloudWorkspace));
  if(LIVE){
   const denied=await r.evaluate(async()=>{const cfg=JSON.parse(localStorage.getItem('nt.cloud.config')),key=JSON.parse(localStorage.getItem('nt.cloud.authKey')),session=JSON.parse(localStorage.getItem(key)),access=JSON.parse(localStorage.getItem('nt.cloud.access'));const profiles=await fetch(cfg.url+'/rest/v1/nt_cloud_students?select=id',{headers:{apikey:cfg.publishableKey,authorization:'Bearer '+session.access_token}}).then(r=>r.json());const response=await fetch(cfg.url+'/rest/v1/rpc/nt_cloud_batch',{method:'POST',headers:{apikey:cfg.publishableKey,authorization:'Bearer '+session.access_token,'content-type':'application/json'},body:JSON.stringify({s:profiles[0].id,items:[]})});return response.status;});
-  assert.equal(denied,403);await r.screenshot({path:new URL('researcher_report.png',liveDir).pathname});run.realReadback=2;run.researcherWriteStatus=denied;run.requests=calls.length;
+  assert.equal(denied,403);await r.screenshot({path:fileURLToPath(new URL('researcher_report.png',liveDir))});run.realReadback=2;run.researcherWriteStatus=denied;run.requests=calls.length;
  }
  assert.deepEqual(errors,[]);await checkpoint('complete');
  console.log('PASS standard-page cloud pipeline: UI-created teacher/student, enrolment, scoped recovery, actual answer upload, second-device history, offline reload, lost receipt retry and readonly researcher report');

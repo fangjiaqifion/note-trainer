@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="156b85e041">
+<meta name="app-build" content="df08b997fd">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -5648,7 +5648,7 @@ function renderReport(days){
 
   html += '<p class="report-note">一次答对率＝第一次就答对的题 / 总题数；错误次数含同一题内的重试；' +
     '用时按每题从出现到答对计，含重试和按住，不含题间停顿。前测后测不计入日常正确率和自动难度。' +
-    '第 1 关按音名归并，例如 F 的题都算到 F4。数据只在本机，导出 CSV 后可做学习曲线。</p>';
+    '第 1 关按音名归并，例如 F 的题都算到 F4。数据先保存在本机；已绑定档案另有云端副本。导出 CSV 可做学习曲线。</p>';
   body.innerHTML = html;
   bindReportBody(body);
   const sheet = $('#reportModal .sheet');
@@ -5682,7 +5682,8 @@ function download(name, text, mime){
 const CSV_HEAD = ['participant', 'display_name', 'event_seq', 'datetime_iso', 'date_local', 'session_id',
   'phase', 'mode', 'skill', 'kind', 'note', 'letter', 'value', 'clef', 'line_space',
   'difficulty', 'first_try', 'wrong_count', 'response_ms', 'battery',
-  'relation', 'staff_y1', 'staff_y2', 'higher', 'ask', 'target', 'pair', 'chosen'];
+  'relation', 'staff_y1', 'staff_y2', 'higher', 'ask', 'target', 'pair', 'chosen',
+  'cloud_workspace', 'cloud_participant', 'event_id'];
 
 function csvEventRows(acc, state){
   const rows = [];
@@ -5691,7 +5692,8 @@ function csvEventRows(acc, state){
     rows.push([acc.id, acc.name, e.seq, d.toISOString(), dayKey(d), e.sid,
       e.phase, e.mode, e.skill, e.kind, e.note, e.letter, e.value, e.clef, e.spot,
       e.diff, e.first, e.wrong, e.ms, e.battery,
-      e.relation, e.staffY1, e.staffY2, e.higher, e.ask, e.target, e.pair, e.chosen]);
+      e.relation, e.staffY1, e.staffY2, e.higher, e.ask, e.target, e.pair, e.chosen,
+      acc.cloudWorkspace || '', acc.cloudStudent || '', e.id || '']);
   });
   return rows;
 }

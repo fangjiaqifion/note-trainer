@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "build": "156b85e041",
+  "build": "df08b997fd",
   "files": {
-    "index.html": "f6c1e946e479de384544fb8b1ad691be5788ae539d0d18ad77abe5544fc57653",
-    "sw.js": "33e8f4e813b5b67bf698b870c0d3f6e10195fbeb802d6654c0506b3604b70f48",
+    "index.html": "94972e9f197b1c446c7e676065e9a0ae6d45fdb3ba683ec42cd47780581681ff",
+    "sw.js": "5f6536b5d99555bf9a13218e51fb6939c8dd8ec194c4baaec550314da60fe85b",
     "clear-cache.html": "500d30c3694eecf60edafad0a278386ecc37e51bc1ed746724aa4d367e5f4b54",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
     "cloud_client.mjs": "fbf9d33faeee640560755f942bb36e06db6433bfae6908327ee76f3f610d4737",
-    "cloud_ui.mjs": "70b601c44f3931730f6c3b8609f4e2d3f923ca609868edb1d76e2648b6d0b92b",
+    "cloud_ui.mjs": "b9ce8a1cd2b4c7a7d9a45c87504ba36ebba43b57922b6fee5dd0aa73f5d1df30",
     "audio_readiness.mjs": "cc4c74974c85a02ec2c351c34924ef1e6bc9d489a99bb12cab9c3c507db88ede",
     "sync_test.mjs": "787aed3ce8df77f5f0fec4d10a556fabe12b94a8c7a3df6c0ff09ec94e862eb8",
     "experiments/supabase_sync/transport.mjs": "6ac64861ca21ddec04b06938434f81ea355300488b0d4140ed48ccd0107e6cb9",
