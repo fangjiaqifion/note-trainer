@@ -102,7 +102,7 @@
       return response;
     }
     var manifest = await (await download('./release.json',true)).json();
-    var required = ['index.html','sw.js','clear-cache.html','manifest.webmanifest','sync_test.mjs','experiments/supabase_sync/transport.mjs','icon.svg','icon-180.png','icon-192.png','icon-512.png'];
+    var required = ['index.html','sw.js','clear-cache.html','manifest.webmanifest','cloud_client.mjs','cloud_ui.mjs','audio_readiness.mjs','sync_test.mjs','experiments/supabase_sync/transport.mjs','icon.svg','icon-180.png','icon-192.png','icon-512.png'];
     if(manifest.schema !== 1 || !/^[a-f0-9]{10}$/.test(manifest.build) ||
        !required.every(function(file){ return /^[a-f0-9]{64}$/.test((manifest.files || {})[file] || ''); }))
       throw new Error('发布清单不完整');

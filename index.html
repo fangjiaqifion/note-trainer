@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="950868f0bf">
+<meta name="app-build" content="156b85e041">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -597,6 +597,7 @@
       </div>
       <div class="who-grid" id="whoGrid"></div>
       <div class="gate-foot">
+        <button class="ghost-btn" id="btnGateCloud">云端恢复</button>
         <button class="ghost-btn" id="btnGateTeacher">🔒 老师入口</button>
         <button class="ghost-btn" id="btnGateBack" style="display:none">返回练习</button>
       </div>
@@ -644,6 +645,7 @@
       <div class="teacher-foot">
         <button class="ghost-btn" id="btnTeacherNew">＋ 新建学生</button>
         <button class="ghost-btn" id="btnTeacherExportAll">导出全部 CSV</button>
+        <button class="ghost-btn" id="btnTeacherCloud">云端管理</button>
         <button class="ghost-btn" id="btnRosterBackup">完整备份</button>
         <button class="ghost-btn" id="btnRosterRestore">恢复完整备份</button>
         <button class="ghost-btn" id="btnPreviousBackup">导出恢复前快照</button>
@@ -706,6 +708,18 @@
     </div>
     <div class="row">
       <div><div class="name">试听</div><div class="desc">一声琴音加一句中文；听不到先看侧边静音开关</div></div>
+      <details><summary>启动与声音诊断</summary>
+      <p id="audioReadiness" role="status">请点击检测；实际出声需要逐项试听确认。</p>
+      <button class="secondary-btn" id="btnAudioCheck">检测 / 重试</button>
+      <button class="secondary-btn" id="btnPianoOnly">只听琴声</button>
+      <button class="secondary-btn" id="btnChineseOnly">只听中文</button>
+      <button class="secondary-btn" id="btnEnglishOnly">只听字母</button>
+      <label><input id="audioHeardPiano" type="checkbox">听到琴声</label>
+      <label><input id="audioHeardChinese" type="checkbox">听到中文</label>
+      <label><input id="audioHeardEnglish" type="checkbox">听到英文字母</label>
+      <button class="secondary-btn" id="btnAudioEvidence">导出本机诊断</button>
+      </details>
+      <button class="secondary-btn" id="btnCloudSettings">云端同步</button>
       <button class="secondary-btn" id="btnTrySound" style="padding:10px 18px;font-size:15px;border-radius:14px;flex:none">试听</button>
     </div>
     <div class="row">
@@ -836,6 +850,7 @@
   </div>
 </div>
 
+<div class="modal" id="storageFailure" style="z-index:20000"><div class="sheet"><h2>本题尚未保存</h2><p>已暂停换题，答案仍在本页内存中。请先导出备份；解决存储空间或其他页面占用后重试。不要直接关闭页面。</p><button class="secondary-btn" id="btnUnsavedBackup">导出当前未保存备份</button><button class="primary-btn" id="btnRetryStorage">重试保存并继续</button></div></div>
 <script>
 (function(){
 'use strict';
@@ -1237,7 +1252,8 @@ const DIFFS = {
 };
 
 /* ==================== 账户与存档 ====================
-   两层存档，都是本机 localStorage，没有服务器：
+   设备优先：两层本机 localStorage；教师明确备份、绑定后才启用云端。
+   cloud_client.mjs 管身份与合批，cloud_ui.mjs 管授权界面；云端由 RLS/RPC 校验权限：
 
      nt.accounts.v1      账户名册：学生名字、4 位密码哈希、颜色、最后练习时间、
                          老师密码哈希（ACCOUNTS.teacher）
@@ -1283,6 +1299,8 @@ function currentGeneration(){
 let ACCOUNTS = readJSON(ACCOUNTS_KEY) || { v:1, accounts:[], currentId:null, legacyImported:false };
 if(!Array.isArray(ACCOUNTS.accounts)) ACCOUNTS.accounts = [];
 
+let cloudWriter = false;
+let cloudUI = null;
 let CURRENT = null;   // 当前账户（名册里的那一条）
 let S = null;         // 当前账户的状态；未登录时为 null
 let TEACHER_MODE = false;      // 老师总览或老师查看某个学生时为 true
@@ -1360,10 +1378,12 @@ function warnStorage(){
 function saveStore(){
   if(!CURRENT || !S) return true;
   if(!currentGeneration()){ toast('档案已在其他页面恢复，请刷新后继续', 'bad'); return false; }
+  if(CURRENT.cloudStudent && !cloudWriter){ toast('云端档案尚未取得本页写入锁，请关闭其他游戏页面后重试', 'bad'); return false; }
   S.updatedAt = Date.now();
   if(writeJSON(stateKey(CURRENT.id), S)){
     storageWarned = false;
     if(SYNC_TEST) window.dispatchEvent(new Event('nt-test-saved'));
+    else window.dispatchEvent(new Event('nt-local-saved'));
     return true;
   }
   warnStorage();
@@ -1695,16 +1715,17 @@ function applyDecor(){
 /* ==================== 声音 ====================
    全部用 Web Audio 实时合成，页面里没有音频文件。
    iOS 要求第一次发声必须发生在用户手势里，所以 init 时挂了一个
-   一次性 pointerdown 把 AudioContext 唤醒（见文件末尾）。
+   pointerdown 把 AudioContext 唤醒并在返回前台后重试（见文件末尾）。
    iPad 侧边静音开关会同时静音 Web Audio，听不到先看那个开关。 */
 let AC = null;
 function audioCtx(){
+  if(AC && AC.state === 'closed') AC=null;
   if(!AC){
     const Ctor = window.AudioContext || window.webkitAudioContext;
     if(!Ctor) return null;
     AC = new Ctor();
   }
-  if(AC.state === 'suspended') AC.resume().catch(function(){ /* 启动检测提供重试。 */ });
+  if(AC.state !== 'running' && AC.state !== 'closed') AC.resume().catch(function(){ /* 启动检测提供重试。 */ });
   return AC;
 }
 /* ==================== 钢琴音色 ====================
@@ -2477,6 +2498,18 @@ function updateDots(){
    给提示（高亮正确的键、或在标题里说出答案），但不告诉孩子「错了」。
    always = true 时这句提示每次都显示，不只在第一次错时显示：
    第 5 关一题有三段，每段第一次错都该看到本段的方法提示。 */
+let unsavedAnswer=false;
+function holdForStorage(resume){
+  unsavedAnswer=true;stopSay();openModal('storageFailure');
+  $('#btnUnsavedBackup').onclick=function(){
+    download('note-trainer_unsaved_'+safeName(CURRENT.name)+'.json',JSON.stringify({app:'note-trainer',version:SCHEMA_VERSION,account:{id:CURRENT.id,name:CURRENT.name},state:S}),'application/json');
+  };
+  $('#btnRetryStorage').onclick=function(){
+    if(!unsavedAnswer || !saveStore())return;
+    unsavedAnswer=false;closeModal('storageFailure');resume();
+  };
+}
+window.addEventListener('beforeunload',function(event){if(unsavedAnswer){event.preventDefault();event.returnValue='';}});
 function judge(ok, msg, wait, always){
   const q = G.q;
   if(!q || q.answered || G.busy) return;
@@ -2486,20 +2519,24 @@ function judge(ok, msg, wait, always){
     q.answered = true;
     G.busy = true;
     if(!q.wrong) G.first++;
-    recordAnswer(q);
-    /* 第 7 关不给孩子「对！哪个音更高」这一句：答对只爆礼花、
-       音头变绿，然后换下一题。quiet 同时停掉还在念的题干，
-       避免题目念到一半、礼花已经放了还在响。 */
-    if(q.quiet) stopSay();
-    else toast('✓ ' + (msg || praise()), 'ok');
-    confetti(!!q.quiet);
-    delay(wait || 1050, function(){
-      if(session !== G.session) return;
-      G.busy = false;
-      G.i++;
-      if(G.i >= G.qs.length) finishLevel();
-      else renderQuestion();
-    });
+    const saved=recordAnswer(q);
+    function continueAnswer(){
+      /* 第 7 关不给孩子「对！哪个音更高」这一句：答对只爆礼花、
+         音头变绿，然后换下一题。quiet 同时停掉还在念的题干，
+         避免题目念到一半、礼花已经放了还在响。 */
+      if(q.quiet) stopSay();
+      else toast('✓ ' + (msg || praise()), 'ok');
+      confetti(!!q.quiet);
+      delay(wait || 1050, function(){
+        if(session !== G.session) return;
+        G.busy = false;
+        G.i++;
+        if(G.i >= G.qs.length) finishLevel();
+        else renderQuestion();
+      });
+    }
+    if(saved===false){holdForStorage(continueAnswer);return;}
+    continueAnswer();
   }else{
     q.wrong = (q.wrong || 0) + 1;
     toast(msg && (always || q.wrong === 1) ? msg : '再试一次', 'bad');
@@ -2550,15 +2587,15 @@ function recordAnswer(q){
     wrong: q.wrong || 0,
     ms: Math.max(0, Math.round(performance.now() - (q._shownAt || performance.now())))
   };
-  if(SYNC_TEST) e.id = crypto.randomUUID();
+  if(SYNC_TEST || (typeof CURRENT !== 'undefined' && CURRENT && CURRENT.cloudStudent)) e.id = crypto.randomUUID();
   S.events.push(e);
   /* 新音导入每答对一题就记住走到第几步。中途按返回时，
      下次从下一题接着走，而不是从第 1 题重来。 */
   if(G.mode === 'spotlight' && G.spotNote){
     advanceSpotlight((G.spotFrom || 0) + G.i + 1);
   }
-  // 答题先完整落盘，测试同步只读取落盘成功的数据。
-  saveStore();
+  // 未成功落盘时停在本题；不得继续换题或上传内存中的答案。
+  return saveStore();
 }
 
 /* 换题：先停掉上一题的按住与长音，再清空舞台、答案区、状态，
@@ -4751,7 +4788,35 @@ $('#btnTrySound').addEventListener('click', function(){
   if(c && c.state === 'suspended') c.resume();
   playMidi(60, 1.1, 0.4, true);
   say('这是中央 C，听到声音就说明正常', true);
-  toast('听到「咚」和一句话，声音就正常', 'ok');
+  toast('已请求播放琴声和中文，请确认实际听到声音', 'ok');
+});
+
+let audioProbe=null,audioEvidence=null;
+import('./audio_readiness.mjs').then(function(m){
+  audioProbe=m.createAudioProbe({getContext:audioCtx,prepare:roomReverb,
+    voices:function(){loadVoices();return {zh:!!zhVoice,en:!!enVoice};},
+    voiceEvents:('speechSynthesis' in window)?speechSynthesis:null});
+}).catch(function(){ $('#audioReadiness').textContent='声音诊断组件未加载，请刷新重试；可关闭声音练习。'; });
+$('#btnAudioCheck').onclick=function(){
+  if(!audioProbe){$('#audioReadiness').textContent='声音诊断尚未加载，请重试';return;}
+  $('#audioReadiness').textContent='正在检测…';
+  audioProbe.check().then(function(result){
+    audioEvidence=result;
+    $('#audioReadiness').textContent='琴声引擎 '+result.engine+'；中文 '+(result.zh?'可用':'未就绪')+'；字母 '+(result.en?'可用':'未就绪')+'；'+result.elapsed+' ms。引擎就绪不代表扬声器已出声，请逐项试听。';
+  });
+};
+$('#btnPianoOnly').onclick=function(){playMidi(60,1.1,0.4,true);};
+$('#btnChineseOnly').onclick=function(){say('请确认听到中文',true);};
+$('#btnEnglishOnly').onclick=function(){say('C',true);};
+$('#btnAudioEvidence').onclick=function(){
+  const result={v:1,at:new Date().toISOString(),userAgent:navigator.userAgent,standalone:!!navigator.standalone,
+    build:document.querySelector('meta[name="app-build"]').content,online:navigator.onLine,diagnostic:audioEvidence,
+    heard:{piano:$('#audioHeardPiano').checked,chinese:$('#audioHeardChinese').checked,english:$('#audioHeardEnglish').checked}};
+  download('note-trainer_audio_diagnostic.json',JSON.stringify(result),'application/json');
+};
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden){audioEvidence=null;$('#audioReadiness').textContent='已返回前台，请点击检测并重新试听。';
+    for(const id of ['audioHeardPiano','audioHeardChinese','audioHeardEnglish'])$('#'+id).checked=false;}
 });
 
 $('#btnReset').addEventListener('click', function(){
@@ -4773,10 +4838,10 @@ document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
 /* iOS 只在用户手势里允许创建/恢复 AudioContext。
    这里在第一次触摸时悄悄唤醒，之后各处的 playMidi 才能立刻出声。 */
-document.addEventListener('pointerdown', function once(){
+document.addEventListener('pointerdown', function(){
+  // iOS can suspend/interupt audio again after backgrounding or locking the screen.
   audioCtx();
-  document.removeEventListener('pointerdown', once);
-}, { once:true });
+}, { passive:true });
 
 /* ==================== 账户界面 ====================
    名册在 ACCOUNTS，当前账户在 CURRENT，当前状态在 S。
@@ -5663,7 +5728,6 @@ function validateRosterBackup(data){
   const ids = new Set();
   function credential(x){ return object(x) && typeof x.salt === 'string' && x.salt.length > 0 && /^fnv1a:[a-f0-9]+$/.test(x.hash); }
   if(data.roster.teacher && !credential(data.roster.teacher)) fail();
-  if(data.roster.accounts.length && !credential(data.roster.teacher)) fail();
   for(const acc of data.roster.accounts){
     if(!object(acc) || typeof acc.id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(acc.id) ||
       ids.has(acc.id) || typeof acc.name !== 'string' || !credential(acc)) fail();
@@ -5766,7 +5830,7 @@ function exportBackup(){
 
 function importBackup(file){
   if(!file || !CURRENT || !TEACHER_MODE) return;
-  if(SYNC_TEST){ toast('隔离云测试不支持覆盖导入，避免破坏稳定记录 ID', 'bad'); return; }
+  if(SYNC_TEST || CURRENT.cloudStudent){ toast('已绑定云端的档案请使用云端进度恢复；先导出本机备份', 'bad'); return; }
   const reader = new FileReader();
   reader.onload = function(){
     let payload;
@@ -5794,6 +5858,7 @@ function importBackup(file){
 
 function clearEvents(){
   if(!CURRENT) return;
+  if(CURRENT.cloudStudent){ toast('云端档案保留完整研究记录，不支持在游戏里清除', 'bad'); return; }
   if(!window.confirm('清空「' + CURRENT.name + '」的 ' + S.events.length + ' 条答题记录？星星、勾选和进度保留。')) return;
   S.events = [];
   S.autoHistory = [];
@@ -6033,7 +6098,75 @@ if(expectedBuild && expectedBuild !== actualBuild){
 }
 bindAccountUI();
 renderBuildTag();
-if(!SYNC_TEST) bootApp();
+let normalBootReady=Promise.resolve();
+if(!SYNC_TEST){
+  if(releaseParams.has('verify')){
+    // Verification pages load code but do not claim a writer, sync, or mutate profiles.
+    normalBootReady=Promise.all([import('./cloud_ui.mjs'),import('./audio_readiness.mjs')]);
+  }else{
+  const host = {
+    accounts:()=>ACCOUNTS.accounts,
+    readState:id=>readJSON(stateKey(id)),
+    download:download,
+    notify:text=>toast(text,'bad'),
+    isTeacher:()=>TEACHER_MODE,
+    requireLocalTeacher:function(){ if(!TEACHER_MODE) throw new Error('请先通过本机老师入口验证'); },
+    authorizeManagement:function(role,pin){
+      if(role==='learner') return;
+      if(ACCOUNTS.teacher && !TEACHER_MODE) throw new Error('云端身份已恢复；请先通过本机老师入口验证，再打开云端管理');
+      if(!ACCOUNTS.teacher){
+        if(!/^\d{4}$/.test(pin)) throw new Error('请填写四位本地 PIN，再次点击恢复');
+        const salt=randomSalt();ACCOUNTS.teacher={salt:salt,hash:pinHash(pin,salt),createdAt:Date.now()};saveAccounts();
+      }
+      TEACHER_MODE=true;
+    },
+    setWriter:ready=>{cloudWriter=ready;},
+    beforeBind:function(){
+      if(CURRENT && !flushStore()) throw new Error('请先解决本机保存问题');
+      const backup=captureRosterBackup();
+      // A durable snapshot must exist before creating any server profile.
+      localStorage.setItem('nt.cloud.migrationBackup',JSON.stringify(backup));
+      download('note-trainer_before_cloud_'+dayKey(new Date())+'.json',JSON.stringify(backup),'application/json');
+    },
+    bind:function(id,remote,workspace){
+      const backup=captureRosterBackup(),acc=backup.roster.accounts.find(a=>a.id===id);
+      if(!acc || acc.cloudStudent) throw new Error('请选择尚未绑定的学生');
+      acc.cloudStudent=remote;acc.cloudWorkspace=workspace;
+      const st=backup.states[id];for(const event of st.events) if(!event.id) event.id=crypto.randomUUID();
+      restoreRosterBackup(backup,localStorage.getItem(ACCOUNTS_KEY));
+    },
+    importRemote:function(profile,events,pin,access){
+      if(access.role==='researcher') throw new Error('研究者仅可读取与导出');
+      const backup=captureRosterBackup();
+      let acc=backup.roster.accounts.find(a=>a.cloudStudent===profile.id);
+      const old=acc?backup.states[acc.id]:null;
+      const merged=new Map(events.map(e=>[e.id,e]));
+      if(old) for(const e of old.events){
+        if(!e.id) throw new Error('本机记录缺少稳定 ID，请先导出');
+        if(merged.has(e.id)){
+          const canonical=x=>JSON.stringify(x,Object.keys(x).sort());
+          if(canonical(merged.get(e.id))!==canonical(e)) throw new Error('相同答题 ID 内容冲突，已停止恢复，请保留并导出本机备份');
+        }else merged.set(e.id,e);
+      }
+      if(!acc){
+        const salt=randomSalt();acc={id:'cloud-'+profile.id,name:profile.code,salt:salt,hash:pinHash(pin,salt),color:ACCOUNT_COLORS[0],createdAt:Date.now()};backup.roster.accounts.push(acc);
+      }else{const salt=randomSalt();acc.salt=salt;acc.hash=pinHash(pin,salt);}
+      acc.cloudStudent=profile.id;acc.cloudWorkspace=profile.workspace_id;
+      const state=Object.assign(newState(),profile.state,{events:[...merged.values()].sort((a,b)=>a.t-b.t || a.id.localeCompare(b.id))});
+      for(const e of state.events){state.eventSeq=Math.max(state.eventSeq||0,e.seq||0);state.practiceSeq=Math.max(state.practiceSeq||0,e.pseq||0);}
+      state.eventSeq=Math.max(state.eventSeq||0,state.events.length);
+      state.practiceSeq=Math.max(state.practiceSeq||0,state.events.filter(e=>e.mode!=='test').length);
+      backup.states[acc.id]=state;
+      restoreRosterBackup(backup,localStorage.getItem(ACCOUNTS_KEY));
+    }
+  };
+  const bound=ACCOUNTS.accounts.some(a=>a.cloudStudent);
+  const init=import('./cloud_ui.mjs').then(function(m){cloudUI=m.mountCloudUI(host);return cloudUI.ready;});
+  for(const id of ['btnGateCloud','btnTeacherCloud','btnCloudSettings']) $('#'+id).onclick=function(){init.then(()=>cloudUI.open()).catch(()=>toast('云同步组件未就绪，请刷新或关闭其他游戏页','bad'));};
+  if(bound) init.then(bootApp).catch(function(error){document.body.textContent='云端档案保护：'+error.message+'。本机记录仍保留，请关闭其他游戏页后刷新。';});
+  else { bootApp();init.catch(function(){toast('云同步组件未加载，未绑定的本机练习仍可使用','bad');}); }
+  }
+}
 function bootSyncTest(){
   const panel = document.createElement('div');
   panel.style.cssText = 'position:fixed;z-index:10000;bottom:4px;left:4px;right:4px;background:#fffbe9;border:2px solid #c79431;border-radius:12px;padding:8px;font-size:13px;max-height:35vh;overflow:auto';
@@ -6093,16 +6226,19 @@ if(SYNC_TEST){
   });
 }
 if(releaseParams.has('verify')){
-  document.title = 'note-trainer-ready:' + actualBuild + ':' + releaseParams.get('verify');
-  try{
-    const callback = new URL(releaseParams.get('callback'));
-    if(callback.protocol === 'http:' && ['127.0.0.1','localhost'].includes(callback.hostname) &&
-       /^\/__release\/receipt\/[a-f0-9]{48}$/.test(callback.pathname)){
-      callback.searchParams.set('build',actualBuild);
-      // 顶层导航回执避免 HTTPS → localhost 的 fetch/CORS/本地网络权限问题。
-      window.addEventListener('load',function(){ location.replace(callback.href); });
-    }
-  }catch(e){}
+  const loaded=new Promise(function(resolve){if(document.readyState==='complete')resolve();else window.addEventListener('load',resolve,{once:true});});
+  function receipt(ok){
+    document.title=(ok?'note-trainer-ready:':'note-trainer-load:failed:')+(ok?actualBuild+':':'')+releaseParams.get('verify');
+    try{
+      const callback=new URL(releaseParams.get('callback'));
+      if(callback.protocol==='http:' && ['127.0.0.1','localhost'].includes(callback.hostname) && /^\/__release\/receipt\/[a-f0-9]{48}$/.test(callback.pathname)){
+        callback.searchParams.set('build',actualBuild);
+        if(!ok){callback.searchParams.set('status','failed');callback.searchParams.set('stage','game-startup');}
+        location.replace(callback.href);
+      }
+    }catch(e){}
+  }
+  Promise.all([normalBootReady,loaded]).then(()=>receipt(true)).catch(()=>receipt(false));
 }
 
 /* 离线缓存只在安全上下文里注册：https 或本机调试。

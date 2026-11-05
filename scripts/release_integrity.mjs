@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
 export const ASSETS = ['index.html','sw.js','clear-cache.html','manifest.webmanifest',
-  'sync_test.mjs','experiments/supabase_sync/transport.mjs','icon.svg','icon-180.png','icon-192.png','icon-512.png'];
+  'cloud_client.mjs','cloud_ui.mjs','audio_readiness.mjs','sync_test.mjs','experiments/supabase_sync/transport.mjs','icon.svg','icon-180.png','icon-192.png','icon-512.png'];
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 export const pageBuild = text => /<meta name="app-build" content="([^"]+)">/.exec(text)?.[1];
 

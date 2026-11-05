@@ -21,8 +21,8 @@ grows; the menu does not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
 notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
-in `localStorage`; learner records are not uploaded to an account server, and account recovery
-is not available.
+in `localStorage`. Teachers can explicitly back up and bind selected profiles to a cloud class;
+strong recovery codes restore scoped access on another device. Unbound profiles remain local.
 
 The teacher is the only superuser. A separate teacher PIN unlocks the student roster: the
 teacher creates learner profiles, opens every learner's report on this device, and exports all
@@ -40,7 +40,7 @@ three minutes a day.
 - Every question is read aloud by the system voice, so no reading is required.
 - Feedback is immediate and positive; a wrong answer is "try again", never "wrong".
 - The game is one `index.html` with no compilation or runtime dependencies, and no network
-  requests for piano samples or learner-data uploads. It runs from a static host and caches
+  requests for piano samples. Explicitly bound cloud profiles upload allowlisted practice data. It runs from a static host and caches
   its application files for offline use.
 
 Sound is synthesized at runtime with the Web Audio API; there are no audio files to download.
@@ -96,6 +96,26 @@ A normal profile's account panel has only **切换** (Switch) and **锁定** (Lo
 pre/post tests, CSV/JSON export, backup import and log clearing are hidden unless the teacher
 is in teacher mode. The checked notes and the settings (sound, speech, key labels, difficulty,
 decor) remain available to the learner.
+
+### Optional cloud classes and recovery
+
+Teachers can open **云端管理** to enroll a class with an administrator-issued one-time code,
+back up and bind a learner, and issue recovery codes. Students can restore only their own
+profile; researchers receive readonly class access. Roles are checked by database permissions.
+The server stores recovery-code hashes, not the codes or local PINs. Codes expire after a year,
+can be revoked, and permit up to ten devices. Individual device access can also be revoked.
+
+Completed answers are saved locally before bounded batches of up to fifty records are uploaded.
+Retries keep their UUIDs. Progress uses revision checks: concurrent changes pause instead of
+automatically overwriting another device. Restoring cloud progress retains a local snapshot
+and merges locally pending answer records. Storage failures pause question advancement and
+allow an emergency backup. Cloud-bound logs cannot be cleared or replaced by a profile import.
+
+Teachers can export a consistent class disaster-recovery archive; restore is administrator-only
+and refuses to overwrite an existing class. Browser exports are limited to 50,000 answers and
+25 MiB of event payload; larger archives require an administrator database dump. Keep recovery
+codes and backups offline. Local browser storage is unencrypted, and shared devices holding a
+teacher session should be trusted. See [Cloud operations](docs/cloud_operations.md).
 
 ### Practice log
 
@@ -520,6 +540,7 @@ date rather than semver.
 | 2026-11-04 | Question generators space out adjacent notes: skill 3 balances B/C/D and never shows C twice in a row (C4 and C4B count as C), and skills 2, 4, 5, 8 and 9 and the daily mix use a shared `spaceOut` pass |
 | 2026-11-04 | Skill 8 always offers numbers 1–8 instead of shrinking the list to the correct position, and the session is fixed at six questions |
 | 2026-11-04 | New-note progress is saved after every answered question, so leaving the 14-question lesson resumes at the next step; `npm test` now runs a Playwright smoke suite |
+| 2026-11-05 | Optional cloud classes add revocable scoped recovery, cross-device history, teacher/researcher access, version-conflict protection, and class disaster recovery. Audio diagnostics distinguish piano, Chinese, and letters; failed local saves pause practice |
 | 2026-11-05 | Teachers can back up and restore the full roster with a recoverable previous snapshot. Failed single-profile imports no longer claim success; missing or duplicate local sync identities pause uploads |
 | 2026-11-05 | Isolated sync tests batch saved answers on a bounded ten-second window, back off on temporary failures, pause on identity/configuration errors, and support remote test pages without publishing a database key |
 | 2026-11-05 | Completed answers save immediately; older records are retained beyond 8000 rows. A separate local test mode checks game-generated answers against Supabase and reports startup audio/network timing |
@@ -751,8 +772,8 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
 - Stars, checked notes, progress and the log are per profile but still per device
   (`localStorage`); clearing website data erases every profile. Export a JSON backup before
   clearing browser data.
-- The teacher roster reads only the profiles on this device. There is no cloud sync and no
-  cross-device merge; a teacher with several devices has to collect CSV files or JSON backups.
+- The local teacher roster lists this device. The separate cloud panel lists the authorized
+  class and provides recovery, readonly researcher reports, and deidentified exports.
 - The teacher PIN has no recovery and no change screen. Forgetting it leaves the learner data
   readable only by clearing site data or by using developer tools.
 - The report's time figure is the sum of per-question response times. It includes retries and
@@ -764,7 +785,7 @@ licensed for reuse. If this changes, add a `LICENSE` file and replace this secti
   the hash protects only against casual reading. Anyone with the unlocked device and developer
   tools can read the log.
 - The log is limited by browser storage capacity. Export regularly; a full browser store can
-  prevent new saves. Cloud sync is an explicitly enabled isolated test feature and is not enabled for learners.
+  prevent new saves. Cloud sync is enabled only after a teacher explicitly backs up and binds each learner.
 - A profile JSON covers one learner; use the teacher console's full backup for a restorable
   whole roster. Combined CSV is a research export and does not restore progress or PINs.
 - The test battery is frozen at pre-test. If the child learns new notes before the post-test,

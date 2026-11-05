@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/release_pipeline.test.mjs tests/legacy_migration.test.mjs tests/roster_backup.test.mjs tests/game_sync.test.mjs experiments/supabase_sync/*.test.mjs && node tests/scheduling_audit.mjs && node tests/smoke.mjs && node tests/sync_browser.mjs && node tests/backup_browser.mjs",
+    "test": "node --test tests/release_pipeline.test.mjs tests/legacy_migration.test.mjs tests/roster_backup.test.mjs tests/cloud_database.test.mjs tests/cloud_client.test.mjs tests/audio_readiness.test.mjs tests/storage_barrier.test.mjs tests/game_sync.test.mjs experiments/supabase_sync/*.test.mjs && node tests/scheduling_audit.mjs && node tests/smoke.mjs && node tests/sync_browser.mjs && node tests/backup_browser.mjs && node tests/cloud_pipeline.mjs",
     "serve": "bash serve.sh",
     "release": "node scripts/release.mjs",
     "release:push": "node scripts/release.mjs --push",
@@ -13,6 +13,7 @@
     "pages:refresh": "node scripts/pages_refresh.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
     "playwright-core": "^1.64.0"
   }
 }
