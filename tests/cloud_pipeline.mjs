@@ -21,6 +21,8 @@ await db.exec(`create role anon;create role authenticated;create schema auth;cre
  grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
 await db.exec(await readFile(new URL('../scripts/migrations/001_cloud.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../scripts/migrations/002_archive_expiry.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../scripts/migrations/003_teacher_portal.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../scripts/migrations/004_automatic_students.sql',import.meta.url),'utf8'));
 }
 const bootstrap=LIVE?(await readFile(new URL('../.release/cloud_bootstrap.txt',import.meta.url),'utf8')).trim():randomBytes(32).toString('hex');
 const config=LIVE?JSON.parse(await readFile(new URL('../.release/browser_test_config.json',import.meta.url),'utf8')):{url:'https://pokrwqirkjcjlworttvk.supabase.co',publishableKey:'sb_publishable_fixture'};
@@ -100,11 +102,11 @@ try{
  await p.locator('#cloudConfig').setInputFiles({name:'config.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(config))});
  await waitStatus(p,'配置已加载');await p.locator('#cloudBootstrap').fill(bootstrap);await p.locator('#cloudCreate').click();await waitStatus(p,'恢复码已生成');
  const teacherRecovery=await p.locator('#cloudIssued').inputValue();assert.ok(teacherRecovery.startsWith('nt1.'));if(LIVE)await writeFile(new URL('teacher_recovery.json',liveDir),JSON.stringify({recovery:teacherRecovery}),{mode:0o600});await checkpoint('cloud class created');
- await p.locator('#cloudParticipant').fill('P001');p.once('dialog',d=>d.accept());await p.locator('#cloudBind').click();
+ await p.locator('#cloudSafety > summary').click();await p.locator('#cloudLegacyBind > summary').click();await p.locator('#cloudParticipant').fill('P001');p.once('dialog',d=>d.accept());await p.locator('#cloudBind').click();
  await p.waitForFunction(()=>!!window.__dbg?.ACCOUNTS.accounts[0]?.cloudStudent);
  await teacher(p);await p.locator('#cloudRetry').click();await waitStatus(p,'本机记录已同步');await p.locator('#cloudRefresh').click();
  await p.locator('#cloudRoster button').filter({hasText:'学生恢复码'}).click();await waitStatus(p,'恢复码已生成');const learnerRecovery=await p.locator('#cloudIssued').inputValue();if(LIVE)await writeFile(new URL('learner_recovery.json',liveDir),JSON.stringify({recovery:learnerRecovery}),{mode:0o600});
- await p.locator('#cloudSafety summary').click();await p.locator('#cloudResearchCode').click();await waitStatus(p,'恢复码已生成');
+ await p.locator('#cloudSafety > summary').click();await p.locator('#cloudResearchCode').click();await waitStatus(p,'恢复码已生成');
  await p.waitForFunction(previous=>document.querySelector('#cloudIssued').value!==previous,learnerRecovery);const researcherRecovery=await p.locator('#cloudIssued').inputValue();if(LIVE)await writeFile(new URL('researcher_recovery.json',liveDir),JSON.stringify({recovery:researcherRecovery}),{mode:0o600});await checkpoint('scoped codes issued');
  await p.locator('#cloudClose').click();await p.locator('#btnTeacherExit').click();await p.locator('#whoGrid button').first().click();await pin(p,'1111');
  await p.getByRole('button',{name:'1 键盘上的位置 ★★★',exact:true}).click();await answer(p);

@@ -23,7 +23,7 @@ grows; the menu does not get longer.
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
 notes, progress flags, stars, settings, and a per-question practice log. Profiles are stored
-in `localStorage`. Teachers can explicitly back up and bind selected profiles to a cloud class;
+in `localStorage`. For a signed-in teacher, learner profiles automatically join their cloud class;
 strong recovery codes restore scoped access on another device. Unbound profiles remain local.
 
 On this device, the teacher manages the local roster. Cloud access uses separately authorized roles. A separate teacher PIN unlocks the student roster: the
@@ -42,7 +42,7 @@ three minutes a day.
 - Every question is read aloud by the system voice, so no reading is required.
 - Feedback is immediate and positive; a wrong answer is "try again", never "wrong".
 - The game is a static single-page app with local modules and no compilation or third-party runtime dependencies, and no network
-  requests for piano samples. Explicitly bound cloud profiles upload allowlisted practice data. It runs from a static host and caches
+  requests for piano samples. Cloud profiles automatically synchronize allowlisted practice data and private display labels. It runs from a static host and caches
   its application files for offline use.
 
 Sound is synthesized at runtime with the Web Audio API; there are no audio files to download.
@@ -92,10 +92,10 @@ export single-profile or full-roster backups. A four-digit local PIN guards swit
 it does not encrypt the records. Back up regularly because browser storage is finite
 and clearing website data erases local profiles.
 
-Optional cloud classes require explicit teacher backup and binding for each learner.
+For signed-in cloud teachers, creating a learner automatically enrols and synchronizes the profile.
 Scoped recovery codes support another device; teacher and readonly researcher access
-are enforced separately from local PINs. Existing local learners are not uploaded
-automatically. See [cloud operation and recovery](docs/cloud_operations.md) for details.
+are enforced separately from local PINs. An unowned local roster can join its first verified teacher workspace; profiles belonging
+to another workspace are never reassigned. See [cloud operation and recovery](docs/cloud_operations.md) for details.
 
 ## Evidence and limitations
 
@@ -131,7 +131,7 @@ current descriptions should stay accurate as the product changes.
 | Progress history for teachers | Shipped 2026-11-03 | Time, daily-by-skill matrix, per-skill and per-note tables, comparison pairs, error-rate trend, print/PDF |
 | Adaptive question selection | Shipped 2026-11-02 | Error-weighted note pools and auto difficulty |
 | Pre/post testing | Shipped 2026-11-02 | Frozen 12-item battery, same items and difficulty at post |
-| Optional cloud classes and recovery | Available for controlled use | Explicit backup/binding, scoped recovery, teacher/researcher roles, and disaster recovery; long-term and regional limits remain |
+| Optional cloud classes and recovery | Available for controlled use | Automatic cloud enrolment, scoped recovery, teacher/researcher roles, and disaster recovery; long-term and regional limits remain |
 | Account deletion | Idea | The teacher console can clear logs but cannot remove a profile |
 | Teacher PIN change or recovery | Idea | The PIN can be set once; there is no change screen and no recovery |
 | English interface | Idea | All strings are inline; would need a small dictionary and a switch |

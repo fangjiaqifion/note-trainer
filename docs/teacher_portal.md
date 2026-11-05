@@ -26,8 +26,10 @@ a local browser fixture as a live Supabase acceptance result.
    Confirm saving to clear the pending plaintext registration key from browser storage.
 4. On another device choose `教师登录`, enter username/key, and establish the local PIN.
    Explicitly load students and progress; login alone never imports or uploads a roster.
-5. Bind each local learner explicitly after the full local snapshot/download. Student and
-   researcher recovery continues to use existing scoped `nt1.` packets.
+5. Create learners normally in the teacher overview. Automatic enrolment, backup snapshots,
+   display labels, progress, and answers synchronize without a participant-code/binding step.
+   Offline/cloud-request failures retain a local queue and retry after reconnection. Student
+   and researcher recovery continues to use existing scoped `nt1.` packets.
 
 The random teacher key has 256 bits of entropy. It is not derived from a username or invitation.
 New portal teacher keys (including later teacher keys for that workspace) have no fixed annual
@@ -163,3 +165,32 @@ References checked 2026-11-05:
 - https://supabase.com/docs/guides/auth/users
 - https://supabase.com/docs/guides/platform/free-project-pausing
 - https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
+
+## Automatic student synchronization update
+
+The user replaced per-learner opt-in binding with cloud-by-default operation on 2026-11-05.
+This update requires migration 004 before publishing the new client. Consult the tracker
+for the actual release status. It does not retroactively change previous live evidence.
+
+The first verified teacher workspace can adopt the existing unowned local roster after local
+teacher verification, preserving an internal full snapshot. Profiles already associated with
+another workspace are never reassigned. Each newly created profile records the active teacher
+workspace before scheduling its enrolment. The server uses the stable local ID for idempotency;
+automatically generated participant codes are nonidentifying and are not a teacher input.
+
+The local state and pending ownership are saved before networking. Automatic attachment checks
+both roster and state/memory tokens after requests, avoiding overwrite when a learner continues
+practicing. UUIDs persist before upload. Lost receipts retry the same server student, while
+quota failures retain local records and cannot claim successful cloud synchronization.
+
+Migration 004 stores student names/nicknames and avatar colors separately in a private label
+table. Only the owning teacher and corresponding learner can read them; researcher APIs and
+answer payloads remain deidentified. Local PINs, PIN hashes, teacher credentials, and sessions
+are not uploaded as student metadata. Class disaster archives include the labels, and restores
+validate workspace ownership transactionally. A new device still establishes its own local PIN.
+
+Normal account management offers automatic-sync status and the existing student creation
+button. The old participant-code/binding controls are retained only inside the advanced legacy
+compatibility section. The automatic snapshot remains on-device; independent off-device
+backups are still needed for disaster recovery. Teacher login opens the teacher overview,
+rather than returning a newly signed-in teacher to the empty account gate.

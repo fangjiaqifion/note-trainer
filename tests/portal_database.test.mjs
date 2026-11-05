@@ -19,7 +19,7 @@ test('portal: invite reuse, idempotency, MFA, suspension, reset, RLS, limits and
    create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
    grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
   for(const id of [owner,a,b,c])await db.query('insert into auth.users values($1)',[id]);
-  for(const file of ['001_cloud.sql','002_archive_expiry.sql','003_teacher_portal.sql'])await db.exec(await readFile(new URL('../scripts/migrations/'+file,import.meta.url),'utf8'));
+  for(const file of ['001_cloud.sql','002_archive_expiry.sql','003_teacher_portal.sql','004_automatic_students.sql'])await db.exec(await readFile(new URL('../scripts/migrations/'+file,import.meta.url),'utf8'));
   await db.query("insert into nt_private.portal_admins(user_id,require_mfa_after) values($1,now()-interval '1 minute')",[owner]);
   async function as(id,name,args=[],mfa=false){
    await db.exec('begin');
@@ -53,6 +53,13 @@ test('portal: invite reuse, idempotency, MFA, suspension, reset, RLS, limits and
   assert.equal((await db.query('select * from public.nt_cloud_workspaces')).rows.length,1);
   await assert.rejects(db.exec('select * from nt_private.portal_teachers'));await assert.rejects(db.exec('select * from nt_private.portal_admins'));await db.exec('reset role');
   const student=await as(a,'nt_cloud_add_student',[first.workspace,'local-a','P001']);
+  await as(a,'nt_cloud_label',[student,'TEST01','#3C7DD9']);
+  assert.equal((await as(a,'nt_cloud_labels',[first.workspace]))[0].display_name,'TEST01');
+  assert.equal((await as(b,'nt_cloud_labels',[first.workspace])).length,0);
+  const readOnly=randomUUID();await db.query('insert into auth.users values($1)',[readOnly]);
+  const readOnlyCode=randomBytes(32).toString('hex');await as(a,'nt_cloud_issue',[first.workspace,null,'researcher',hash(readOnlyCode)]);await as(readOnly,'nt_cloud_claim',[readOnlyCode]);
+  assert.equal((await as(readOnly,'nt_cloud_labels',[first.workspace])).length,0,'researchers never receive student display names');
+  await assert.rejects(as(readOnly,'nt_cloud_label',[student,'INVALID','#3C7DD9']));
   await as(a,'nt_cloud_batch',[student,JSON.stringify([{id:randomUUID(),payload:{seq:1,first:true}}])]);
   const t=listing.teachers.find(t=>t.username==='teacher01');
   await as(owner,'nt_portal_admin_teacher',[t.id,false,'suspended'],true);
@@ -67,17 +74,19 @@ test('portal: invite reuse, idempotency, MFA, suspension, reset, RLS, limits and
   assert.equal((await as(c,'nt_portal_login',['teacher01',secret])).error,'invalid_login');await assert.rejects(as(a,'nt_cloud_codes',[first.workspace]));
   assert.equal((await as(c,'nt_portal_login',['teacher01',fresh])).workspace,first.workspace);
   const archive=await as(c,'nt_cloud_backup',[first.workspace]);assert.equal(archive.events.length,1);
+  assert.equal(archive.student_labels[0].display_name,'TEST01');
   assert.equal(archive.portal_teacher.username,'teacher01');assert.equal(archive.portal_teacher.initial_user,undefined);assert.equal(archive.portal_teacher.note,undefined);
   const restored=new PGlite();
   try{
    await restored.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
     grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
-   for(const file of ['001_cloud.sql','002_archive_expiry.sql','003_teacher_portal.sql'])await restored.exec(await readFile(new URL('../scripts/migrations/'+file,import.meta.url),'utf8'));
+   for(const file of ['001_cloud.sql','002_archive_expiry.sql','003_teacher_portal.sql','004_automatic_students.sql'])await restored.exec(await readFile(new URL('../scripts/migrations/'+file,import.meta.url),'utf8'));
    await restored.query('select nt_private.restore_snapshot($1)',[JSON.stringify(archive)]);
    const uid=randomUUID();await restored.query('insert into auth.users values($1)',[uid]);await restored.query("select set_config('request.jwt.claim.sub',$1,false)",[uid]);await restored.exec('set role authenticated');
    const out=(await restored.query('select public.nt_portal_login($1,$2) a',['Teacher01',fresh])).rows[0].a;
    assert.equal(out.workspace,first.workspace);assert.equal((await restored.query('select * from public.nt_cloud_events')).rows.length,1);
+   assert.equal((await restored.query('select public.nt_cloud_labels($1) a',[first.workspace])).rows[0].a[0].display_name,'TEST01');
   }finally{await restored.close();}
   await as(owner,'nt_portal_admin_update_invite',[inviteId,false,expiry,3],true);
   assert.equal((await as(b,'nt_portal_login',['teacher02',second])).workspace,next.workspace);

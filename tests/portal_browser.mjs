@@ -6,12 +6,12 @@ import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
-const db=new PGlite(),owner=randomUUID(),tokens=new Map(),contexts=[],errors=[];let chain=Promise.resolve(),loseRegistration=true,ownerHasFactor=false;
+const db=new PGlite(),owner=randomUUID(),tokens=new Map(),contexts=[],errors=[];let chain=Promise.resolve(),loseRegistration=true,ownerHasFactor=false,cloudUnavailable=false,loseStudentReceipt=true;
 await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
 await db.query('insert into auth.users values($1)',[owner]);
-for(const f of ['001_cloud.sql','002_archive_expiry.sql','003_teacher_portal.sql'])await db.exec(await readFile(new URL('../scripts/migrations/'+f,import.meta.url),'utf8'));
+for(const f of ['001_cloud.sql','002_archive_expiry.sql','003_teacher_portal.sql','004_automatic_students.sql'])await db.exec(await readFile(new URL('../scripts/migrations/'+f,import.meta.url),'utf8'));
 await db.query("insert into nt_private.portal_admins(user_id,require_mfa_after) values($1,now()-interval '1 minute')",[owner]);
 const server=spawn(process.execPath,['scripts/local_server.mjs','0'],{stdio:['ignore','pipe','pipe']});
 const base=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Test server startup timed out')),10000);server.stdout.once('data',d=>{clearTimeout(timer);resolve(String(d).match(/http:\/\/\S+/)[0]+'/');});server.once('error',reject);server.once('exit',code=>{clearTimeout(timer);reject(Error('Test server exited before startup: '+code));});});
@@ -22,6 +22,7 @@ async function context(){
  await c.route('https://pokrwqirkjcjlworttvk.supabase.co/**',route=>{
   const run=async()=>{
    const req=route.request(),url=new URL(req.url()),body=req.postData()?req.postDataJSON():{},auth=tokens.get(req.headers().authorization?.replace('Bearer ',''));
+   if(cloudUnavailable)return route.abort('internetdisconnected');
    if(url.pathname.endsWith('/signup')){const id=randomUUID();await db.query('insert into auth.users values($1)',[id]);return route.fulfill({json:token(id)});}
    if(url.pathname.endsWith('/token')){
     if(url.searchParams.get('grant_type')==='password')return route.fulfill({json:token(owner)});
@@ -45,6 +46,7 @@ async function context(){
     }else if(url.pathname.endsWith('/nt_cloud_students'))value=(await db.query('select * from public.nt_cloud_students where workspace_id=$1',[url.searchParams.get('workspace_id').slice(3)])).rows;
     else throw Error('unexpected API');
     await db.exec('commit');
+    if(loseStudentReceipt&&url.pathname.endsWith('/nt_cloud_add_student')){loseStudentReceipt=false;return route.abort('connectionreset');}
     if(loseRegistration&&url.pathname.endsWith('/nt_portal_register')){loseRegistration=false;return route.abort('connectionreset');}
     return route.fulfill({json:value});
    }catch(e){await db.exec('rollback');return route.fulfill({status:e.code==='42501'?403:400,json:{message:'fixture rejected request'}});}
@@ -69,13 +71,30 @@ try{
  await p.locator('#cloudRegister').click();await p.locator('#cloudPacket').waitFor({state:'visible'});
  const key=await p.locator('#cloudIssued').inputValue();assert.ok(key.startsWith('NT2-'));
  assert.equal((await db.query('select used from nt_private.portal_invites')).rows[0].used,1);
- await p.reload();await p.locator('#btnGateTeacher').click();for(const n of '1234')await p.locator('#keypad [data-k="'+n+'"]').click();await p.locator('#btnTeacherCloud').click();
+ await p.reload();if(await p.locator('#home.active').count())await p.locator('#btnWho').click();await p.locator('#btnGateTeacher').click();for(const n of '1234')await p.locator('#keypad [data-k="'+n+'"]').click();await p.locator('#btnTeacherCloud').click();
  await p.locator('#cloudPacket').waitFor({state:'visible'});assert.ok((await p.locator('#cloudIssued').inputValue())===key,'unconfirmed credential survives reload');await p.locator('#cloudSavedCode').click();
  assert.equal(await p.evaluate(()=>localStorage.getItem('nt.cloud.registrationPending')),null);
  const other=await context(),q=await other.newPage();await q.goto(base);await q.locator('#btnGateCloud').click();await q.locator('#cloudLoginName').fill('TEACHER01');await q.locator('#cloudLoginKey').fill(key);await q.locator('#cloudLocalPin').fill('4321');await q.locator('#cloudLogin').click();
- await q.waitForFunction(()=>document.querySelector('#cloudStatus').textContent.includes('当前云端角色：教师'));
+ await q.locator('#cloudTeacher').waitFor({state:'visible'});
  assert.equal(await q.locator('#cloudLoginKey').inputValue(),'');
  const denial=await q.evaluate(async()=>{const c=JSON.parse(localStorage.getItem('nt.cloud.config')),k=JSON.parse(localStorage.getItem('nt.cloud.authKey')),s=JSON.parse(localStorage.getItem(k));return (await fetch(c.url+'/rest/v1/rpc/nt_portal_admin_list',{method:'POST',headers:{apikey:c.publishableKey,authorization:'Bearer '+s.access_token,'content-type':'application/json'},body:'{}'})).status;});assert.equal(denial,403);
+
+ // New students synchronize without visiting cloud management or entering a participant code.
+ await p.locator('#cloudClose').click();cloudUnavailable=true;
+ await p.locator('#btnTeacherNew').click();await p.locator('#accName').fill('AUTO01');await p.locator('#accPin').fill('1111');await p.locator('#accPin2').fill('1111');await p.locator('#btnAccCreate').click();
+ await p.waitForFunction(()=>document.querySelector('#teacherCloudStatus').textContent.includes('同步未完成'));
+ assert.equal((await db.query('select count(*)::int n from public.nt_cloud_students')).rows[0].n,0);
+ await p.reload();if(await p.locator('#home.active').count())await p.locator('#btnWho').click();await p.locator('#btnGateTeacher').click();for(const n of '1234')await p.locator('#keypad [data-k="'+n+'"]').click();
+ cloudUnavailable=false;await p.locator('#btnTeacherCloud').click();await p.locator('#cloudRetry').click();
+ await p.waitForFunction(()=>!!window.__dbg?.ACCOUNTS.accounts[0]?.cloudStudent);
+ await p.waitForFunction(()=>document.querySelector('#teacherCloudStatus').textContent.includes('本机记录已同步'));
+ assert.equal((await db.query('select count(*)::int n from public.nt_cloud_students')).rows[0].n,1,'lost enrolment receipt must not duplicate the student');
+ assert.equal((await db.query('select display_name from nt_private.student_labels')).rows[0].display_name,'AUTO01');
+ await p.locator('#cloudClose').click();await p.locator('#teacherList [data-enter]').click();
+ await p.getByRole('button',{name:'1 键盘上的位置 ★★★',exact:true}).click();await p.locator('#promptText').waitFor();
+ const prompt=await p.locator('#promptText').innerText(),letter=prompt.match(/[BCD]/)[0];await p.locator('#answer [data-midi="'+({B:59,C:60,D:62}[letter])+'"]').click();
+ await p.waitForFunction(()=>JSON.parse(localStorage.getItem('nt.cloud.meta.'+window.__dbg.CURRENT.cloudStudent)||'{}').ack?.length===1,null,{timeout:20000});
+ assert.equal((await db.query('select count(*)::int n from public.nt_cloud_events')).rows[0].n,1);
  await m.locator('#refresh').click();await m.locator('#teachersTab').click();await m.locator('#search').fill('teacher01');await m.locator('#teacherTable button').click();
  m.once('dialog',d=>d.accept());await m.locator('#toggleTeacher').click();await m.waitForFunction(()=>document.querySelector('#toggleTeacher').textContent==='恢复账户');
  await m.locator('#teacherNote').fill('Synthetic suspended account');await m.locator('#saveTeacherNote').click();await m.waitForFunction(()=>document.querySelector('#toggleTeacher').textContent==='恢复账户');
@@ -93,5 +112,5 @@ try{
  assert.ok(await v.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'registration key must not overflow mobile viewport');
  await v.locator('#cloudSavedCode').click();
 
- assert.deepEqual(errors,[]);console.log('PASS portal UI: MFA gate, invitation issue, validation, lost registration receipt, saved key recovery, new-device login, admin denial and suspension.');
+ assert.deepEqual(errors,[]);console.log('PASS portal UI: MFA gate, invitation issue, validation, lost registration receipt, saved key recovery, new-device login, automatic student enrolment, offline reload, lost enrolment receipt, private labels, actual answer upload, admin denial and suspension.');
 }finally{await browser.close();server.kill();await db.close();}

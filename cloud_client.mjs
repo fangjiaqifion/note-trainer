@@ -19,6 +19,13 @@ export function canSyncAccount(access,account){
  return !!(account.cloudStudent && account.cloudWorkspace===access?.workspace &&
   (access.role==='teacher' || (access.role==='learner' && access.student===account.cloudStudent)));
 }
+export function canAutoEnroll(access,account){
+ return access?.role==='teacher'&&account.cloudAuto===true&&!account.cloudStudent&&account.cloudWorkspace===access.workspace;
+}
+export async function autoParticipant(localId){
+ if(typeof localId!=='string'||!localId.length)throw Error('学生档案 ID 缺失');
+ return 'S'+(await codeHash(localId)).slice(0,24);
+}
 // UUIDv5: an identical pre-cloud record in two backups must get the same ID.
 // The cloud student UUID is the namespace; this hash is not an authentication secret.
 export async function identifyLegacyEvents(student,events){
@@ -104,9 +111,21 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
  async function students(){
   const access=load('access');
   if(access.username&&!await request('/rest/v1/rpc/nt_portal_access',{method:'POST',body:{w:access.workspace}}))throw new SyncError('教师账户已停用或本机授权已撤销，请联系管理员或重新登录',{permanent:true});
-  return request('/rest/v1/nt_cloud_students?select=id,workspace_id,local_id,code,state,revision&workspace_id=eq.'+encodeURIComponent(access.workspace)+'&order=id');
+  const rows=await request('/rest/v1/nt_cloud_students?select=id,workspace_id,local_id,code,state,revision&workspace_id=eq.'+encodeURIComponent(access.workspace)+'&order=id');
+  if(access.role==='researcher')return rows;
+  const labels=await rpc('labels',{w:access.workspace});
+  if(!Array.isArray(labels))throw Error('云端名册信息格式不正确');
+  const names=new Map(labels.map(l=>[l.student_id,l]));
+  return rows.map(s=>({...s,...(names.get(s.id)||{})}));
  }
- async function profile(id){if(!UUID.test(id)) throw Error('学生 ID 无效');const rows=await request('/rest/v1/nt_cloud_students?select=*&id=eq.'+id);if(rows.length!==1) throw new SyncError('学生未授权或已撤销',{permanent:true});return rows[0];}
+ async function profile(id){
+  if(!UUID.test(id))throw Error('学生 ID 无效');const rows=await request('/rest/v1/nt_cloud_students?select=*&id=eq.'+id);
+  if(rows.length!==1)throw new SyncError('学生未授权或已撤销',{permanent:true});
+  if(load('access').role==='researcher')return rows[0];
+  const labels=await rpc('labels',{w:rows[0].workspace_id});
+  if(!Array.isArray(labels))throw Error('云端学生信息格式不正确');
+  return {...rows[0],...(labels.find(l=>l.student_id===id)||{})};
+ }
  async function readEvents(id){
   if(!UUID.test(id)) throw Error('学生 ID 无效');
   const result=[];let cursor='0';
@@ -134,6 +153,13 @@ export function createCloudClient({storage,fetchImpl=fetch,locks=navigator.locks
   forgetPendingCode(){storage.removeItem(KEY+'pendingCode');},
   async create(bootstrap){const workspace=await rpc('create',{bootstrap_code:bootstrap});const access={workspace,role:'teacher',student:null};save('access',access);return access;},
   async addStudent(local,code){return rpc('add_student',{w:load('access').workspace,local_key:local,participant_code:code});},
+  async pushLabel(id,account){
+   const meta=load('meta.'+id,{revision:0,ack:[]}),label=JSON.stringify([account.name,account.color||'#3C7DD9']);
+   if(meta.label===label)return;
+   await rpc('label',{s:id,display_name:account.name,color:account.color||'#3C7DD9'});
+   // Merge after the request to preserve receipts saved by another completed operation.
+   const latest=load('meta.'+id,{revision:0,ack:[]});latest.label=label;save('meta.'+id,latest);
+  },
   codes(){return rpc('codes',{w:load('access').workspace});},
   revoke(id){return rpc('revoke',{code_id:id});},
   devices(){return rpc('devices',{w:load('access').workspace});},

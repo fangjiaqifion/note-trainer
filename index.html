@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="29d4243781">
+<meta name="app-build" content="e30cc2ef11">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -651,6 +651,7 @@
       <div class="teacher-head">
         <h1>学生总览</h1>
         <p class="sub">老师模式 · 这台设备上的练习者</p>
+        <p class="gate-note" id="teacherCloudStatus" role="status">登录云端后，学生和练习记录会自动同步。</p>
       </div>
       <div class="teacher-list" id="teacherList"></div>
       <div class="teacher-foot">
@@ -1411,8 +1412,10 @@ function flushStore(){
 }
 
 function saveAccounts(){
-  if(!currentGeneration()){ toast('档案已在其他页面恢复，请刷新后继续', 'bad'); return; }
-  if(!writeJSON(ACCOUNTS_KEY, ACCOUNTS)) warnStorage();
+  if(!currentGeneration()){ toast('档案已在其他页面恢复，请刷新后继续', 'bad'); return false; }
+  if(!writeJSON(ACCOUNTS_KEY, ACCOUNTS)){ warnStorage(); return false; }
+  if(!SYNC_TEST) window.dispatchEvent(new Event('nt-roster-saved'));
+  return true;
 }
 function accountById(id){
   for(let i = 0; i < ACCOUNTS.accounts.length; i++){
@@ -2598,7 +2601,7 @@ function recordAnswer(q){
     wrong: q.wrong || 0,
     ms: Math.max(0, Math.round(performance.now() - (q._shownAt || performance.now())))
   };
-  if(SYNC_TEST || (typeof CURRENT !== 'undefined' && CURRENT && CURRENT.cloudStudent)) e.id = crypto.randomUUID();
+  if(SYNC_TEST || (typeof CURRENT !== 'undefined' && CURRENT && (CURRENT.cloudStudent||CURRENT.cloudAuto))) e.id = crypto.randomUUID();
   S.events.push(e);
   /* 新音导入每答对一题就记住走到第几步。中途按返回时，
      下次从下一题接着走，而不是从第 1 题重来。 */
@@ -5053,7 +5056,7 @@ function syncRoleUI(){
   if(t) t.textContent = TEACHER_MODE ? '老师 · 记录与账户' : '家长 · 设置与账户';
   const h = $('#parentHint');
   if(h) h.textContent = TEACHER_MODE
-    ? '记录只在这台设备上，没有网络请求。换设备或清理浏览器数据前，先导出 JSON 备份。'
+    ? '登录云端后，新建学生和练习记录自动同步。离线时先保存在本机，联网后继续上传。'
     : '这里可以切换练习者或锁定设备。练习报告和账户管理由老师负责。';
   const b = $('#btnParent');
   if(b) b.textContent = TEACHER_MODE ? '👩‍🏫 老师' : '👨‍👩‍👧 家长';
@@ -5111,6 +5114,7 @@ function showTeacher(){
   renderTeacherList();
   syncRoleUI();
   showScreen('teacher');
+  cloudUI?.teacherReady();
 }
 
 function exitTeacher(){
@@ -5154,12 +5158,13 @@ function renderTeacherList(){
     const meta = r.recent.length
       ? '最近 7 天：' + r.days + ' 天 · ' + fmtTotal(s) + ' · ' + s.n + ' 题 · 一次答对 ' + pct(s.acc)
       : '最近 7 天还没练';
+    const cloudHint=r.acc.cloudStudent?' · 云端自动同步':r.acc.cloudAuto?' · 等待联网同步':' · 本机档案';
     const el = document.createElement('div');
     el.className = 'teacher-row';
     el.innerHTML = '<span class="who-avatar" style="background:' + (r.acc.color || '#3C7DD9') + '">' +
         esc(r.acc.name.slice(0, 1)) + '</span>' +
       '<div class="t-main"><div class="t-name">' + esc(r.acc.name) + '</div>' +
-      '<div class="t-meta">' + meta + ' · ' + (r.lastTs ? '上次 ' + fmtDate(r.lastTs) : '还没练过') + '</div></div>' +
+      '<div class="t-meta">' + meta + ' · ' + (r.lastTs ? '上次 ' + fmtDate(r.lastTs) : '还没练过') + cloudHint + '</div></div>' +
       '<div class="t-actions">' +
         '<button class="mini-btn" data-report="' + r.acc.id + '">报告</button>' +
         '<button class="mini-btn" data-enter="' + r.acc.id + '">进入</button>' +
@@ -5186,6 +5191,8 @@ function createAccount(){
   if(ACCOUNTS.accounts.some(function(a){ return a.name === name; })){ err('这个名字已经有了'); return; }
   if(!/^\d{4}$/.test(p1)){ err('密码要 4 位数字'); return; }
   if(p1 !== p2){ err('两次密码不一样'); return; }
+  const access=SYNC_TEST?null:(cloudUI?.client.access||readJSON('nt.cloud.access'));
+  if(access?.role==='teacher'&&!cloudWriter){err('云端账户正在准备，请关闭其他游戏页后重试');return;}
 
   const isFirst = ACCOUNTS.accounts.length === 0;
   const salt = randomSalt();
@@ -5198,6 +5205,7 @@ function createAccount(){
     createdAt: Date.now(),
     lastActiveAt: 0
   };
+  if(access?.role==='teacher'){acc.cloudWorkspace=access.workspace;acc.cloudAuto=true;}
   ACCOUNTS.accounts.push(acc);
 
   /* 第一个账户把旧版单账户进度整份接过来；之后建的账户都是全新的。 */
@@ -5207,8 +5215,12 @@ function createAccount(){
   }else{
     st = newState();
   }
+  const previousLegacyImported=ACCOUNTS.legacyImported;
   if(isFirst) ACCOUNTS.legacyImported = true;
-  writeJSON(stateKey(acc.id), st);
+  if(!writeJSON(stateKey(acc.id), st)||!saveAccounts()){
+    ACCOUNTS.accounts.pop();ACCOUNTS.legacyImported=previousLegacyImported;
+    err('本机保存未完成，请释放空间后重试。没有上传学生。');return;
+  }
   closeModal('accountModal');
   /* 老师建学生时不自动进入，回到总览；下一次点「进入」或「报告」再加载。 */
   if(newAccountFromTeacher){
@@ -6134,6 +6146,41 @@ if(!SYNC_TEST){
       TEACHER_MODE=true;
     },
     setWriter:ready=>{cloudWriter=ready;},
+    cloudStatus:function(text){const el=$('#teacherCloudStatus');if(el)el.textContent=text;},
+    teacherDashboard:function(){if(CURRENT&&!flushStore())throw new Error('请先完成本机保存');showTeacher();},
+    memoryToken:id=>CURRENT?.id===id?JSON.stringify(S):null,
+    rosterToken:()=>localStorage.getItem(ACCOUNTS_KEY),
+    enableCloudDefault:function(workspace){
+      if(!TEACHER_MODE)return;
+      if(!currentGeneration()||JSON.stringify(ACCOUNTS)!==localStorage.getItem(ACCOUNTS_KEY))throw new Error('名册已变化，请刷新后继续');
+      // Establish one owner for previously local profiles; never adopt another class's data.
+      if(ACCOUNTS.defaultCloudWorkspace&&ACCOUNTS.defaultCloudWorkspace!==workspace)return;
+      if(ACCOUNTS.accounts.some(a=>a.cloudWorkspace&&a.cloudWorkspace!==workspace))return;
+      const pending=ACCOUNTS.accounts.filter(a=>!a.cloudStudent&&!a.cloudWorkspace);
+      if(ACCOUNTS.defaultCloudWorkspace===workspace&&!pending.length)return;
+      const backup=captureRosterBackup();localStorage.setItem('nt.cloud.autoBackup',JSON.stringify(backup));
+      const next=JSON.parse(JSON.stringify(ACCOUNTS));next.defaultCloudWorkspace=workspace;
+      for(const acc of next.accounts)if(!acc.cloudStudent&&!acc.cloudWorkspace){acc.cloudWorkspace=workspace;acc.cloudAuto=true;}
+      localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(next));ACCOUNTS=next;
+      if(CURRENT)CURRENT=accountById(CURRENT.id);
+      window.dispatchEvent(new Event('nt-roster-saved'));
+    },
+    attachAuto:function(id,remote,workspace,prepared){
+      if(!currentGeneration()||localStorage.getItem(ACCOUNTS_KEY)!==prepared.rosterToken)throw new Error('名册已变化，稍后自动重试');
+      const source=readJSON(stateKey(id)),acc=accountById(id);
+      if(!acc||acc.cloudStudent||!acc.cloudAuto||acc.cloudWorkspace!==workspace)throw new Error('学生归属已变化，已停止同步');
+      if(JSON.stringify(source)!==prepared.original||(CURRENT?.id===id?JSON.stringify(S):null)!==prepared.memoryToken)throw new Error('学生正在练习，稍后自动继续同步');
+      if(CURRENT?.id===id&&JSON.stringify(S.events)!==JSON.stringify(source.events))throw new Error('本机答案尚未保存，请先重试保存');
+      const backup=captureRosterBackup();localStorage.setItem('nt.cloud.autoBackup',JSON.stringify(backup));
+      const next=JSON.parse(JSON.stringify(ACCOUNTS)),target=next.accounts.find(a=>a.id===id);
+      target.cloudStudent=remote;target.cloudWorkspace=workspace;target.cloudAuto=true;
+      const state=CURRENT?.id===id?JSON.parse(JSON.stringify(S)):source;state.events=prepared.events;
+      // Metadata is committed after the durable state. A failed metadata write can retry safely.
+      localStorage.setItem(stateKey(id),JSON.stringify(state));localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(next));
+      ACCOUNTS=next;if(CURRENT?.id===id){CURRENT=accountById(id);S.events=prepared.events;}
+      if(TEACHER_MODE&&!CURRENT)renderTeacherList();
+      window.dispatchEvent(new Event('nt-local-saved'));
+    },
     beforeBind:function(){
       if(!currentGeneration()||JSON.stringify(ACCOUNTS)!==localStorage.getItem(ACCOUNTS_KEY))throw new Error('名册已变化，请刷新后绑定');
       if(CURRENT && !flushStore()) throw new Error('请先解决本机保存问题');
@@ -6167,7 +6214,7 @@ if(!SYNC_TEST){
         }else merged.set(e.id,e);
       }
       if(!acc){
-        const salt=randomSalt();acc={id:'cloud-'+profile.id,name:profile.code,salt:salt,hash:pinHash(pin,salt),color:ACCOUNT_COLORS[0],createdAt:Date.now()};backup.roster.accounts.push(acc);
+        const salt=randomSalt();acc={id:'cloud-'+profile.id,name:profile.display_name||profile.code,salt:salt,hash:pinHash(pin,salt),color:profile.color||ACCOUNT_COLORS[0],createdAt:Date.now()};backup.roster.accounts.push(acc);
       }else{const salt=randomSalt();acc.salt=salt;acc.hash=pinHash(pin,salt);}
       acc.cloudStudent=profile.id;acc.cloudWorkspace=profile.workspace_id;
       const state=Object.assign(newState(),profile.state,{events:[...merged.values()].sort((a,b)=>a.t-b.t || a.id.localeCompare(b.id))});

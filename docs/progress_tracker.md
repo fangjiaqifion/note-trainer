@@ -28,8 +28,8 @@ unchanged. Do not describe this as a fresh iPad test of the final build.
 
 The earlier tracker also said that its round had no push. That statement applied to the
 backup-only stage (build `950868f0bf`), not the subsequent production delivery above.
-Documentation commits may now be ahead of the last runtime-delivery commit. This task
-has no push or deployment authorization.
+Documentation commits may now be ahead of the last runtime-delivery commit. That documentation-only task had no push or deployment authorization; the subsequent
+portal and automatic-sync implementation were explicitly authorized for deployment.
 
 ## Priorities and remaining work
 
@@ -43,7 +43,7 @@ has no push or deployment authorization.
 
 Local work adds reusable invitations, ASCII-alphanumeric case-insensitive usernames, random
 teacher keys, a separate MFA-protected `manage.html`, owner-maintenance SQL preparation, and
-a dedicated database-health workflow. Local build `29d4243781 passed the full required
+a dedicated database-health workflow. Local build `29d4243781` passed the full required
 regression suite and four Safari/Chrome local-origin navigation receipts. See
 [operations/design](teacher_portal.md) and [acceptance audit](audit_20261105_portal/audit.md).
 Migration 003 has been applied and feature commit `59d8018` pushed to the existing game remote.
@@ -180,3 +180,18 @@ node scripts/database_pressure_test.mjs --execute
 The live pressure command is not part of routine handoff or documentation verification.
 Game commits/pushes belong here; the parent updates its pointer locally and is not pushed.
 The parent's pre-existing untracked `.statamcp/` is unrelated and must remain untouched.
+
+## Cloud-default student update, 2026-11-05
+
+The user authorized automatic teacher-owned student enrolment and synchronization, replacing
+the manual participant-code/binding workflow. Local build `e30cc2ef11` passed the full release regression suite. Migration 004 was
+applied successfully to the live project before the client update. Pages publication
+and browser-load acceptance are pending. Automatic full local snapshots, offline queues,
+idempotent enrolment, state/roster race protection, and private display labels are covered
+by targeted checks. PIN hashes remain local; researcher access excludes names.
+
+The supplied invitation was separately tested against the live portal: one synthetic teacher
+`portalqa20261105` registered, copied/saved its random key, and logged in through a fresh private
+Safari session with an uppercase username. No MFA was required. Exactly one registration was
+performed; the synthetic key is retained privately under ignored `.release/portal_live_invite/`.
+No real learners or administrator credentials were used.

@@ -2,8 +2,10 @@
 
 Last updated: 2026-11-05
 
-Internal operating reference. Ordinary practice can remain offline. Only profiles explicitly
-backed up and bound by the teacher synchronize; names and local PINs are not uploaded.
+Internal operating reference. Ordinary practice can remain offline. The cloud-default update
+automatically enrols teacher-owned profiles and synchronizes progress, answers, and private
+display labels. Local PINs/hashes are not uploaded. Migration 004 and the new client release
+are required; consult the tracker for deployment status.
 Researchers read authorized participant codes, progress, and answers only. Cloud JSON
 retains workspace_id/student_id; local CSV adds cloud_workspace/cloud_participant/event_id.
 Use those stable fields for cross-device joins; legacy participant remains a local-profile ID.
@@ -18,7 +20,7 @@ are complete. Teacher registration acceptance remains isolated-fixture evidence;
 learner was enrolled automatically. New teacher keys have
 no fixed annual expiry; existing student/researcher and legacy keys retain their prior policy.
 
-## Legacy teacher setup
+## Legacy teacher setup (advanced compatibility only)
 
 1. Open the local teacher entry, set/enter its PIN, and create the learner.
 2. In cloud management (`云端管理`), load the administrator-provided public client
@@ -100,7 +102,8 @@ The recorded user confirmation and its missing OS/mode details are in the progre
 
 ## Development and acceptance entry points
 
-- Ordered migrations: `scripts/migrations/001_cloud.sql`, then `002_archive_expiry.sql`.
+- Ordered migrations: `scripts/migrations/001_cloud.sql`, `002_archive_expiry.sql`,
+  `003_teacher_portal.sql`, then `004_automatic_students.sql`.
   They are transactional and separate from the isolated test table.
 - `npm test` includes real local PostgreSQL-engine permissions/transactions/restore tests
   and ordinary-page synthetic UI workflows.

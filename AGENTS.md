@@ -76,7 +76,13 @@ the parent records only the submodule pointer and is never pushed implicitly.
 
 Use synthetic accounts and isolated contexts. Never modify real student records for tests,
 print/commit credentials or recovery codes, or silently upload existing learners.
-Cloud binding is explicit per learner and preceded by a full local backup. A local PIN
+The user authorized cloud-by-default student creation on 2026-11-05. A signed-in teacher
+creates a student once; automatic enrolment, an internal local snapshot, progress, answers,
+and private student display labels follow without manual binding or forced downloads.
+The initial local roster can be assigned to its first verified teacher workspace; never
+reassign another workspace's profiles or upload through learner/researcher credentials.
+Student display labels are restricted to the owning teacher and the corresponding learner;
+researchers receive participant codes only. PINs and their hashes remain local. A local PIN
 is neither encryption nor server authorization. Reuse existing synthetic identities for
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 

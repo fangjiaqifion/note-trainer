@@ -1,5 +1,5 @@
 const moduleBuild=new URL(import.meta.url).searchParams.get('build')||'dev';
-const {createCloudClient,decodeRecovery,canSyncAccount,identifyLegacyEvents,randomCode}=await import('./cloud_client.mjs?build='+moduleBuild);
+const {createCloudClient,decodeRecovery,canSyncAccount,canAutoEnroll,autoParticipant,identifyLegacyEvents,randomCode}=await import('./cloud_client.mjs?build='+moduleBuild);
 const {portalConfig}=await import('./portal_config.mjs?build='+moduleBuild);
 const {username,teacherKey,parseInvitation}=await import('./portal_identity.mjs?build='+moduleBuild);
 // The host owns game state; this module owns network state and the management dialog.
@@ -44,24 +44,25 @@ export function mountCloudUI(host){
  <button class="secondary-btn" id="cloudSavedCode">我已妥善保存</button></section>
  <div id="cloudManagement" hidden>
  <div id="cloudTeacher" hidden>
- <h3>添加云端学生</h3>
- <label class="field"><span>选择本机学生</span><select id="cloudLocal"></select></label>
- <label class="field"><span>学生编号（不要填姓名）</span><input id="cloudParticipant" placeholder="例如 P001" maxlength="40"></label>
- <button class="secondary-btn" id="cloudBind">备份并绑定学生</button>
+ <p class="hint">直接在学生总览新建学生即可。学生档案、进度和答案会自动同步；离线时先保存在本机。</p>
  <details id="cloudSafety"><summary>账户安全与备份</summary>
  <button class="secondary-btn" id="cloudTeacherCode">生成备用教师恢复码</button>
  <button class="secondary-btn" id="cloudResearchCode">生成研究者只读授权码</button>
  <button class="secondary-btn" id="cloudBackup">导出班级云端灾备</button>
  <button class="secondary-btn" id="cloudDevices">查看或撤销设备</button>
- <button class="secondary-btn" id="cloudCodes">查看或撤销授权</button><div id="cloudGrantList"></div></details></div>
- <h3>云端学生</h3><button class="ghost-btn" id="cloudRefresh">刷新云端名册</button>
+ <button class="secondary-btn" id="cloudCodes">查看或撤销授权</button><div id="cloudGrantList"></div>
+ <details id="cloudLegacyBind"><summary>旧版档案兼容工具</summary>
+ <label class="field"><span>选择本机学生</span><select id="cloudLocal"></select></label>
+ <label class="field"><span>旧研究编号（可选的兼容流程）</span><input id="cloudParticipant" placeholder="例如 P001" maxlength="40"></label>
+ <button class="secondary-btn" id="cloudBind">备份并绑定学生</button></details></details></div>
+ <h3>学生记录</h3><button class="ghost-btn" id="cloudRefresh">刷新学生记录</button>
  <button class="secondary-btn" id="cloudRetry">立即同步 / 重试</button>
  <div id="cloudRoster"></div><div id="cloudReadReport"></div>
  <p class="hint">另一设备继续练习前，请先确认原设备已同步。进度冲突不会自动覆盖，请先备份本机记录。</p>
  <button class="ghost-btn" id="cloudSwitch">登录 / 恢复其他账户</button></div>
  <div class="sheet-foot"><button class="secondary-btn" id="cloudClose">关闭</button></div></div>`;
  document.body.append(dialog);
- const $=id=>dialog.querySelector('#'+id),status=text=>{$('cloudStatus').textContent=text;};
+ const $=id=>dialog.querySelector('#'+id),status=text=>{$('cloudStatus').textContent=text;host.cloudStatus?.(text);};
  function entry(mode){
   dialog.querySelector('.sheet').scrollTop=0;
   for(const [name,panel] of [['login','cloudLoginPanel'],['register','cloudRegisterPanel'],['recover','cloudRecoveryPanel']])$(panel).hidden=mode!==name;
@@ -93,7 +94,7 @@ export function mountCloudUI(host){
  function showAccess(){
   const connected=!!client.access;
   $('cloudManagement').hidden=!connected;$('cloudEntryTabs').hidden=connected;
-  $('cloudIntro').textContent=connected?'已连接'+(client.access.username?'：'+client.access.username:'云端账户')+'。仅绑定的学生同步练习记录。':'教师使用用户名和教师密钥登录。首次使用请先注册。';
+  $('cloudIntro').textContent=connected?'已连接'+(client.access.username?'：'+client.access.username:'云端账户')+'。新建学生后自动同步。':'教师使用用户名和教师密钥登录。首次使用请先注册。';
   $('cloudLocalPinBox').hidden=!connected&&host.isTeacher();$('cloudLocalPinBox').open=!connected&&!host.isTeacher();
   if(connected){for(const id of ['cloudLoginPanel','cloudRegisterPanel','cloudRecoveryPanel'])$(id).hidden=true;}
   else entry('login');
@@ -109,10 +110,11 @@ export function mountCloudUI(host){
  async function roster(){
   if(!client.access)throw Error('请先恢复账户或开通班级');
   if(client.access.role!=='learner')host.requireLocalTeacher();
+  if(client.access.role==='teacher'){host.enableCloudDefault(client.access.workspace);schedule(0);}
   const students=await client.students();$('cloudRoster').replaceChildren();showAccess();
   for(const student of students){
    const row=document.createElement('div');row.className='cloud-row';
-   const label=document.createElement('strong');label.textContent=student.code;row.append(label);
+   const label=document.createElement('strong');label.textContent=student.display_name||student.code;row.append(label);
    const button=(text,fn)=>{const b=document.createElement('button');b.className='ghost-btn';b.textContent=text;b.onclick=()=>action(fn);row.append(b);};
    button('只读报告',async()=>{
     const events=await client.readEvents(student.id),box=$('cloudReadReport');box.replaceChildren();
@@ -143,9 +145,18 @@ export function mountCloudUI(host){
   active=true;const startedVersion=saveVersion;
   try{
    await writer();
-   for(const account of host.accounts()){
+   for(let account of host.accounts()){
+    if(canAutoEnroll(client.access,account)){
+     const source=host.readState(account.id);if(!source||!Array.isArray(source.events))throw Object.assign(Error('本机学生档案缺失，已停止同步'),{permanent:true});
+     const prepared={rosterToken:host.rosterToken(),original:JSON.stringify(source),memoryToken:host.memoryToken(account.id)};
+     const remote=await client.addStudent(account.id,await autoParticipant(account.id));
+     prepared.events=await identifyLegacyEvents(remote,source.events);
+     host.attachAuto(account.id,remote,client.access.workspace,prepared);
+     account=host.accounts().find(a=>a.id===account.id);
+    }
     if(!canSyncAccount(client.access,account))continue;
     const state=host.readState(account.id);if(!state || !Array.isArray(state.events))throw Object.assign(Error('本机存档缺失，已停止同步'),{permanent:true});
+    if(client.access.role==='teacher')await client.pushLabel(account.cloudStudent,account);
     await client.push(account.cloudStudent,state,client.meta(account.cloudStudent));
    }
    attempt=0;status('本机记录已同步；服务器确认后仍保留本机副本。');
@@ -165,6 +176,7 @@ export function mountCloudUI(host){
   client.configure(portalConfig);await writer();
   await client.registerTeacher(invitation,name,pending.secret);
   $('cloudInvitation').value='';await roster();
+  host.teacherDashboard();
   showIssued(teacherKey(pending.secret),'保存教师密钥 · '+name);
   status('教师账户已创建。请复制并保存教师密钥；以后换设备仍使用它。');
  });
@@ -175,7 +187,7 @@ export function mountCloudUI(host){
   client.configure(portalConfig);await writer();
   const access=await client.loginTeacher(name,$('cloudLoginKey').value);
   host.authorizeManagement(access.role,$('cloudLocalPin').value);$('cloudLoginKey').value='';
-  $('cloudIssued').value='';$('cloudPacket').hidden=true;paused=false;await roster();schedule();
+  $('cloudIssued').value='';$('cloudPacket').hidden=true;paused=false;await roster();host.teacherDashboard();schedule();
  });
  $('cloudConfig').onchange=()=>action(async()=>{const f=$('cloudConfig').files[0];if(f)client.configure(JSON.parse(await f.text()));status('配置已加载；尚未绑定或上传本机学生。');});
  $('cloudRecover').onclick=()=>action(async()=>{
@@ -219,8 +231,9 @@ export function mountCloudUI(host){
  });
  $('cloudRefresh').onclick=()=>action(roster);
  $('cloudRetry').onclick=()=>{paused=false;clearTimeout(timer);timer=null;sync();};
- const onSave=()=>{saveVersion++;schedule();},onOnline=()=>{if(!paused){clearTimeout(timer);timer=null;schedule(0);}};
+ const onSave=()=>{saveVersion++;schedule();},onRoster=()=>{saveVersion++;if(client.access?.role==='teacher'){clearTimeout(timer);timer=null;schedule(0);}},onOnline=()=>{if(!paused){clearTimeout(timer);timer=null;schedule(0);}};
  window.addEventListener('nt-local-saved',onSave);window.addEventListener('online',onOnline);
+ window.addEventListener('nt-roster-saved',onRoster);
  async function open(){
   if(client.access?.role!=='learner' && client.access && !host.isTeacher()){host.notify('请先从老师入口验证本机 PIN，再打开云端管理');return;}
   dialog.classList.add('open');showAccess();if(client.access)await action(roster);
@@ -229,6 +242,10 @@ export function mountCloudUI(host){
  }
  $('cloudRecoveryFile').onchange=()=>action(async()=>{const file=$('cloudRecoveryFile').files[0];if(file){const value=JSON.parse(await file.text());if(value.recovery?.startsWith('NT2-')){$('cloudLoginName').value=username(value.username);$('cloudLoginKey').value=value.recovery;entry('login');}else{decodeRecovery(value.recovery);$('cloudRecovery').value=value.recovery;}}});
  // Bindings are durable before a reload; take the writer lock before the game boots.
- const ready=host.accounts().some(a=>a.cloudStudent)?writer().then(()=>schedule()):Promise.resolve();
- return {open,ready,client,dispose(){disposed=true;clearTimeout(timer);releaseLock?.();window.removeEventListener('nt-local-saved',onSave);window.removeEventListener('online',onOnline);}};
+ function teacherReady(){
+  if(client.access?.role!=='teacher'||!host.isTeacher())return;
+  try{host.enableCloudDefault(client.access.workspace);schedule(0);}catch(error){status(error.message);}
+ }
+ const ready=client.access&&client.access.role!=='researcher'?writer().then(()=>{status('云端自动同步已开启。离线时先保存在本机。');teacherReady();schedule(0);}):Promise.resolve();
+ return {open,ready,client,teacherReady,dispose(){disposed=true;clearTimeout(timer);releaseLock?.();window.removeEventListener('nt-local-saved',onSave);window.removeEventListener('nt-roster-saved',onRoster);window.removeEventListener('online',onOnline);}};
 }
