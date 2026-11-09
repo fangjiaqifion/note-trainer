@@ -6,7 +6,31 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status below incorporates the accepted teacher portal and automatic-student
 release. The documentation review itself did not rerun runtime or live database tests.
 
-## Touch and matching refinement, 2026-11-09
+## Placement and symbolic-menu correction, 2026-11-09
+
+The user clarified skill 10: every tier now places one note inside the staff, followed
+by five notes on requested upper/lower ledger lines/spaces. The previous Easy/Normal
+naming behavior is superseded. Skill 8 retains compact sentence dropdowns, with clef
+SVGs, arrows, Arabic digits, and line/space diagrams instead of written options.
+Skill 11 scales the whole standard keyboard uniformly, replacing independent card-height
+stretching. Four face-up matching rounds remain. See the
+[correction audit](audit_20261109_placement_symbols/audit.md).
+
+Final local build: `09f63dc4c3`. Full required release suite passed: 54 Node tests,
+1,144 scheduling boundaries, 55,080 generated sessions, four-viewport layout/card
+checks, all 18 placement confirmations across three tiers, symbol-choice correction,
+and storage, backup, sync, cloud/portal fixture, and offline-upgrade browser suites.
+Published-file hashes match both local origins. All four actual Safari/Chrome receipts
+across 127.0.0.1 and localhost acknowledged this build; local release status is ready.
+Local preview: `http://127.0.0.1:8773/index.html?build=09f63dc4c3`.
+No push or deployment was performed. Physical iPad touch accuracy remains unverified.
+
+Documentation updated: AGENTS, LEVELS, README, user guide, tracker, and correction audit.
+Development, cloud operations, and teacher portal docs reviewed unchanged because
+release mechanics, storage, cloud behavior, and permissions are unaffected. Historical
+audits and the earlier local build records below are retained with their original scope.
+
+## Earlier touch and matching refinement, 2026-11-09
 
 Build `ce29b4d8fb` simplifies skills 8/10 position naming to four native dropdowns.
 All shared answer keyboards are taller (190–300 CSS pixels outside short landscape),

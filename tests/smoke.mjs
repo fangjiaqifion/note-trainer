@@ -103,7 +103,7 @@ async function renderCases(){
     ['higher', d.buildQuestions(7).find(function(q){ return q.kind === 'higher'; })],
     ['ledger', d.buildQuestions(8)[0]],
     ['contrast', d.buildQuestions(9)[0]],
-    ['ledgerName', d.buildQuestions(10)[0]],
+    ['staffPlacement', d.buildQuestions(10)[0]],
     ['matching', d.buildQuestions(11)[0]],
     ['ledgerMove',placement]
   ];
@@ -468,8 +468,11 @@ async function newSkillsCheck(page){
     const stage=document.querySelector('#stage'),answer=document.querySelector('#answer');
     function render(q){stage.innerHTML='';answer.innerHTML='';d.G.q=q;q.answered=false;q.render();}
     d.G.diffKey='normal';render(d.buildQuestions(8)[0]);
-    const icons=answer.querySelectorAll('.ledger-sentence select').length;
+    const icons=answer.querySelectorAll('.ledger-sentence select, .symbol-trigger').length;
     const digits=Array.from(answer.querySelector('select[data-key="num"]').options).slice(1).map(o=>o.textContent);
+    const symbols=Array.from(answer.querySelectorAll('.symbol-menu [role=option]')).every(o=>o.querySelector('svg') || ['↑','↓'].includes(o.textContent));
+    const placements=['easy','normal','hard'].map(function(tier){d.G.diffKey=tier;return d.buildQuestions(10).map(q=>({kind:q.kind,y:q.y1}));});
+    d.G.diffKey='normal';
     const basic=d.buildQuestions(9).map(q=>({clef:q.clef,y:q.noteId,ys:[q.y1,q.y2]}));
     d.G.diffKey='hard';const q=d.buildQuestions(10)[0];render(q);
     const svg=stage.querySelector('svg');svg.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
@@ -478,9 +481,15 @@ async function newSkillsCheck(page){
     const focused=document.activeElement===stage.querySelector('svg');
     const kinds=d.buildQuestions(11).map(q=>q.pair);
     d.G.diffKey=old;
-    return {icons,digits,basic,moved,focused,kinds};
+    return {icons,digits,symbols,placements,basic,moved,focused,kinds};
   });
-  assert.equal(info.icons,4,'four compact position dropdowns');
+  assert.equal(info.icons,4,'four compact symbolic dropdowns');
+  assert.ok(info.symbols,'non-numeric dropdowns contain only music symbols, arrows and diagrams');
+  for(const qs of info.placements){
+    assert.equal(qs.length,6);assert.ok(qs.every(q=>q.kind==='ledgerMove'));
+    assert.ok(qs[0].y>=0 && qs[0].y<=4,'first placement is inside the staff');
+    assert.ok(qs.slice(1).every(q=>q.y<0 || q.y>4),'last five placements are ledger positions');
+  }
   assert.deepEqual(info.digits,['1','2','3','4','5','6','7','8']);
   assert.ok(info.basic.some(q=>q.clef==='treble') && info.basic.some(q=>q.clef==='bass'));
   for(const q of info.basic){
@@ -490,6 +499,37 @@ async function newSkillsCheck(page){
   assert.equal(info.moved,'1','two arrow keys move the note two half staff steps');
   assert.ok(info.focused,'movement retains keyboard focus after redrawing');
   assert.deepEqual(info.kinds,['name-key','name-staff','key-staff','duration-beats']);
+  const placed=await page.evaluate(function(){
+    const d=window.__dbg,results=[];
+    for(const tier of ['easy','normal','hard']){
+      d.startLevel(10);d.G.diffKey=tier;d.G.qs=d.buildQuestions(10);
+      for(const q of d.G.qs){
+        d.G.session++;d.G.busy=false;d.G.q=q;q.answered=false;
+        document.querySelector('#answer').innerHTML='';q.render();
+        const key=q.y1<2?'ArrowUp':'ArrowDown';
+        for(let step=0;step<Math.abs(q.y1-2)*2;step++)document.querySelector('#stage svg').dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true}));
+        document.querySelector('#answer .primary-btn').click();results.push(q.answered===true);
+      }
+    }
+    d.G.session++;d.G.busy=false;return results;
+  });
+  assert.equal(placed.length,18);assert.ok(placed.every(Boolean),'all six placement tasks complete in every tier');
+  const corrected=await page.evaluate(function(){
+    const d=window.__dbg;document.querySelector('#answer').innerHTML='';const q=d.buildQuestions(8)[0];d.G.busy=false;d.G.q=q;q.answered=false;q.render();
+    function choose(key,value){
+      document.querySelector('.symbol-trigger[data-key="'+key+'"]').click();
+      document.querySelector('#ledger-'+key+'-options [data-value="'+value+'"]').click();
+    }
+    choose('clef',q.clef);choose('dir',q.y1<0?'down':'up');
+    const k=Math.round(Math.abs(q.y1-(q.y1>4?4:0))*2);
+    const num=document.querySelector('select[data-key="num"]');num.value=String(Math.ceil(k/2));num.dispatchEvent(new Event('change'));
+    choose('kind',k%2?'space':'line');const wrong=q.wrong;
+    choose('dir',q.y1<0?'up':'down');
+    return {wrong,answered:q.answered,correct:document.querySelectorAll('.symbol-trigger.correct').length};
+  });
+  assert.ok(corrected.wrong>=1,'symbolic selection records a wrong combination');
+  assert.ok(corrected.answered,'correcting one symbolic dropdown completes the answer');
+  assert.equal(corrected.correct,3,'all symbolic dropdowns mark success');
   // Every mode starts face up, keeps full notation inside each card, and completes by matching.
   for(const viewport of [[820,1180],[1180,820],[390,844],[844,390]]){
     await page.setViewportSize({width:viewport[0],height:viewport[1]});
@@ -506,6 +546,15 @@ async function newSkillsCheck(page){
       });
     });
     assert.ok(results.every(Boolean),'full card content fits at '+viewport.join('x'));
+    const keyboard=await page.evaluate(async function(){
+      const d=window.__dbg;document.querySelector('#answer').innerHTML='';d.G.q=d.buildQuestions(11)[2];d.G.q.answered=true;d.G.q.render();
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      return Array.from(document.querySelectorAll('.card-keyboard')).every(function(kb){
+        const r=kb.getBoundingClientRect(),host=kb.parentElement.getBoundingClientRect();
+        return kb.offsetWidth===Math.min(innerWidth-28,1200) && Math.abs(r.width/r.height-kb.offsetWidth/kb.offsetHeight)<.01 && r.left>=host.left-.5 && r.right<=host.right+.5 && r.top>=host.top-.5 && r.bottom<=host.bottom+.5;
+      });
+    });
+    assert.ok(keyboard,'whole standard keyboard scales uniformly inside cards at '+viewport.join('x'));
     if(process.env.NT_UI_SCREENSHOTS) await page.screenshot({path:'/tmp/note-trainer-matching-'+viewport.join('x')+'.png'});
   }
   await page.setViewportSize({width:820,height:1180});
@@ -745,7 +794,7 @@ async function main(){
     console.log('PASS level 8: 6 questions, numbers 1-8');
 
     await newSkillsCheck(page);
-    console.log('PASS levels 8-11: dropdowns, grouped pitches, movement, four face-up matching modes');
+    console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 

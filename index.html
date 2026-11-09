@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="ce29b4d8fb">
+<meta name="app-build" content="09f63dc4c3">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -583,12 +583,22 @@
     .report-sec{break-inside:avoid}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
+.symbol-select{position:relative;flex:none}
+.symbol-trigger{display:flex;align-items:center;justify-content:center;gap:8px;min-width:68px;min-height:52px;padding:4px 8px;background:white;border:2px solid var(--line);border-radius:12px;color:var(--ink);font:inherit;box-shadow:0 3px 0 #EADDCB}
+.symbol-value{display:flex;align-items:center;justify-content:center;min-width:26px;height:36px}
+.symbol-select svg{display:block;width:40px;height:34px}.symbol-select .cleficon{width:26px;height:36px}
+.select-chevron{font-size:18px;color:var(--muted)}
+.symbol-menu{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:20;padding:6px;background:white;border:2px solid var(--line);border-radius:12px;box-shadow:0 6px 20px #49321d30}
+.symbol-menu[hidden]{display:none}.symbol-menu button{display:flex;align-items:center;justify-content:center;min-width:64px;min-height:52px;border:0;border-radius:8px;background:white;color:var(--ink);font:inherit;font-size:30px}
+.symbol-menu button:hover,.symbol-menu button:focus,.symbol-menu button[aria-selected="true"]{background:#EEF5FF}
+.symbol-trigger.correct{border-color:var(--green);background:#EFFAF4}
 .matching-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(100%,900px)}
 .match-card{min-width:0;height:140px;padding:8px;border:2px solid var(--line);border-radius:14px;background:#fffaf0;display:flex;align-items:center;justify-content:center;font-size:36px}
 #play .match-card .staff{width:100%;height:100%;max-height:100%;max-width:100%}
 .match-card.selected{border-color:var(--blue);box-shadow:0 0 0 3px #c9dcf5}
 .match-card.matched{border-color:var(--green);background:#eaf8ee;opacity:.65}
-.card-keyboard{height:100%!important;width:100%;pointer-events:none}.card-letter{font-size:48px}
+.keyboard-preview{position:relative;width:100%;height:100%;pointer-events:none}
+.card-keyboard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.card-letter{font-size:48px}
 @media(max-height:520px){.match-card{height:86px;padding:4px}.matching-board{gap:6px}}
 
 </style>
@@ -1143,7 +1153,7 @@ const SKILLS = [
     desc:'分组辨认高音 CDEFG、低音 FGABC，挑战加线音', color:'#6C63B5',
     needs:[], pool:'none', make:makeContrast },
   { id:10, key:'ledgerMove', name:'加线定位', title:'认位置与摆音符',
-    desc:'先说出加线位置，挑战把音符移到指定位置', color:'#43858D',
+    desc:'听位置摆音符，先练谱表内，再练加线加间', color:'#43858D',
     needs:[], pool:'none', make:makeLedgerMove, count:function(){ return 6; } },
   { id:11, key:'matching', name:'卡牌配对', title:'音名、键盘与五线谱配对',
     desc:'直接配对音名、键盘、五线谱和拍数', color:'#B27B3F',
@@ -3996,6 +4006,41 @@ function qLedgerName(spot){
         return s;
       }
       function select(key, label, options){
+        if(key !== 'num'){
+          const wrap=document.createElement('div');wrap.className='symbol-select';
+          const trigger=document.createElement('button');trigger.type='button';trigger.className='symbol-trigger';
+          trigger.dataset.key=key;trigger.setAttribute('role','combobox');trigger.setAttribute('aria-label',label);
+          trigger.setAttribute('aria-haspopup','listbox');trigger.setAttribute('aria-expanded','false');
+          trigger.innerHTML='<span class="symbol-value">?</span><span class="select-chevron" aria-hidden="true">⌄</span>';
+          const menu=document.createElement('div');menu.className='symbol-menu';menu.hidden=true;
+          menu.id='ledger-'+key+'-options';menu.setAttribute('role','listbox');menu.setAttribute('aria-label',label);
+          trigger.setAttribute('aria-controls',menu.id);
+          function icon(value){
+            if(key==='clef')return clefSVG(value);
+            if(key==='dir')return value==='up'?'↑':'↓';
+            return '<svg viewBox="0 0 50 34" aria-hidden="true"><path d="M3 8H47 M3 26H47" stroke="currentColor" stroke-width="1.5"/><ellipse cx="25" cy="'+(value==='line'?8:17)+'" rx="7" ry="4" fill="currentColor"/></svg>';
+          }
+          options.forEach(function(o){
+            const option=document.createElement('button');option.type='button';option.setAttribute('role','option');
+            option.dataset.value=o[0];option.setAttribute('aria-label',o[1]);option.setAttribute('aria-selected','false');
+            option.innerHTML=icon(o[0]);option.onclick=function(){
+              if(G.q.answered)return;picks[key]=o[0];
+              trigger.querySelector('.symbol-value').innerHTML=icon(o[0]);
+              trigger.classList.remove('hint');trigger.setAttribute('aria-expanded','false');menu.hidden=true;
+              menu.querySelectorAll('[role=option]').forEach(function(x){x.setAttribute('aria-selected',String(x===option));});
+              trigger.focus();tryJudge();
+            };menu.appendChild(option);
+          });
+          trigger.onclick=function(){
+            if(G.q.answered)return;
+            const open=menu.hidden;
+            row.querySelectorAll('.symbol-menu').forEach(function(x){x.hidden=true;});
+            row.querySelectorAll('.symbol-trigger').forEach(function(x){x.setAttribute('aria-expanded','false');});
+            menu.hidden=!open;trigger.setAttribute('aria-expanded',String(open));
+          };
+          wrap.onkeydown=function(e){if(e.key==='Escape'){menu.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus();}};
+          wrap.append(trigger,menu);row.appendChild(wrap);return trigger;
+        }
         const sel = document.createElement('select');
         sel.dataset.key = key;
         sel.setAttribute('aria-label', label);
@@ -4049,7 +4094,7 @@ function qLedgerName(spot){
         const right = picks.clef === rightClef &&
           picks.dir === rightDirKey && picks.num === String(rightNum) && picks.kind === rightKindKey;
         if(right){
-          $$('select', row).forEach(function(s){ s.classList.add('correct'); });
+          $$('select, .symbol-trigger', row).forEach(function(s){ s.classList.add('correct'); });
           const el = noteEl();
           if(el) el.classList.add('correct');
           playMidi(staffPitch(clef, y).midi, 0.9);
@@ -4066,7 +4111,7 @@ function qLedgerName(spot){
       if(el) el.classList.add('hint');
       playMidi(staffPitch(clef, y).midi, 0.9);
       /* 不替孩子改选项：每题都保留自己动手的机会，只把正确句子说一遍。 */
-      $$('select', answerEl).forEach(function(s){ s.classList.add('hint'); });
+      $$('select, .symbol-trigger', answerEl).forEach(function(s){ s.classList.add('hint'); });
     }
   };
 }
@@ -4277,16 +4322,16 @@ function makeContrastFor(noteId, n){
   }));
 }
 
-/* Skill 10 shares the position vocabulary, then reverses the task. */
+/* All tiers practice placement: one staff position, then five ledger positions. */
 function makeLedgerMove(ids,n){
-  const qs=makeLedger(ids,n);
-  return qs.map(function(q){
-    if(diff().key !== 'hard'){ q.kind='ledgerName'; return q; }
+  const first={clef:pick(['treble','bass']),y:pick([0,.5,1,1.5,2.5,3,3.5,4])};
+  return [qLedgerMove(first)].concat(makeLedger(ids,5).map(function(q){
     return qLedgerMove({clef:q.clef,y:q.y1});
-  });
+  }));
 }
 function qLedgerMove(spot){
   let current=2, svg;
+  const inStaff=spot.y>=0 && spot.y<=4;
   const sentence='请把音符放在'+positionLabel(spot.clef,spot.y);
   function draw(){
     stageEl.innerHTML=ledgerBlock({ys:[current],clef:spot.clef,xs:[8.9],viewBox:'-0.35 -3.6 15.3 12.2'});
@@ -4307,11 +4352,21 @@ function qLedgerMove(spot){
   }
   return {kind:'ledgerMove',clef:spot.clef,y1:spot.y,target:spot.y,wrong:0,
     render:function(){setPrompt(sentence,sentence);current=2;draw();
-      answerEl.innerHTML='<div class="spot-cap">拖动音符或点谱表放置，再确认</div><button class="btn" type="button">放好了</button>';
-      answerEl.querySelector('button').onclick=function(){G.q.chosen=String(current);judge(current===spot.y,current===spot.y?'对！'+positionLabel(spot.clef,spot.y):'再数一数加线和加间');};
-    },reveal:function(){setPrompt(sentence+'，从谱表边缘开始数',sentence);}
+      answerEl.innerHTML='<div class="spot-cap">拖动音符或点谱表放置，再确认</div><button class="primary-btn" type="button">放好了</button>';
+      answerEl.querySelector('button').onclick=function(){G.q.chosen=String(current);judge(current===spot.y,current===spot.y?'对！'+positionLabel(spot.clef,spot.y):(inStaff?'从最下面的线开始数':'再数一数加线和加间'));};
+    },reveal:function(){setPrompt(sentence+(inStaff?'，从最下面的线开始数':'，从谱表边缘开始数'),sentence);}
   };
 }
+
+function fitMatchingKeyboards(){
+  stageEl.querySelectorAll('.card-keyboard').forEach(function(kb){
+    const width=Math.min(window.innerWidth-28,1200),host=kb.parentElement;
+    kb.style.width=width+'px';
+    const scale=Math.min(host.clientWidth/width,host.clientHeight/kb.offsetHeight);
+    kb.style.transform='translate(-50%,-50%) scale('+scale+')';
+  });
+}
+window.addEventListener('resize',fitMatchingKeyboards);
 
 function makeMatching(ids,n){
   if(!ids.length)return [];
@@ -4325,7 +4380,7 @@ function makeMatching(ids,n){
       if(card.type==='beats')return '<span class="card-letter">'+VALUES[card.id].beats+' 拍</span>';
       if(card.type==='duration')return staffSVG({noteId:'C4',value:card.id,compact:true});
       if(card.type==='staff')return staffSVG({noteId:card.id,value:'whole',compact:true});
-      return '<div class="kb keyboard card-keyboard"></div>';
+      return '<div class="keyboard-preview"><div class="kb keyboard card-keyboard"></div></div>';
     }
     return {kind:'matching',pair:types.join('-'),target:notes.length,wrong:0,
       render:function(){
@@ -4335,7 +4390,15 @@ function makeMatching(ids,n){
         const board=stageEl.firstChild;
         buttons=cards.map(function(card,i){
           const b=document.createElement('button');b.type='button';b.className='match-card';b.dataset.pair=card.id;b.dataset.type=card.type;b.setAttribute('aria-label','选择第'+(i+1)+'张牌');
-          function show(){b.innerHTML=face(card);if(card.type==='key')buildKeyboard(b.querySelector('.keyboard'),{start:0,count:15,target:NOTES[card.id].midi});}
+          function show(){
+            b.innerHTML=face(card);
+            if(card.type==='key'){
+              const kb=b.querySelector('.keyboard');
+              buildKeyboard(kb,{start:0,count:15,target:NOTES[card.id].midi});
+              // Scale the entire standard keyboard, including borders, corners and landmarks.
+              requestAnimationFrame(fitMatchingKeyboards);
+            }
+          }
           b.onclick=function(){
             if(G.q.answered||matched.has(i))return;
             if(first===i){b.classList.remove('selected');first=null;return;}

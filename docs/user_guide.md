@@ -200,9 +200,9 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four compact dropdowns for clef, direction, Arabic 1–8, and line/space (the note name is not asked); six questions per session | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with compact dropdowns with clef glyphs, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six questions per session | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (treble C4–G4, then bass F3–C4; Hard adds ledger notes) | none |
-| 10 | 加线定位 · Ledger placement | Easy/Normal name the ledger position; Hard drag or tap a note to a requested position and confirm | none |
+| 10 | 加线定位 · Ledger placement | All tiers: place a note at one requested staff line/space, then five requested ledger lines/spaces; drag or tap and confirm | none |
 | 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in four rounds | `key` + `pos` |
 
 The clef skill uses only the checked notes. C4 brings both spellings (treble and bass) of the

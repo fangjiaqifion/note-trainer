@@ -117,7 +117,7 @@ Counts are Easy / Normal / Hard.
 | 7 | twoNotes | Direction and relative height | abstract staff | 8 / 8 / 10 |
 | 8 | ledger | Name ledger position | fixed positions, independent of selection | 6 / 6 / 6 |
 | 9 | contrast | Tap named note in separate clef groups | fixed treble C4–G4 / bass F3–C4, Hard adds ledgers | 8 / 8 / 10 |
-| 10 | ledgerMove | Name position, then place a requested note on Hard | abstract positions | 6 / 6 / 6 |
+| 10 | ledgerMove | Place one staff note, then five ledger notes | abstract positions | 6 / 6 / 6 |
 | 11 | matching | Match face-up representations and durations | checked key + pos | 4 rounds in all tiers |
 
 ### Skill behavior
@@ -151,8 +151,9 @@ Counts are Easy / Normal / Hard.
    Never name the clef in the higher/lower prompt. Center the pair in available staff space.
    Eight items split 3+2+3; ten split 3+3+4. Direction always has three options. Pool is
    `'none'`. This skill is absent from daily practice and the frozen pre/post battery.
-8. **Ledger positions:** use four native dropdowns for clef, direction, Arabic numbers 1–8,
-   and line/space. All four fields must be set; wrong answers remain
+8. **Ledger positions:** use compact dropdowns showing clef glyphs, direction arrows, Arabic numbers 1–8,
+   and line/space diagrams. Only the number menu uses a native select; symbol menus use
+   the shared clef SVG and position diagrams so options require no text reading. All four fields must be set; wrong answers remain
    editable. Six unique positions cover both clefs and both directions. Easy/Normal reach
    two ledger lines; Hard reaches three. Read the complete correct position after success.
 9. **Confusable notes:** practice a treble block (C4 D4 E4 F4 G4), then a bass block
@@ -160,12 +161,14 @@ Counts are Easy / Normal / Hard.
    Easy/Normal require at most one ledger line; Hard extends both groups with ledger notes.
    These fixed groups intentionally ignore lesson selection. The separate new-note finale
    retains learned-note comparisons and the new note as its target.
-10. **Ledger naming and placement:** Easy/Normal consolidate the full four-part position
-    name from skill 8. Hard reverses the task: hear/read a requested clef and ledger position,
-    drag or tap to place the note, then confirm. Arrow keys move by half a staff step.
-    Placement snaps to lines/spaces; retries preserve the requested position.
+10. **Position placement:** all tiers contain six placement questions. First hear/read a
+    requested line or space inside the treble or bass staff. The remaining five request
+    ledger lines/spaces above or below a staff, covering both clefs and directions.
+    Drag or tap to place the note, then confirm; arrow keys move by half a staff step.
+    Easy/Normal reach two ledger lines; Hard reaches three. Retries preserve the request.
 11. **Card matching:** four rounds pair name↔keyboard, name↔staff, keyboard↔staff, and duration↔beat count.
-    All cards start face up. Selected cards are outlined, successful pairs stay marked,
+    Keyboard cards scale the entire standard keyboard, preserving its key aspect ratios,
+    borders, corners, black-key proportions, and middle-C landmark. All cards start face up. Selected cards are outlined, successful pairs stay marked,
     and mismatches remain visible after feedback. Easy uses up to two checked pitches; Normal/Hard up to three. One checked
     pitch remains playable. Name cards match letters across octaves; keyboard↔staff requires
     the exact pitch. One completed round produces one answer row; mismatches count as errors.
@@ -292,12 +295,12 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
     fifth line/F3–B3; A4 right 5/F4–B4. Completed lessons join eligible named-note skills.
 19. Use the release pipeline for SW versions, file hashes, actual load receipts, and offline
     upgrade. Never manually increment the cache version or erase learner storage.
-20. Skill 8 covers four compact dropdowns, Arabic 1–8, line/space choices, editable answers, six unique
+20. Skill 8 covers compact symbolic dropdowns, Arabic 1–8, line/space diagrams, editable answers, six unique
     positions, one/two/three ledgers by tier, full-sentence speech, and no pitch-name question.
 21. Skill 9 covers the two fixed clef groups, limited basic ledgers, Hard ledger extensions,
     feedback/hints/log fields, and one-per-learned-comparison new-note finale.
 22. A chips disambiguate octaves; A speech is /eɪ/, not /aɪ/.
-23. Skill 10 supports naming on Easy/Normal and snapped placement/confirmation on Hard;
+23. Skill 10 uses placement in all tiers: one staff position, then five ledger positions;
     continuous keyboard movement retains focus after redraw.
 24. Skill 11 offers all three representation pairs and duration/beat pairs, mismatches, persistent matches, and
     completion with one checked pitch; keyboard/staff matching requires the exact octave.

@@ -127,7 +127,7 @@ current descriptions should stay accurate as the product changes.
 | Skill 7 in daily and pre/post | Idea | Two-note comparison is not in the daily mix or the 12-item battery yet |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
 | More left-hand notes | Idea | B3 and A3 are the only left-hand notes, so skill 5 is still right-hand heavy |
-| Ledger placement | Implemented locally | Skill 10 Hard places notes at requested ledger positions |
+| Ledger placement | Implemented locally | Skill 10 places one staff note and five ledger notes in every tier |
 | Grand staff for skill 9 | Idea | The mirror pairs (E4/A3, D4/B3) are most visible on a two-staff system; the current version uses one staff |
 | A3 treble spelling | Idea | A3 is taught on the bass staff; its treble spelling (second ledger line below) is not yet taught |
 | Progress history for teachers | Shipped 2026-11-03 | Time, daily-by-skill matrix, per-skill and per-note tables, comparison pairs, error-rate trend, print/PDF |
