@@ -3,8 +3,8 @@
 Last updated: 2026-11-09
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
-record. Earlier audits describe their own stages, not current readiness. Current status below incorporates the accepted teacher portal and automatic-student
-release. The documentation review itself did not rerun runtime or live database tests.
+record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
+instructional release. Each entry identifies its own runtime and database verification scope.
 
 ## Left/right matching release, 2026-11-09
 
@@ -13,6 +13,20 @@ ordering and one-card-per-side matching. Same-side reselection changes the selec
 without an error. The user authorized publishing this final fix together with the earlier
 local instructional, keyboard, placement, and symbol-menu changes. See the
 [release audit](audit_20261109_left_right_release/audit.md).
+
+Released build: `b6f44fffb5`; feature commit `3862334` and preceding local
+instructional corrections were pushed to origin/main. The full required suite passed:
+54 Node tests, 1,144 scheduling boundaries, 55,080 generated sessions, four-viewport
+layout/left-right geometry, symbolic answer correction, 18 placement confirmations,
+and all storage, backup, sync, cloud/portal fixture, and offline-upgrade browser suites.
+All deployed runtime file hashes matched Pages and both local origins. Six actual
+Safari/Chrome load receipts across Pages, 127.0.0.1:8773, and localhost:8773 acknowledged
+this exact build. Chrome remote reset initially failed twice at release-files; a separate
+full-file diagnostic and the final fresh reset/boot succeeded. Prior attempts are retained
+in ignored release status. No browser failure was converted to success by assertion.
+No new database migration or live learner-data test was needed for these UI-only changes.
+Physical iPad touch accuracy remains unverified. Published URL:
+`https://fangjiaqifion.github.io/note-trainer/index.html?build=b6f44fffb5`.
 
 Documentation updated: LEVELS, user guide, tracker, and release audit. AGENTS, README,
 development, cloud operations, and teacher portal docs reviewed unchanged because their
@@ -90,17 +104,18 @@ unchanged because cloud behavior and permissions are unaffected. Historical audi
 
 | Item | Accepted result |
 |---|---|
-| Runtime build | `e30cc2ef11` |
-| Game commits | Feature `ac86b85`, release `d8d55a2`, acceptance record `d07e0de`, pushed |
+| Runtime build | `b6f44fffb5`, instructional and left/right matching release |
+| Game commits | Frontend `3862334`, pushed; prior cloud release `ac86b85` / `d8d55a2` / `d07e0de` retained |
 | Database | Migrations 001–004 applied; migration 004 succeeded before dependent client publication |
-| Release verification | Pages file hashes matched; six Safari/Chrome receipts ready across Pages, 127.0.0.1:8771, and localhost:8771 |
+| Release verification | Pages file hashes matched; six Safari/Chrome receipts ready for `b6f44fffb5` across Pages, 127.0.0.1:8773, and localhost:8773 |
 | Teacher access | Reusable invitation, ASCII-alphanumeric username, saved random key; ordinary teachers need no MFA |
 | Administrator | Separate unlinked `manage.html`, allowlist, owner-entered password/TOTP; invitation and teacher views accepted |
 | Default student flow | Ordinary New Student creation automatically enrolls and syncs labels, progress, and answers; offline queue and idempotent retry |
 | Live acceptance | Existing synthetic teacher, one synthetic `AUTO01` student, one answer read back from cloud; no manual binding or forced download |
 | Health check | Three daily GitHub runs configured; initial run passed; no service-availability guarantee |
 
-Evidence: [automatic-sync audit](audit_20261105_automatic_students/audit.md) and
+Frontend release evidence: [left/right release audit](audit_20261109_left_right_release/audit.md).
+Cloud acceptance evidence: [automatic-sync audit](audit_20261105_automatic_students/audit.md) and
 [portal audit](audit_20261105_portal/audit.md). Prior device/network/capacity limits remain.
 
 ## Historical pre-portal delivery baseline

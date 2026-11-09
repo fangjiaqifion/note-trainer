@@ -19,6 +19,22 @@ and uniform keyboard scaling. Full release-suite, remote file hashes, deployed b
 and actual Safari/Chrome navigation evidence are recorded in the current tracker.
 Physical iPad touch accuracy remains a device-specific acceptance boundary.
 
+## Observed delivery
+
+- Build `b6f44fffb5`, feature commit `3862334`, pushed to the existing origin/main.
+- Full required suite passed: 54 Node tests, 1,144 scheduling boundaries, 55,080
+  generated sessions, four-viewport left/right geometry and containment, symbolic
+  correction, all 18 placement confirmations, storage/backup/sync/cloud/portal fixtures,
+  and offline-cache upgrade checks. No additional live database pressure test was run.
+- Every deployed runtime hash matched Pages, 127.0.0.1:8773, and localhost:8773.
+- All six actual Safari/Chrome navigation receipts acknowledged the exact build.
+  Chrome remote reset failed twice at release-files, then passed a separate full-file
+  diagnostic and a fresh reset/boot. Failed attempt history is retained in ignored status.
+  A Safari duplicate callback displayed an already-used receipt after the original
+  successful receipt; the server's actual ready record was checked rather than inferred.
+- No database migrations changed. Existing learner storage was preserved during scoped
+  service-worker/cache clearing. Physical iPad touch accuracy remains unverified.
+
 ## Documentation disposition
 
 Updated LEVELS, user guide, tracker, and this audit. AGENTS reviewed unchanged: generation,
