@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="6cd59fcd9e">
+<meta name="app-build" content="ce29b4d8fb">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -241,7 +241,7 @@
      保持单行并从键盘右缘向外让一点，手机上也不会挤成「中央 / C」。 */
   .kb-legend span{display:flex;align-items:center;gap:5px;background:#FFF3E2;border:1.5px solid #F1D6B2;border-radius:999px;padding:3px 9px;font-size:12.5px;font-weight:700;color:#A96C22;line-height:1.1;white-space:nowrap;flex:none}
   .kb-legend .lg-dot{width:9px;height:9px;border-radius:50%;background:var(--orange);flex:none}
-  .kb{position:relative;width:100%;height:clamp(150px,23vh,235px);touch-action:none}
+  .kb{position:relative;width:100%;height:clamp(190px,29vh,300px);touch-action:none}
   .kb .w{position:absolute;top:0;bottom:0;background:linear-gradient(#FFFFFF,#FBF5E9);border:1.5px solid #D9CDBA;border-radius:0 0 10px 10px;box-shadow:inset 0 -8px 0 #EFE6D6;transition:background .08s}
   .kb .w.on{background:linear-gradient(#FFE7C2,#FFD79E)}
   .kb .w.correct{background:linear-gradient(#D3F2E2,#A6E2C3);border-color:#3FA96F}
@@ -583,7 +583,14 @@
     .report-sec{break-inside:avoid}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
-.ledger-options{display:flex;gap:4px}.ledger-options button{min-width:44px;min-height:48px;border:2px solid #d6c8af;border-radius:10px;background:white;font-size:28px;color:#302a24}.ledger-options button[aria-pressed="true"]{background:#e2f2ff;border-color:#3c7dd9}.ledger-options svg{display:block;width:38px;height:44px}.ledger-options button svg:last-child{max-height:44px}.matching-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(100%,660px)}.match-card{min-width:0;height:125px;border:2px solid #c9b795;border-radius:14px;background:#fffaf0;overflow:hidden;font-size:36px}.match-card .paper{width:100%;height:110px;margin:0}.match-card svg{max-height:110px}.match-card.matched{border-color:#3fa96f;background:#eaf8ee}.card-keyboard{height:80px!important;width:100%;pointer-events:none}.card-letter{font-size:50px}@media(max-height:520px){.match-card{height:85px}.match-card .paper,.match-card svg{height:75px}}
+.matching-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(100%,900px)}
+.match-card{min-width:0;height:140px;padding:8px;border:2px solid var(--line);border-radius:14px;background:#fffaf0;display:flex;align-items:center;justify-content:center;font-size:36px}
+#play .match-card .staff{width:100%;height:100%;max-height:100%;max-width:100%}
+.match-card.selected{border-color:var(--blue);box-shadow:0 0 0 3px #c9dcf5}
+.match-card.matched{border-color:var(--green);background:#eaf8ee;opacity:.65}
+.card-keyboard{height:100%!important;width:100%;pointer-events:none}.card-letter{font-size:48px}
+@media(max-height:520px){.match-card{height:86px;padding:4px}.matching-board{gap:6px}}
+
 </style>
 </head>
 <body>
@@ -1129,7 +1136,7 @@ const SKILLS = [
     desc:'上行、下行、重复；再选出更高或更低的音', color:'#B0577E',
     needs:[], pool:'none', make:makeTwoNotes },
   { id:8, key:'ledger', name:'加线加间', title:'谱表外的加线加间',
-    desc:'看谱号与箭头，选出加线或加间的位置', color:'#4C8C6A',
+    desc:'补全句子，说出加线或加间的位置', color:'#4C8C6A',
     needs:[], pool:'none', make:makeLedger,
     count:function(){ return 6; } },
   { id:9, key:'contrast', name:'易混音', title:'容易混的音',
@@ -1139,8 +1146,8 @@ const SKILLS = [
     desc:'先说出加线位置，挑战把音符移到指定位置', color:'#43858D',
     needs:[], pool:'none', make:makeLedgerMove, count:function(){ return 6; } },
   { id:11, key:'matching', name:'卡牌配对', title:'音名、键盘与五线谱配对',
-    desc:'翻开卡牌，找到表示同一个音的两张牌', color:'#B27B3F',
-    needs:['key','pos'], pool:'active', make:makeMatching, count:function(){ return 3; } }
+    desc:'直接配对音名、键盘、五线谱和拍数', color:'#B27B3F',
+    needs:['key','pos'], pool:'active', make:makeMatching, count:function(){ return 4; } }
 ];
 
 /* ---------------------------------------------------------------------
@@ -2379,15 +2386,11 @@ function makeKB(opts){
   opts = opts || {};
   const wrap = document.createElement('div');
   wrap.className = 'kb-wrap';
-  /* 局部键盘只有三个或四个白键，不能把它们拉满整块屏：宽度按 15 个
-     白键的比例取，键的宽度就和完整键盘一致，黑白键的比例才正常。
-     范围本身仍然只覆盖一个黑键组，不会为了填满而多露三个黑键。 */
   const start = opts.start || 0;
   const count = opts.count || 15;
-  wrap.style.width = (count / 15 * 100) + '%';
-  /* 宽屏上 .kb-wrap 最多 980px；局部键盘的宽度上限也要跟着缩，
-     否则 20% 会按更宽的父容器算，键又比完整键盘大一圈。 */
-  wrap.style.maxWidth = (count / 15 * 980) + 'px';
+  // Keep local groups finger-sized, with the same proportions as the full keyboard.
+  wrap.style.width = 'min(100%, ' + (count * 80) + 'px)';
+  wrap.style.maxWidth = '1200px';
   const kb = document.createElement('div');
   kb.className = 'kb';
   buildKeyboard(kb, opts);
@@ -3993,20 +3996,6 @@ function qLedgerName(spot){
         return s;
       }
       function select(key, label, options){
-        if(key !== 'num'){
-          const group = document.createElement('div'); group.className = 'ledger-options';
-          group.setAttribute('role','group'); group.setAttribute('aria-label',label);
-          options.forEach(function(o){
-            const b = document.createElement('button'); b.type='button'; b.dataset.value=o[0];
-            b.setAttribute('aria-label',o[1]); b.setAttribute('aria-pressed','false');
-            b.innerHTML = key === 'clef' ? '<svg viewBox="0 -2 4.5 8">'+clefMarkup(o[0])+'</svg>'
-              : key === 'dir' ? (o[0]==='up' ? '↑' : '↓')
-              : o[1]+'<svg viewBox="0 0 50 30"><path d="M2 8H48 M2 22H48" stroke="currentColor"/><ellipse cx="25" cy="'+(o[0]==='line'?8:15)+'" rx="7" ry="4" fill="currentColor"/></svg>';
-            b.onclick=function(){ if(G.q.answered) return; picks[key]=o[0];
-              group.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));}); tryJudge(); };
-            group.appendChild(b);
-          }); row.appendChild(group); return group;
-        }
         const sel = document.createElement('select');
         sel.dataset.key = key;
         sel.setAttribute('aria-label', label);
@@ -4326,35 +4315,38 @@ function qLedgerMove(spot){
 
 function makeMatching(ids,n){
   if(!ids.length)return [];
-  return [['name','key'],['name','staff'],['key','staff']].slice(0,n).map(function(types){
-    const notes=shuffle(ids).slice(0, diff().key==='easy'?2:3);
+  return [['name','key'],['name','staff'],['key','staff'],['duration','beats']].slice(0,n).map(function(types){
+    const rhythm=types[0]==='duration';
+    const notes=shuffle(rhythm?VALUE_IDS:ids).slice(0, diff().key==='easy'?2:3);
     const cards=shuffle(notes.flatMap(function(id){return types.map(function(type){return {id:id,type:type};});}));
-    let first=null, matched=new Set(), locked=false, buttons=[];
+    let first=null, matched=new Set(), buttons=[];
     function face(card){
       if(card.type==='name')return '<span class="card-letter">'+NOTES[card.id].letter+'</span>';
-      if(card.type==='staff')return staffBlock({noteId:card.id,value:'whole'});
+      if(card.type==='beats')return '<span class="card-letter">'+VALUES[card.id].beats+' 拍</span>';
+      if(card.type==='duration')return staffSVG({noteId:'C4',value:card.id,compact:true});
+      if(card.type==='staff')return staffSVG({noteId:card.id,value:'whole',compact:true});
       return '<div class="kb keyboard card-keyboard"></div>';
     }
     return {kind:'matching',pair:types.join('-'),target:notes.length,wrong:0,
       render:function(){
-        first=null;matched=new Set();locked=false;
-        setPrompt('翻两张牌，找到同一个音','翻两张牌，找到同一个音');
-        stageEl.innerHTML='<div class="matching-board"></div>';answerEl.innerHTML='<div class="spot-cap">音名卡只看字母；键盘与谱面配对要在同一个八度</div>';
+        first=null;matched=new Set();
+        setPrompt(rhythm?'把音符和拍数配对':'选两张牌，把同一个音配对',rhythm?'把音符和拍数配对':'选两张牌，把同一个音配对');
+        stageEl.innerHTML='<div class="matching-board"></div>';answerEl.innerHTML='<div class="spot-cap">所有卡牌直接可见，点两张配对；键盘与谱面要在同一个八度</div>';
         const board=stageEl.firstChild;
         buttons=cards.map(function(card,i){
-          const b=document.createElement('button');b.type='button';b.className='match-card';b.textContent='♪'; b.setAttribute('aria-label','翻开第'+(i+1)+'张牌');
+          const b=document.createElement('button');b.type='button';b.className='match-card';b.dataset.pair=card.id;b.dataset.type=card.type;b.setAttribute('aria-label','选择第'+(i+1)+'张牌');
           function show(){b.innerHTML=face(card);if(card.type==='key')buildKeyboard(b.querySelector('.keyboard'),{start:0,count:15,target:NOTES[card.id].midi});}
           b.onclick=function(){
-            if(G.q.answered||locked||matched.has(i)||first===i)return;
-            show(); if(first===null){first=i;return;}
-            const a=first;first=null;
+            if(G.q.answered||matched.has(i))return;
+            if(first===i){b.classList.remove('selected');first=null;return;}
+            if(first===null){first=i;b.classList.add('selected');return;}
+            const a=first;first=null;buttons[a].classList.remove('selected');
             const same=cards[a].type!==card.type && (types.includes('name')?NOTES[cards[a].id].letter===NOTES[card.id].letter:cards[a].id===card.id);
             if(same){matched.add(a);matched.add(i);buttons[a].classList.add('matched');b.classList.add('matched');
               if(matched.size===cards.length)judge(true,'全部配对成功！');
-            }else{G.q.wrong++;toast('这两张还不配，再看看','bad');locked=true;
-              const session=G.session;setTimeout(function(){if(session!==G.session)return;buttons[a].textContent=b.textContent='♪';locked=false;},850);
+            }else{G.q.wrong++;toast('这两张还不配，再看看','bad');
             }
-          };board.appendChild(b);return b;
+          };show();board.appendChild(b);return b;
         });
       },reveal:function(){setPrompt('先看谱号和音的位置，再找同一个音',false);}
     };

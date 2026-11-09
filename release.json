@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "build": "6cd59fcd9e",
+  "build": "ce29b4d8fb",
   "files": {
-    "index.html": "ee41975ff81781de40a031eeae67d16f82d8c3dbfcae91bf5a9dcb295abd101c",
-    "sw.js": "b4bf0d9fdb1576e98fa579624442a2b9bd2d68a722e26dc3b576b4e6930d8711",
+    "index.html": "8eb65dc4621045e7e86369eb40081527a35e704f76eb9793be48ea41f0adc7db",
+    "sw.js": "83674dde5c4656963886fc7ab52f39ec303da7773cc609ffe45770011a21cb7c",
     "clear-cache.html": "500d30c3694eecf60edafad0a278386ecc37e51bc1ed746724aa4d367e5f4b54",
     "manifest.webmanifest": "4f99b80d40d95db829c010f339ada183b52bae289cf8972ec74318377e3898ce",
     "cloud_client.mjs": "5124d051e3b6c6fb3e19832626057f58bca3fb91e6d66e436d744c7f8f4217c0",

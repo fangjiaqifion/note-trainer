@@ -6,6 +6,31 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status below incorporates the accepted teacher portal and automatic-student
 release. The documentation review itself did not rerun runtime or live database tests.
 
+## Touch and matching refinement, 2026-11-09
+
+Build `ce29b4d8fb` simplifies skills 8/10 position naming to four native dropdowns.
+All shared answer keyboards are taller (190–300 CSS pixels outside short landscape),
+with a 1,200-pixel full-width cap and local groups up to 80 pixels per white key.
+The complete 15-key pitch range remains available. Narrow screens still constrain
+full-keyboard key widths; physical iPad touch accuracy remains unverified.
+Skill 11 now uses four face-up rounds: name/key, name/staff, key/staff, and duration/beats.
+It shares the standard keyboard renderer and colors; compact SVGs fit complete clefs,
+staffs, ledger lines, and notes inside cards. Mismatches stay visible; matches stay marked.
+
+Verification: full local release passed 54 Node tests, 1,144 scheduling boundaries,
+55,080 generated sessions, four-viewport layout/card containment checks, and all
+storage, backup, sync, cloud/portal fixture, and offline upgrade browser suites.
+Both local origins passed published-file hash checks. Actual Safari/Chrome receipts
+across 127.0.0.1 and localhost all acknowledged build `ce29b4d8fb`; local status is ready.
+Local preview: `http://127.0.0.1:8773/index.html?build=ce29b4d8fb`.
+No push or remote deployment was performed.
+
+Documentation updated: AGENTS (four-round invariant), LEVELS, user guide, this tracker,
+and the [refinement audit](audit_20261109_touch_matching/audit.md). README reviewed
+unchanged because its general capability summary remains accurate. Development, cloud
+operations, and teacher portal procedures remain unchanged because release mechanics,
+permissions, storage, and cloud behavior are unaffected. Earlier audits are historical.
+
 ## Local instructional update, 2026-11-09
 
 Skills 8–11 now have pictorial ledger choices, fixed clef-specific contrast groups,

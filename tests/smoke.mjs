@@ -468,8 +468,8 @@ async function newSkillsCheck(page){
     const stage=document.querySelector('#stage'),answer=document.querySelector('#answer');
     function render(q){stage.innerHTML='';answer.innerHTML='';d.G.q=q;q.answered=false;q.render();}
     d.G.diffKey='normal';render(d.buildQuestions(8)[0]);
-    const icons=answer.querySelectorAll('.ledger-options svg').length;
-    const digits=Array.from(answer.querySelector('select').options).slice(1).map(o=>o.textContent);
+    const icons=answer.querySelectorAll('.ledger-sentence select').length;
+    const digits=Array.from(answer.querySelector('select[data-key="num"]').options).slice(1).map(o=>o.textContent);
     const basic=d.buildQuestions(9).map(q=>({clef:q.clef,y:q.noteId,ys:[q.y1,q.y2]}));
     d.G.diffKey='hard';const q=d.buildQuestions(10)[0];render(q);
     const svg=stage.querySelector('svg');svg.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
@@ -480,7 +480,7 @@ async function newSkillsCheck(page){
     d.G.diffKey=old;
     return {icons,digits,basic,moved,focused,kinds};
   });
-  assert.equal(info.icons,4,'two clef symbols and line/space diagrams');
+  assert.equal(info.icons,4,'four compact position dropdowns');
   assert.deepEqual(info.digits,['1','2','3','4','5','6','7','8']);
   assert.ok(info.basic.some(q=>q.clef==='treble') && info.basic.some(q=>q.clef==='bass'));
   for(const q of info.basic){
@@ -489,7 +489,35 @@ async function newSkillsCheck(page){
   }
   assert.equal(info.moved,'1','two arrow keys move the note two half staff steps');
   assert.ok(info.focused,'movement retains keyboard focus after redrawing');
-  assert.deepEqual(info.kinds,['name-key','name-staff','key-staff']);
+  assert.deepEqual(info.kinds,['name-key','name-staff','key-staff','duration-beats']);
+  // Every mode starts face up, keeps full notation inside each card, and completes by matching.
+  for(const viewport of [[820,1180],[1180,820],[390,844],[844,390]]){
+    await page.setViewportSize({width:viewport[0],height:viewport[1]});
+    const results=await page.evaluate(function(){
+      const d=window.__dbg;
+      return d.buildQuestions(11).map(function(q){
+        document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';
+        d.G.q=q;q.answered=true;q.render();
+        const cards=Array.from(document.querySelectorAll('.match-card'));
+        return cards.every(function(c){
+          const child=c.firstElementChild,r=c.getBoundingClientRect(),x=child.getBoundingClientRect();
+          return child && x.left>=r.left && x.right<=r.right+.5 && x.top>=r.top && x.bottom<=r.bottom+.5;
+        });
+      });
+    });
+    assert.ok(results.every(Boolean),'full card content fits at '+viewport.join('x'));
+    if(process.env.NT_UI_SCREENSHOTS) await page.screenshot({path:'/tmp/note-trainer-matching-'+viewport.join('x')+'.png'});
+  }
+  await page.setViewportSize({width:820,height:1180});
+  const rhythm=await page.evaluate(function(){
+    const d=window.__dbg,q=d.buildQuestions(11)[3];d.G.q=q;q.answered=false;q.render();
+    const cards=Array.from(document.querySelectorAll('.match-card'));
+    cards.filter(c=>c.dataset.type==='duration').forEach(function(c){
+      c.click();cards.find(x=>x.dataset.type==='beats' && x.dataset.pair===c.dataset.pair).click();
+    });
+    return {total:cards.length,matched:document.querySelectorAll('.match-card.matched').length};
+  });
+  assert.equal(rhythm.matched,rhythm.total,'duration matches numeric beat counts');
   // One checked pitch still produces a playable matching pair in every mode.
   await page.evaluate(function(){
     const d=window.__dbg;const old=d.S.selected;d.S.selected=['C4'];
@@ -717,7 +745,7 @@ async function main(){
     console.log('PASS level 8: 6 questions, numbers 1-8');
 
     await newSkillsCheck(page);
-    console.log('PASS levels 8-11: pictorial choices, grouped pitches, movement, three matching modes');
+    console.log('PASS levels 8-11: dropdowns, grouped pitches, movement, four face-up matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 

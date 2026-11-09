@@ -48,7 +48,7 @@ an installed automatic hook or permission to push/deploy.
   even though both answers are treble clef.
 - Skills 6–8 and 10 concern abstract positions and ignore selected notes. Skill 9 uses
   fixed treble C4–G4 and bass F3–C4 groups, independent of selections; Hard adds ledger
-  pitches. Skill 11 uses checked key+pos notes for three representation-pair rounds.
+  pitches. Skill 11 uses checked key+pos notes for three representation-pair rounds plus duration-to-beat matching.
   The new-note contrast finale retains its separate learned-note pool.
 - Plan note counts before ordering. One eligible target necessarily repeats; with multiple
   targets, avoid adjacent repeats whenever feasible.
