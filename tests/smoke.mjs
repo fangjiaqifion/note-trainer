@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页九张卡、13 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页十一张卡、16 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -87,6 +87,8 @@ async function renderCases(){
   const play = document.querySelector('#play');
   const stage = document.querySelector('#stage');
   const answer = document.querySelector('#answer');
+  const savedDiff=d.G.diffKey; d.G.diffKey='hard';
+  const placement=d.buildQuestions(10)[0]; d.G.diffKey=savedDiff;
   const cases = [
     ['kbfind', d.SPOT_STEPS[0]('A4')],
     ['find', d.SPOT_STEPS[1]('A4')],
@@ -100,7 +102,10 @@ async function renderCases(){
     ['pairdir', d.buildQuestions(7)[0]],
     ['higher', d.buildQuestions(7).find(function(q){ return q.kind === 'higher'; })],
     ['ledger', d.buildQuestions(8)[0]],
-    ['contrast', d.buildQuestions(9)[0]]
+    ['contrast', d.buildQuestions(9)[0]],
+    ['ledgerName', d.buildQuestions(10)[0]],
+    ['matching', d.buildQuestions(11)[0]],
+    ['ledgerMove',placement]
   ];
   const out = [];
   for(const item of cases){
@@ -457,6 +462,45 @@ async function ledgerCheck(page){
     'skill 8 number choices must always be 1-8');
 }
 
+async function newSkillsCheck(page){
+  const info=await page.evaluate(function(){
+    const d=window.__dbg, old=d.G.diffKey;
+    const stage=document.querySelector('#stage'),answer=document.querySelector('#answer');
+    function render(q){stage.innerHTML='';answer.innerHTML='';d.G.q=q;q.answered=false;q.render();}
+    d.G.diffKey='normal';render(d.buildQuestions(8)[0]);
+    const icons=answer.querySelectorAll('.ledger-options svg').length;
+    const digits=Array.from(answer.querySelector('select').options).slice(1).map(o=>o.textContent);
+    const basic=d.buildQuestions(9).map(q=>({clef:q.clef,y:q.noteId,ys:[q.y1,q.y2]}));
+    d.G.diffKey='hard';const q=d.buildQuestions(10)[0];render(q);
+    const svg=stage.querySelector('svg');svg.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
+    stage.querySelector('svg').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
+    const moved=stage.querySelector('.note ellipse').getAttribute('cy');
+    const focused=document.activeElement===stage.querySelector('svg');
+    const kinds=d.buildQuestions(11).map(q=>q.pair);
+    d.G.diffKey=old;
+    return {icons,digits,basic,moved,focused,kinds};
+  });
+  assert.equal(info.icons,4,'two clef symbols and line/space diagrams');
+  assert.deepEqual(info.digits,['1','2','3','4','5','6','7','8']);
+  assert.ok(info.basic.some(q=>q.clef==='treble') && info.basic.some(q=>q.clef==='bass'));
+  for(const q of info.basic){
+    assert.ok((q.clef==='treble'?['C4','D4','E4','F4','G4']:['F3','G3','A3','B3','C4']).includes(q.y));
+    assert.ok(q.ys.every(y=>y>=-1&&y<=5),'basic contrast has at most one ledger line');
+  }
+  assert.equal(info.moved,'1','two arrow keys move the note two half staff steps');
+  assert.ok(info.focused,'movement retains keyboard focus after redrawing');
+  assert.deepEqual(info.kinds,['name-key','name-staff','key-staff']);
+  // One checked pitch still produces a playable matching pair in every mode.
+  await page.evaluate(function(){
+    const d=window.__dbg;const old=d.S.selected;d.S.selected=['C4'];
+    d.startLevel(11);d.S.selected=old;
+  });
+  await page.locator('.match-card').nth(0).click();
+  await page.locator('.match-card').nth(1).click();
+  assert.equal(await page.locator('.match-card.matched').count(),2);
+  await page.waitForTimeout(1200);
+}
+
 async function spotlightCheck(page){
   await page.evaluate(function(){
     const d = window.__dbg;
@@ -518,8 +562,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('九个技能') >= 0, 'report must say nine skills');
-  assert.equal(report.headers.length, 11, 'matrix must have date + 9 skills + total');
+  assert.ok(report.text.indexOf('十一个技能') >= 0, 'report must say eleven skills');
+  assert.equal(report.headers.length, 13, 'matrix must have date + 11 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -643,8 +687,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 9, 'home must show nine skill cards');
-    console.log('PASS home: 9 skill cards');
+    assert.equal(cards, 11, 'home must show eleven skill cards');
+    console.log('PASS home: 11 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -653,7 +697,7 @@ async function main(){
     console.log('PASS build: settings matches page build ' + build.meta);
 
     await layoutCheck(page);
-    console.log('PASS layout: 13 question types x 4 viewports');
+    console.log('PASS layout: 16 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -672,11 +716,13 @@ async function main(){
     await ledgerCheck(page);
     console.log('PASS level 8: 6 questions, numbers 1-8');
 
+    await newSkillsCheck(page);
+    console.log('PASS levels 8-11: pictorial choices, grouped pitches, movement, three matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: nine-skill matrix');
+    console.log('PASS report: eleven-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

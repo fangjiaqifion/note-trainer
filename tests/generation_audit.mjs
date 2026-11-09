@@ -33,6 +33,11 @@ export async function generationAudit(page){
           if(q.kind === 'find') check(sel.some(id => d.NOTES[id].letter === q.letter), prefix + ' unselected letter ' + q.letter);
         });
       }
+      if(skill === 9) qs.forEach(q=>{
+        const base=q.clef==='treble'?2:4;
+        const letterAt=y=>((base+Math.round((4-y)*2))%7+7)%7;
+        check(letterAt(q.y1)!==letterAt(q.y2),prefix+' ambiguous same-letter pair');
+      });
       if(skill === 8) check(new Set(keys).size === n, prefix + ' duplicate position');
       if([1,2,3,4,5,9].includes(skill) && new Set(keys).size > 1){
         const counts = keys.reduce((a,k) => (a[k] = (a[k] || 0) + 1, a), {});
@@ -67,7 +72,7 @@ export async function generationAudit(page){
               let state = seed * 100003 + mask;
               Math.random = function(){ state = (Math.imul(state,1664525) + 1013904223) >>> 0; return state / 4294967296; };
               const prefix = sel.join('+') + '/' + difficulty + '/history' + history + '/seed' + seed;
-              for(let skill=1;skill<=9;skill++) inspect(d.buildQuestions(skill),skill,sel,prefix + '/skill' + skill);
+              for(let skill=1;skill<=11;skill++) inspect(d.buildQuestions(skill),skill,sel,prefix + '/skill' + skill);
               inspect(d.buildDailySession(),'daily',sel,prefix);
               if(mask === 12 && difficulty === 'normal' && history === 0)
                 samples.push(d.buildQuestions(3).map(q => q.noteId).join(','));
@@ -84,6 +89,6 @@ export async function generationAudit(page){
     return {failures,sessions,samples};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 10 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 12 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }

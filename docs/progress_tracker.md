@@ -1,10 +1,29 @@
 # Note Trainer Internal Progress Tracker
 
-Last updated: 2026-11-05
+Last updated: 2026-11-09
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
 record. Earlier audits describe their own stages, not current readiness. Current status below incorporates the accepted teacher portal and automatic-student
 release. The documentation review itself did not rerun runtime or live database tests.
+
+## Local instructional update, 2026-11-09
+
+Skills 8–11 now have pictorial ledger choices, fixed clef-specific contrast groups,
+ledger placement on Hard, and three card-matching modes. See the
+[instructional audit](audit_20261109_skills/audit.md) for decisions and verification scope.
+Local build: `6cd59fcd9e`. `npm run release -- --local --local-only --no-open --port 8772`
+passed the complete required suite: 54 Node tests, 1,144 scheduling boundaries, 55,080
+generated sessions, 16 question variants across four viewports, and all browser suites
+for storage, backup, cloud/portal fixtures, and offline cache upgrades. Published-file
+hashes matched both local origins. CUA opened the generated reset URLs; all four
+Safari/Chrome receipts across 127.0.0.1 and localhost acknowledged the exact build.
+The ignored release status was updated to local-only ready from those actual receipts.
+Local preview: `http://127.0.0.1:8772/index.html?build=6cd59fcd9e`.
+This version has not been pushed or deployed; the accepted remote baseline below is unchanged.
+
+Documentation reviewed: updated AGENTS, README, LEVELS, development guide, user guide,
+this tracker, and the new audit. Cloud operations and teacher portal docs were reviewed
+unchanged because cloud behavior and permissions are unaffected. Historical audits retained.
 
 ## Current accepted delivery
 

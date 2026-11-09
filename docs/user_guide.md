@@ -1,6 +1,6 @@
 # Note Trainer User Guide
 
-Last updated: 2026-11-05
+Last updated: 2026-11-09
 
 Detailed product behavior and usage. Start with [the overview](../README.md) for purpose
 and quick start. Contributor procedures are in [development.md](development.md).
@@ -98,7 +98,7 @@ half needs at least three questions, otherwise it says the sample is too small.
 
 Then:
 
-- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the nine skills plus a
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the eleven skills plus a
   total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
   above, orange from 60% to 79%, red below 60%.
 - **每关** (per skill): questions, total time, average time per question, first-try accuracy,
@@ -183,12 +183,12 @@ second keyboard step and no key has been found yet, the prompt names the exact o
 so the target is unambiguous.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-nine fixed skill cards below that. The chips are the only part that grows with the note set.
+eleven fixed skill cards below that. The chips are the only part that grows with the note set.
 Wide screens use three card columns, tablet portrait two, and phones one.
 
-## The nine skills
+## The eleven skills
 
-The nine cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The eleven cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -200,8 +200,10 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with four dropdowns: treble/bass, above/below, number 1–8, line/space (the note name is not asked); six questions per session | none |
-| 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (neighboring, third, ledger-count and mirror pairs) | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with clef symbols, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six questions per session | none |
+| 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (treble C4–G4, then bass F3–C4; Hard adds ledger notes) | none |
+| 10 | 加线定位 · Ledger placement | Easy/Normal name the ledger position; Hard drag or tap a note to a requested position and confirm | none |
+| 11 | 卡牌配对 · Card matching | Flip matching name/key, name/staff, and key/staff pairs in three rounds | `key` + `pos` |
 
 The clef skill uses only the checked notes. C4 brings both spellings (treble and bass) of the
 same pitch. Checking D and E mixes D and E without adding an unchecked bass note. Their
@@ -289,7 +291,7 @@ first lesson); that starts the 14-question first lesson. This keeps the checked 
 only B, C and D are checked, the daily session only asks B, C and D.
 
 The home screen also has a row of note chips (**我的音**). A learned chip is a checkbox: tap it
-to include or exclude that note in daily practice, skills 1–5, and eligible pairs in skill 9. A selected note has
+to include or exclude that note in daily practice and skills 1–5 and 11. A selected note has
 a filled check; an unselected learned note stays white; the current new note pulses and opens
 the spotlight; any other unlearned note is dimmed but still opens its spotlight when tapped.
 A single-note review of a note and its neighbors is available from the **练** button beside

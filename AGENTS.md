@@ -1,6 +1,6 @@
 # Note Trainer: Internal Development Guide
 
-Last updated: 2026-11-05
+Last updated: 2026-11-09
 
 This is an independent repository, registered as a submodule in the music-materials
 workspace. When nested there, inherit the parent and `games/AGENTS.md`; when cloned
@@ -46,8 +46,10 @@ an installed automatic hook or permission to push/deploy.
   Do not add unchecked target notes to manufacture clef variety.
 - Skill 3 may use C4B as the same pitch as checked C4. D/E must both appear when checked,
   even though both answers are treble clef.
-- Skills 6–8 concern abstract positions and ignore selected notes. Skill 9 uses only
-  registered eligible pairs among checked notes and may be empty if no pair is available.
+- Skills 6–8 and 10 concern abstract positions and ignore selected notes. Skill 9 uses
+  fixed treble C4–G4 and bass F3–C4 groups, independent of selections; Hard adds ledger
+  pitches. Skill 11 uses checked key+pos notes for three representation-pair rounds.
+  The new-note contrast finale retains its separate learned-note pool.
 - Plan note counts before ordering. One eligible target necessarily repeats; with multiple
   targets, avoid adjacent repeats whenever feasible.
 - Plan the entire ten-item daily session, rather than shuffling independently sampled blocks.
@@ -99,7 +101,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × nine skills and daily practice, totaling 45,900 sessions.
+answer histories × three seeds × eleven skills and daily practice, totaling 55,080 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and

@@ -1,6 +1,6 @@
 # Skills and Note-Set Design
 
-Last updated: 2026-11-05
+Last updated: 2026-11-09
 
 Internal instructional-design reference, maintained in English. The README introduces
 the product; AGENTS owns technical constraints; the progress tracker owns implementation
@@ -11,7 +11,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at nine cards. The note axis grows through
+The skill axis is fixed at eleven cards. The note axis grows through
 B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
@@ -22,7 +22,7 @@ practice access. Cloud roles are separately authorized.
 |---|---|---|
 | My notes chips | Checked pool, learning note, and unlearned notes | Home top |
 | Daily practice | Ten review/key/duration/finger/staff items | Main home button |
-| Nine skill cards | Practice one skill | Home cards |
+| Eleven skill cards | Practice one skill | Home cards |
 | First lesson | Fourteen new-note items | Any unlearned chip |
 | Single-note review | Six items using the note and neighbors | Teacher report review button |
 | Next note | Adult chooses when to expand the set | Home footer |
@@ -86,7 +86,7 @@ Learned chips toggle selection; at least one remains checked. Completing a lesso
 the note automatically. A current/unlearned chip opens its first lesson rather than toggling.
 Skills using named notes take checked ∩ learned ∩ required flags. Skill 3 honors selection;
 C4B is the same pitch as checked C4, not an unchecked contrast target. Skills 6–8 use
-abstract positions; skill 9 uses registered pairs among checked notes. A distractor card
+abstract positions; skill 9 uses fixed clef-specific pitch groups; skill 10 uses abstract positions and skill 11 uses checked key+pos notes. A distractor card
 in skill 2 may use a base note when only one target is checked; it does not expand targets.
 
 ### Adaptation and scheduling
@@ -102,7 +102,7 @@ skill 3 balances note names. Plan counts before ordering with `spaceOut`. Daily 
 least recently practiced notes. One target necessarily repeats; multiple targets should
 not be adjacent when spacing is feasible. Weights cannot manufacture unchecked targets.
 
-## Nine skills
+## Eleven skills
 
 Counts are Easy / Normal / Hard.
 
@@ -116,7 +116,9 @@ Counts are Easy / Normal / Hard.
 | 6 | spot | Tap numbered line/space | abstract staff | 8 / 8 / 10 |
 | 7 | twoNotes | Direction and relative height | abstract staff | 8 / 8 / 10 |
 | 8 | ledger | Name ledger position | fixed positions, independent of selection | 6 / 6 / 6 |
-| 9 | contrast | Tap named note in a confusable pair | registered checked-note pairs | 8 / 8 / 10 |
+| 9 | contrast | Tap named note in separate clef groups | fixed treble C4–G4 / bass F3–C4, Hard adds ledgers | 8 / 8 / 10 |
+| 10 | ledgerMove | Name position, then place a requested note on Hard | abstract positions | 6 / 6 / 6 |
+| 11 | matching | Flip cards to match representations | checked key + pos | 3 rounds in all tiers |
 
 ### Skill behavior
 
@@ -149,18 +151,24 @@ Counts are Easy / Normal / Hard.
    Never name the clef in the higher/lower prompt. Center the pair in available staff space.
    Eight items split 3+2+3; ten split 3+3+4. Direction always has three options. Pool is
    `'none'`. This skill is absent from daily practice and the frozen pre/post battery.
-8. **Ledger positions:** four dropdowns: clef, above/below, number 1–8, line/space. Judge
-   after all are selected and rejudge any change without locking wrong answers. Ask
-   position, not pitch name; play the pitch calculated from position. Read the full correct
-   sentence after success. Easy/Normal use up to two ledger lines, Hard three. Six items
-   with no duplicate clef+position. Untaught pitch locations can appear. Placement by tapping
-   a requested ledger location is future work.
-9. **Confusable notes:** two whole notes on one clef, tap the named target. Registered
-   `CONTRAST_PARTNERS` include adjacent, third, ledger-count, and mirror relationships;
-   `CONTRAST_POS` supplies alternate spellings so both fit one staff. B3–C4 and B3–A3
-   use bass, others treble. Ask each direction and randomize sides. Save pair and first
-   wrong note for reports. The new-note finale differs: target is always the new note,
-   each learned comparison note once, up to six, without requiring it to be checked.
+8. **Ledger positions:** select clef symbols, up/down arrows, Arabic numbers 1–8,
+   and line/space labels with diagrams. All four fields must be set; wrong answers remain
+   editable. Six unique positions cover both clefs and both directions. Easy/Normal reach
+   two ledger lines; Hard reaches three. Read the complete correct position after success.
+9. **Confusable notes:** practice a treble block (C4 D4 E4 F4 G4), then a bass block
+   (F3 G3 A3 B3 C4). Each question uses one clef and two notes, with randomized sides.
+   Easy/Normal require at most one ledger line; Hard extends both groups with ledger notes.
+   These fixed groups intentionally ignore lesson selection. The separate new-note finale
+   retains learned-note comparisons and the new note as its target.
+10. **Ledger naming and placement:** Easy/Normal consolidate the full four-part position
+    name from skill 8. Hard reverses the task: hear/read a requested clef and ledger position,
+    drag or tap to place the note, then confirm. Arrow keys move by half a staff step.
+    Placement snaps to lines/spaces; retries preserve the requested position.
+11. **Card matching:** three rounds pair name↔keyboard, name↔staff, and keyboard↔staff.
+    Cards start face down, successful pairs stay visible, and mismatches turn back after
+    feedback. Easy uses up to two checked pitches; Normal/Hard up to three. One checked
+    pitch remains playable. Name cards match letters across octaves; keyboard↔staff requires
+    the exact pitch. One completed round produces one answer row; mismatches count as errors.
 
 ## Note queue
 
@@ -247,7 +255,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → nine cards. Wide screens use three columns,
+Home order: My notes → daily button → eleven cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.
@@ -258,7 +266,7 @@ Short landscape under 520px uses question-left/answer-right with width-scaled no
 
 Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functions.
 
-1. Nine home cards/chips/daily/settings render without console errors.
+1. Eleven home cards/chips/daily/settings render without console errors.
 2. Find-key uses checked letters, correct session count, advancement, and result/stars.
 3. Staff/key supports both directions, exact octave, question-before-answer layout, and
    at least two staff options with one target checked.
@@ -285,11 +293,15 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
     fifth line/F3–B3; A4 right 5/F4–B4. Completed lessons join eligible named-note skills.
 19. Use the release pipeline for SW versions, file hashes, actual load receipts, and offline
     upgrade. Never manually increment the cache version or erase learner storage.
-20. Skill 8 covers both clefs/above/below, fixed 1–8 choices, editable answers, six unique
+20. Skill 8 covers clef symbols, arrows, Arabic 1–8, line/space diagrams, editable answers, six unique
     positions, one/two/three ledgers by tier, full-sentence speech, and no pitch-name question.
-21. Skill 9 covers registered selected pairs, both directions/random sides, clef spellings,
+21. Skill 9 covers the two fixed clef groups, limited basic ledgers, Hard ledger extensions,
     feedback/hints/log fields, and one-per-learned-comparison new-note finale.
 22. A chips disambiguate octaves; A speech is /eɪ/, not /aɪ/.
+23. Skill 10 supports naming on Easy/Normal and snapped placement/confirmation on Hard;
+    continuous keyboard movement retains focus after redraw.
+24. Skill 11 offers all three representation pairs, mismatches, persistent matches, and
+    completion with one checked pitch; keyboard/staff matching requires the exact octave.
 
 ## Code map
 
@@ -300,10 +312,11 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
 | Accounts | ACCOUNTS, CURRENT, S, TEACHER_MODE, newState, enterAccount, createAccount |
 | Teacher UI | syncRoleUI, openTeacherEntry, saveTeacherPin, showTeacher, teacherRoster, renderTeacherList, openTeacherLearner, exitTeacher |
 | Progress/selection | blankProgress, ensureProgress, ensureSelection, selectedNotes, activeNotes, noteComplete |
-| Generators | makeFindKey, makeStaffKey, makeClef, makeBeats, makePlay, makeSpot, makeTwoNotes, makeLedger, makeContrast, buildQuestions, weightedRepeatTo, spaceOut |
+| Generators | makeFindKey, makeStaffKey, makeClef, makeBeats, makePlay, makeSpot, makeTwoNotes, makeLedger, makeLedgerMove, makeMatching, makeContrast, buildQuestions, weightedRepeatTo, spaceOut |
 | Clef | clefPool, makeClef |
 | Pairs/geometry | staffPairSVG, staffPairBlock, ledgerBlock, pairIcon, staffPitch, qPairDirection, qWhichHigher, alternateAsks, higherSpecs |
 | Ledger | ledgerSpots, qLedgerName, staffSpotLabel, positionLabel |
+| Placement/cards | qLedgerMove, makeLedgerMove, makeMatching |
 | Contrast | CONTRAST_POS, CONTRAST_PARTNERS, contrastPairFor, contrastPool, qContrast, makeContrastFor |
 | Daily/entry | buildDailySession, startSession, startLevel, startDaily, startSpotlight, startNoteImport, startNoteContinue, startNoteReview, startContrastNote |
 | Logs/adaptation | recordAnswer, practiceEvents, noteStats, evaluateAuto |
@@ -323,7 +336,7 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
   as established optimal teaching thresholds.
 - Whether skills 7/9 belong in daily practice and whether skill 7 belongs in the fixed
   12-item battery. Clarify measurement purpose before replacing or adding items.
-- Skill 7 cross-staff/ledger comparisons; skill 8 requested-position placement.
+- Skill 7 cross-staff/ledger comparisons; skill 10 placement beyond three ledger lines.
 - Skill 9 grand-staff mirror pairs E4/A3 and D4/B3; currently single-staff only.
 - Teach A3's treble second-ledger spelling before relying on it in contrast.
 

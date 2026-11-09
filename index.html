@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="e30cc2ef11">
+<meta name="app-build" content="6cd59fcd9e">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -583,6 +583,7 @@
     .report-sec{break-inside:avoid}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
+.ledger-options{display:flex;gap:4px}.ledger-options button{min-width:44px;min-height:48px;border:2px solid #d6c8af;border-radius:10px;background:white;font-size:28px;color:#302a24}.ledger-options button[aria-pressed="true"]{background:#e2f2ff;border-color:#3c7dd9}.ledger-options svg{display:block;width:38px;height:44px}.ledger-options button svg:last-child{max-height:44px}.matching-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(100%,660px)}.match-card{min-width:0;height:125px;border:2px solid #c9b795;border-radius:14px;background:#fffaf0;overflow:hidden;font-size:36px}.match-card .paper{width:100%;height:110px;margin:0}.match-card svg{max-height:110px}.match-card.matched{border-color:#3fa96f;background:#eaf8ee}.card-keyboard{height:80px!important;width:100%;pointer-events:none}.card-letter{font-size:50px}@media(max-height:520px){.match-card{height:85px}.match-card .paper,.match-card svg{height:75px}}
 </style>
 </head>
 <body>
@@ -1128,12 +1129,18 @@ const SKILLS = [
     desc:'上行、下行、重复；再选出更高或更低的音', color:'#B0577E',
     needs:[], pool:'none', make:makeTwoNotes },
   { id:8, key:'ledger', name:'加线加间', title:'谱表外的加线加间',
-    desc:'补全音名、谱号、上下加和第几线间', color:'#4C8C6A',
+    desc:'看谱号与箭头，选出加线或加间的位置', color:'#4C8C6A',
     needs:[], pool:'none', make:makeLedger,
     count:function(){ return 6; } },
   { id:9, key:'contrast', name:'易混音', title:'容易混的音',
-    desc:'相邻、加线、同一音的不同写法，点出目标音', color:'#6C63B5',
-    needs:[], pool:'none', make:makeContrast }
+    desc:'分组辨认高音 CDEFG、低音 FGABC，挑战加线音', color:'#6C63B5',
+    needs:[], pool:'none', make:makeContrast },
+  { id:10, key:'ledgerMove', name:'加线定位', title:'认位置与摆音符',
+    desc:'先说出加线位置，挑战把音符移到指定位置', color:'#43858D',
+    needs:[], pool:'none', make:makeLedgerMove, count:function(){ return 6; } },
+  { id:11, key:'matching', name:'卡牌配对', title:'音名、键盘与五线谱配对',
+    desc:'翻开卡牌，找到表示同一个音的两张牌', color:'#B27B3F',
+    needs:['key','pos'], pool:'active', make:makeMatching, count:function(){ return 3; } }
 ];
 
 /* ---------------------------------------------------------------------
@@ -1626,6 +1633,8 @@ function eventSkill(e){
     case 'pairdir': case 'higher': return 7;
     case 'ledger': return 8;
     case 'contrast': return 9;
+    case 'ledgerName': case 'ledgerMove': return 10;
+    case 'matching': return 11;
   }
   return 0;
 }
@@ -3944,7 +3953,7 @@ function ledgerSpots(){
 
 /* 一道第 8 关的题：把一句位置说法补全。
    题干是「这个音在（高/低）谱号的（上/下）加（数字）（线/间）」，
-   四个括号都是下拉，选满才判；改任意一个都重新判，判错不锁死。
+   四组选项用谱号、箭头、数字和线间图例，选满才判；改任意一个都重新判，判错不锁死。
    这一关只考位置说法，不考音名：孩子还不一定认识谱表外的实际音高，
    问他「这是什么音」会把位置题变成音名题，答对也靠猜。 */
 function qLedgerName(spot){
@@ -3984,6 +3993,20 @@ function qLedgerName(spot){
         return s;
       }
       function select(key, label, options){
+        if(key !== 'num'){
+          const group = document.createElement('div'); group.className = 'ledger-options';
+          group.setAttribute('role','group'); group.setAttribute('aria-label',label);
+          options.forEach(function(o){
+            const b = document.createElement('button'); b.type='button'; b.dataset.value=o[0];
+            b.setAttribute('aria-label',o[1]); b.setAttribute('aria-pressed','false');
+            b.innerHTML = key === 'clef' ? '<svg viewBox="0 -2 4.5 8">'+clefMarkup(o[0])+'</svg>'
+              : key === 'dir' ? (o[0]==='up' ? '↑' : '↓')
+              : o[1]+'<svg viewBox="0 0 50 30"><path d="M2 8H48 M2 22H48" stroke="currentColor"/><ellipse cx="25" cy="'+(o[0]==='line'?8:15)+'" rx="7" ry="4" fill="currentColor"/></svg>';
+            b.onclick=function(){ if(G.q.answered) return; picks[key]=o[0];
+              group.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));}); tryJudge(); };
+            group.appendChild(b);
+          }); row.appendChild(group); return group;
+        }
         const sel = document.createElement('select');
         sel.dataset.key = key;
         sel.setAttribute('aria-label', label);
@@ -4012,13 +4035,13 @@ function qLedgerName(spot){
 
       row.appendChild(text('这个音在'));
       select('clef', '高音或低音谱号', [['treble','高音'],['bass','低音']]);
-      row.appendChild(text('谱号的'));
+      row.appendChild(text('的'));
       select('dir', '上加或下加', [['up','上'],['down','下']]);
       row.appendChild(text('加'));
       /* 数字固定一到八：孩子不能靠「只有三个选项」反推答案在第几线。
          正确位置最多到三，但选项始终给满。 */
       const numOptions = [];
-      for(let n = 1; n <= 8; n++) numOptions.push([n, cnNum(n)]);
+      for(let n = 1; n <= 8; n++) numOptions.push([n, String(n)]);
       select('num', '第几条', numOptions);
       select('kind', '线或间', [['line','线'],['space','间']]);
       answerEl.appendChild(row);
@@ -4053,7 +4076,7 @@ function qLedgerName(spot){
       const el = noteEl();
       if(el) el.classList.add('hint');
       playMidi(staffPitch(clef, y).midi, 0.9);
-      /* 不替孩子改下拉：每题都保留自己动手的机会，只把正确句子说一遍。 */
+      /* 不替孩子改选项：每题都保留自己动手的机会，只把正确句子说一遍。 */
       $$('select', answerEl).forEach(function(s){ s.classList.add('hint'); });
     }
   };
@@ -4214,19 +4237,29 @@ function qContrast(pair, targetId){
 
 /* 第 9 关：从当前音集里抽对，每对正反各问一次。 */
 function makeContrast(ids, n){
-  const pairs = shuffle(contrastPool());
-  if(!pairs.length) return [];
-  const want = Math.max(2, n || 8);
-  const qs = [];
-  let i = 0;
-  /* 每对正反各问一次，再抽下一对。这样同一个音不会总在同一侧。 */
-  while(qs.length < want){
-    const pair = pairs[i % pairs.length];
-    i++;
-    qs.push(qContrast(pair, pair.a.id));
-    if(qs.length < want) qs.push(qContrast(pair, pair.b.id));
+  const groups = [
+    {clef:'treble', ys:[5,4.5,4,3.5,3]},
+    {clef:'bass', ys:[1,0.5,0,-0.5,-1]}
+  ];
+  if(diff().key === 'hard'){
+    groups[0].ys = [6,5.5,5,4.5,4,3.5,3,-1,-1.5];
+    groups[1].ys = [5,4.5,1,0.5,0,-0.5,-1,-1.5,-2];
   }
-  return spaceOut(qs, function(q){ return q.noteId; });
+  const qs=[];
+  groups.forEach(function(group, gi){
+    const pool=shuffle(group.ys);
+    if(qs.length){ const prev=qs[qs.length-1];
+      while(pool.length>1 && staffPitch(group.clef,pool[0]).letter+Math.floor(staffPitch(group.clef,pool[0]).midi/12-1)===prev.noteId)pool.push(pool.shift());
+    }
+    for(let i=0;i<Math.floor(n/2)+(gi===0?n%2:0);i++){
+      const y=pool[i%pool.length];
+      const other=pool.find(function(candidate){return staffPitch(group.clef,candidate).letter!==staffPitch(group.clef,y).letter;});
+      function note(y){ const p=staffPitch(group.clef,y); return {id:p.letter+Math.floor(p.midi/12-1),letter:p.letter,y:y,midi:p.midi}; }
+      const a=note(y), b=note(other);
+      qs.push(qContrast({key:[a.id,b.id].sort().join('|'),clef:group.clef,a:a,b:b},a.id));
+    }
+  });
+  return qs;
 }
 
 /* 新音学完后的收尾：只问这个新音，每次换一个对比音。
@@ -4253,6 +4286,79 @@ function makeContrastFor(noteId, n){
   return shuffle(pairs.slice(0, want).map(function(pair){
     return qContrast(pair, noteId);
   }));
+}
+
+/* Skill 10 shares the position vocabulary, then reverses the task. */
+function makeLedgerMove(ids,n){
+  const qs=makeLedger(ids,n);
+  return qs.map(function(q){
+    if(diff().key !== 'hard'){ q.kind='ledgerName'; return q; }
+    return qLedgerMove({clef:q.clef,y:q.y1});
+  });
+}
+function qLedgerMove(spot){
+  let current=2, svg;
+  const sentence='请把音符放在'+positionLabel(spot.clef,spot.y);
+  function draw(){
+    stageEl.innerHTML=ledgerBlock({ys:[current],clef:spot.clef,xs:[8.9],viewBox:'-0.35 -3.6 15.3 12.2'});
+    svg=stageEl.querySelector('svg'); svg.style.touchAction='none';
+    svg.setAttribute('aria-label',sentence); svg.setAttribute('tabindex','0');
+    const origin=current;
+    function move(e){
+      const point=svg.createSVGPoint(); point.x=e.clientX; point.y=e.clientY;
+      const y=point.matrixTransform(svg.getScreenCTM().inverse()).y;
+      current=Math.max(-3,Math.min(7,Math.round(y*2)/2));
+      svg.querySelector('.note').setAttribute('transform','translate(0 '+(current-origin)+')');
+      // Rebuild the ledger strokes along with the moved note on release.
+    }
+    svg.onpointerdown=function(e){if(G.q.answered)return; svg.setPointerCapture(e.pointerId);move(e);};
+    svg.onpointermove=function(e){if(svg.hasPointerCapture(e.pointerId))move(e);};
+    svg.onpointerup=function(e){if(G.q.answered)return;move(e);draw();};
+    svg.onkeydown=function(e){if(G.q.answered)return;if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();current=Math.max(-3,Math.min(7,current+(e.key==='ArrowUp'?-.5:.5)));draw();svg.focus();}};
+  }
+  return {kind:'ledgerMove',clef:spot.clef,y1:spot.y,target:spot.y,wrong:0,
+    render:function(){setPrompt(sentence,sentence);current=2;draw();
+      answerEl.innerHTML='<div class="spot-cap">拖动音符或点谱表放置，再确认</div><button class="btn" type="button">放好了</button>';
+      answerEl.querySelector('button').onclick=function(){G.q.chosen=String(current);judge(current===spot.y,current===spot.y?'对！'+positionLabel(spot.clef,spot.y):'再数一数加线和加间');};
+    },reveal:function(){setPrompt(sentence+'，从谱表边缘开始数',sentence);}
+  };
+}
+
+function makeMatching(ids,n){
+  if(!ids.length)return [];
+  return [['name','key'],['name','staff'],['key','staff']].slice(0,n).map(function(types){
+    const notes=shuffle(ids).slice(0, diff().key==='easy'?2:3);
+    const cards=shuffle(notes.flatMap(function(id){return types.map(function(type){return {id:id,type:type};});}));
+    let first=null, matched=new Set(), locked=false, buttons=[];
+    function face(card){
+      if(card.type==='name')return '<span class="card-letter">'+NOTES[card.id].letter+'</span>';
+      if(card.type==='staff')return staffBlock({noteId:card.id,value:'whole'});
+      return '<div class="kb keyboard card-keyboard"></div>';
+    }
+    return {kind:'matching',pair:types.join('-'),target:notes.length,wrong:0,
+      render:function(){
+        first=null;matched=new Set();locked=false;
+        setPrompt('翻两张牌，找到同一个音','翻两张牌，找到同一个音');
+        stageEl.innerHTML='<div class="matching-board"></div>';answerEl.innerHTML='<div class="spot-cap">音名卡只看字母；键盘与谱面配对要在同一个八度</div>';
+        const board=stageEl.firstChild;
+        buttons=cards.map(function(card,i){
+          const b=document.createElement('button');b.type='button';b.className='match-card';b.textContent='♪'; b.setAttribute('aria-label','翻开第'+(i+1)+'张牌');
+          function show(){b.innerHTML=face(card);if(card.type==='key')buildKeyboard(b.querySelector('.keyboard'),{start:0,count:15,target:NOTES[card.id].midi});}
+          b.onclick=function(){
+            if(G.q.answered||locked||matched.has(i)||first===i)return;
+            show(); if(first===null){first=i;return;}
+            const a=first;first=null;
+            const same=cards[a].type!==card.type && (types.includes('name')?NOTES[cards[a].id].letter===NOTES[card.id].letter:cards[a].id===card.id);
+            if(same){matched.add(a);matched.add(i);buttons[a].classList.add('matched');b.classList.add('matched');
+              if(matched.size===cards.length)judge(true,'全部配对成功！');
+            }else{G.q.wrong++;toast('这两张还不配，再看看','bad');locked=true;
+              const session=G.session;setTimeout(function(){if(session!==G.session)return;buttons[a].textContent=b.textContent='♪';locked=false;},850);
+            }
+          };board.appendChild(b);return b;
+        });
+      },reveal:function(){setPrompt('先看谱号和音的位置，再找同一个音',false);}
+    };
+  });
 }
 
 /* 按技能注册表出题。这是以前 buildQuestions 的大 if/else 的替代：
@@ -5400,7 +5506,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是九个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是十一个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){
@@ -5503,7 +5609,7 @@ function contrastTable(list){
       (s.n ? pct(s.acc) : '—') + '</td><td>' + s.wrong + '</td><td>' + wrongText + '</td></tr>';
   });
   html += '</tbody></table></div>';
-  html += '<div class="report-note">对比按字母对合并；错选列出孩子点错的那一个音。同一对正反各问一次，所以能看出是 A→B 多还是 B→A 多。</div>';
+  html += '<div class="report-note">对比按字母对合并；错选列出孩子点错的那一个音。结合目标音与错选音，可以回看混淆的方向。</div>';
   return html;
 }
 function modeTable(list){

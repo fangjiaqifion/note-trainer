@@ -1,6 +1,6 @@
 # Note Trainer Development and Release
 
-Last updated: 2026-11-05
+Last updated: 2026-11-09
 
 Internal technical reference. Read [AGENTS.md](../AGENTS.md) for constraints and
 [the progress tracker](progress_tracker.md) for current implementation status.
@@ -84,31 +84,29 @@ To add a note:
    items should offer the new note and its learned neighbours. The 14 questions come from
    `SPOT_STEPS`; a new note needs no change there.
 
-Skills 1–5 read eligible checked notes through `activeNotes(needs)`. Skills 6–8
-use abstract positions. To include the note in skill 9, review `CONTRAST_POS` and
-`CONTRAST_PARTNERS` and register appropriate spellings/pairs. Its card uses eligible
-checked pairs; the new-note finale can compare all learned notes. Test these paths
-rather than assuming a registry entry completes every integration.
+Skills 1–5 and 11 read eligible checked notes. Skills 6–8 and 10 use abstract
+positions. Skill 9 uses fixed clef-specific pitch groups; the new-note finale still
+uses CONTRAST_POS and CONTRAST_PARTNERS for learned-note comparisons.
 
 ## Adding a skill
 
 Add one entry to `SKILLS` and one `make` function:
 
 ```js
-{ id:10, key:'interval', name:'音程', title:'音程',
+{ id:12, key:'interval', name:'音程', title:'音程',
   desc:'两个音之间隔几步', color:'#5C6B3F',
   needs:['key','pos'], pool:'active', make:makeInterval }
 ```
 
-This is a hypothetical tenth skill, not an implemented feature.
+This is a hypothetical twelfth skill, not an implemented feature.
 `needs` says which note flags the skill requires; `pool` is `'active'` (eligible checked notes),
 `'fixed'` (the `ids` list) or `'none'` (no notes). `make(ids, n)` returns an array of question
 objects with the same `{ kind, render(), reveal() }` interface as the existing factories.
 `buildQuestions` is a registry lookup now, not a chain of `if`/`else`, so adding a skill does
 not touch the note data or the other skills. `id` is also the display number and the star key;
-it must stay unique, and adding a tenth card changes the home grid.
+it must stay unique, and adding another card changes the home grid.
 
-`SKILLS` also drives the home screen. The menu length is fixed at nine; new skills would be
+`SKILLS` also drives the home screen. The menu currently has eleven cards; new skills are
 added only when the interface has room for them.
 
 ## Project structure
@@ -208,11 +206,11 @@ npm test
 ```
 
 It uses `playwright-core` with the system Google Chrome, starts a temporary static server,
-seeds a test profile in `localStorage`, and checks: nine home cards; 13 question types at four
+seeds a test profile in `localStorage`, and checks: eleven home cards; 16 question types at four
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
-flags; the report has nine skill columns; the console stays clean; every checked-note subset
-is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (45,900 sessions across nine skills and daily practice); and `clear-cache.html` removes only this
+flags; the report has eleven skill columns; the console stays clean; every checked-note subset
+is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (55,080 sessions across eleven skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
 runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts.
 
