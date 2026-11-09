@@ -539,8 +539,11 @@ async function newSkillsCheck(page){
         document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';
         d.G.q=q;q.answered=true;q.render();
         const cards=Array.from(document.querySelectorAll('.match-card'));
-        return cards.every(function(c){
+        return cards.every(function(c,i){
+          const side=i%2?'right':'left',type=q.pair.split('-')[i%2];
+          if(c.dataset.side!==side || c.dataset.type!==type)return false;
           const child=c.firstElementChild,r=c.getBoundingClientRect(),x=child.getBoundingClientRect();
+          if(i%2){const left=cards[i-1].getBoundingClientRect();if(r.left<=left.right || Math.abs(r.top-left.top)>.5)return false;}
           return child && x.left>=r.left && x.right<=r.right+.5 && x.top>=r.top && x.bottom<=r.bottom+.5;
         });
       });
@@ -567,6 +570,14 @@ async function newSkillsCheck(page){
     return {total:cards.length,matched:document.querySelectorAll('.match-card.matched').length};
   });
   assert.equal(rhythm.matched,rhythm.total,'duration matches numeric beat counts');
+  const sameSide=await page.evaluate(function(){
+    const d=window.__dbg;d.startLevel(11);
+    const cards=Array.from(document.querySelectorAll('.match-card')),left=cards.filter(c=>c.dataset.side==='left');
+    if(left.length<2)return true;
+    left[0].click();left[1].click();
+    return d.G.q.wrong===0 && !left[0].classList.contains('selected') && left[1].classList.contains('selected');
+  });
+  assert.ok(sameSide,'choosing another card in the same column changes selection without an error');
   // One checked pitch still produces a playable matching pair in every mode.
   await page.evaluate(function(){
     const d=window.__dbg;const old=d.S.selected;d.S.selected=['C4'];

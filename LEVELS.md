@@ -167,6 +167,9 @@ Counts are Easy / Normal / Hard.
     Drag or tap to place the note, then confirm; arrow keys move by half a staff step.
     Easy/Normal reach two ledger lines; Hard reaches three. Retries preserve the request.
 11. **Card matching:** four rounds pair name↔keyboard, name↔staff, keyboard↔staff, and duration↔beat count.
+    Each round fixes one representation in the left column and the other in the right,
+    shuffling the two columns independently. Students select one card from each side;
+    selecting another card on the same side changes the selection without an error.
     Keyboard cards scale the entire standard keyboard, preserving its key aspect ratios,
     borders, corners, black-key proportions, and middle-C landmark. All cards start face up. Selected cards are outlined, successful pairs stay marked,
     and mismatches remain visible after feedback. Easy uses up to two checked pitches; Normal/Hard up to three. One checked

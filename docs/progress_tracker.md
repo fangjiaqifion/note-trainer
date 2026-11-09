@@ -6,7 +6,19 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status below incorporates the accepted teacher portal and automatic-student
 release. The documentation review itself did not rerun runtime or live database tests.
 
-## Placement and symbolic-menu correction, 2026-11-09
+## Left/right matching release, 2026-11-09
+
+Skill 11 now keeps each representation in a fixed left/right column, with independent
+ordering and one-card-per-side matching. Same-side reselection changes the selection
+without an error. The user authorized publishing this final fix together with the earlier
+local instructional, keyboard, placement, and symbol-menu changes. See the
+[release audit](audit_20261109_left_right_release/audit.md).
+
+Documentation updated: LEVELS, user guide, tracker, and release audit. AGENTS, README,
+development, cloud operations, and teacher portal docs reviewed unchanged because their
+generation rules, capabilities, release procedures, storage, and permissions remain valid.
+
+## Earlier placement and symbolic-menu correction, 2026-11-09
 
 The user clarified skill 10: every tier now places one note inside the staff, followed
 by five notes on requested upper/lower ledger lines/spaces. The previous Easy/Normal

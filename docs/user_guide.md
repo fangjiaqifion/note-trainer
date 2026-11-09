@@ -203,7 +203,7 @@ skill automatically once that flag is open.
 | 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with compact dropdowns with clef glyphs, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six questions per session | none |
 | 9 | 易混音 · Confusable notes | Two whole notes on one staff; tap the one the prompt names (treble C4–G4, then bass F3–C4; Hard adds ledger notes) | none |
 | 10 | 加线定位 · Ledger placement | All tiers: place a note at one requested staff line/space, then five requested ledger lines/spaces; drag or tap and confirm | none |
-| 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in four rounds | `key` + `pos` |
+| 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in four rounds; each representation stays in its own left/right column | `key` + `pos` |
 
 The clef skill uses only the checked notes. C4 brings both spellings (treble and bass) of the
 same pitch. Checking D and E mixes D and E without adding an unchecked bass note. Their

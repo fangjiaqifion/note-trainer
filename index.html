@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="09f63dc4c3">
+<meta name="app-build" content="b6f44fffb5">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -4373,7 +4373,11 @@ function makeMatching(ids,n){
   return [['name','key'],['name','staff'],['key','staff'],['duration','beats']].slice(0,n).map(function(types){
     const rhythm=types[0]==='duration';
     const notes=shuffle(rhythm?VALUE_IDS:ids).slice(0, diff().key==='easy'?2:3);
-    const cards=shuffle(notes.flatMap(function(id){return types.map(function(type){return {id:id,type:type};});}));
+    const left=shuffle(notes),right=shuffle(notes);
+    const cards=left.flatMap(function(id,row){return [
+      {id:id,type:types[0],side:'left'},
+      {id:right[row],type:types[1],side:'right'}
+    ];});
     let first=null, matched=new Set(), buttons=[];
     function face(card){
       if(card.type==='name')return '<span class="card-letter">'+NOTES[card.id].letter+'</span>';
@@ -4385,11 +4389,11 @@ function makeMatching(ids,n){
     return {kind:'matching',pair:types.join('-'),target:notes.length,wrong:0,
       render:function(){
         first=null;matched=new Set();
-        setPrompt(rhythm?'把音符和拍数配对':'选两张牌，把同一个音配对',rhythm?'把音符和拍数配对':'选两张牌，把同一个音配对');
-        stageEl.innerHTML='<div class="matching-board"></div>';answerEl.innerHTML='<div class="spot-cap">所有卡牌直接可见，点两张配对；键盘与谱面要在同一个八度</div>';
+        setPrompt(rhythm?'把左边的音符和右边的拍数配对':'左右各选一张，把同一个音配对',rhythm?'把音符和拍数配对':'选两张牌，把同一个音配对');
+        stageEl.innerHTML='<div class="matching-board"></div>';answerEl.innerHTML='<div class="spot-cap">左右各选一张配对；键盘与谱面要在同一个八度</div>';
         const board=stageEl.firstChild;
         buttons=cards.map(function(card,i){
-          const b=document.createElement('button');b.type='button';b.className='match-card';b.dataset.pair=card.id;b.dataset.type=card.type;b.setAttribute('aria-label','选择第'+(i+1)+'张牌');
+          const b=document.createElement('button');b.type='button';b.className='match-card';b.dataset.pair=card.id;b.dataset.type=card.type;b.dataset.side=card.side;b.setAttribute('aria-label',(card.side==='left'?'左侧':'右侧')+'第'+(Math.floor(i/2)+1)+'张牌');
           function show(){
             b.innerHTML=face(card);
             if(card.type==='key'){
@@ -4403,6 +4407,9 @@ function makeMatching(ids,n){
             if(G.q.answered||matched.has(i))return;
             if(first===i){b.classList.remove('selected');first=null;return;}
             if(first===null){first=i;b.classList.add('selected');return;}
+            if(cards[first].side===card.side){
+              buttons[first].classList.remove('selected');first=i;b.classList.add('selected');return;
+            }
             const a=first;first=null;buttons[a].classList.remove('selected');
             const same=cards[a].type!==card.type && (types.includes('name')?NOTES[cards[a].id].letter===NOTES[card.id].letter:cards[a].id===card.id);
             if(same){matched.add(a);matched.add(i);buttons[a].classList.add('matched');b.classList.add('matched');
