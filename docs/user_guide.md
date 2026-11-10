@@ -1,6 +1,6 @@
 # Note Trainer User Guide
 
-Last updated: 2026-11-10
+Last updated: 2026-11-11
 
 Detailed product behavior and usage. Start with [the overview](../README.md) for purpose
 and quick start. Contributor procedures are in [development.md](development.md).
@@ -98,7 +98,7 @@ half needs at least three questions, otherwise it says the sample is too small.
 
 Then:
 
-- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the twelve skills plus a
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the thirteen skills plus a
   total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
   above, orange from 60% to 79%, red below 60%.
 - **每关** (per skill): questions, total time, average time per question, first-try accuracy,
@@ -183,12 +183,12 @@ second keyboard step and no key has been found yet, the prompt names the exact o
 so the target is unambiguous.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-twelve fixed skill cards below that. The chips are the only part that grows with the note set.
+thirteen fixed skill cards below that. The chips are the only part that grows with the note set.
 Wide screens use three card columns, tablet portrait two, and phones one.
 
-## The twelve skills
+## The thirteen skills
 
-The twelve cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The thirteen cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -200,11 +200,19 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with compact dropdowns with clef glyphs, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six questions per session | none |
-| 9 | 易混音 · Confusable notes | Tap the named note, using checked notes in separate treble CDE and bass ABC blocks before selected upper-treble extensions | `pos` |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with compact dropdowns with clef glyphs, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six position questions plus selected-note review | none |
+| 9 | 易混音 · Confusable notes | Tap the named checked note; alternate available familiar clefs and vary pairs | `pos` |
 | 10 | 加线定位 · Ledger placement | All tiers: place a note at one requested staff line/space, then five requested ledger lines/spaces; drag or tap and confirm | none |
-| 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in four rounds; each representation stays in its own left/right column | `key` + `pos` |
-| 12 | 三音辨认 · Three-note recognition | Three shuffled adjacent whole notes on one staff; “请问这三个音中哪个是 E？” asks the child to tap E. Separate treble C4/D4/E4 and bass A3/B3/C4 blocks require all three checked and learned notes | `pos` |
+| 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in at least four rounds, adding rounds for coverage; each representation stays in its own left/right column | `key` + `pos` |
+| 12 | 三音辨认 · Three-note recognition | Three shuffled checked notes, preferring nearby pitches; tap the requested letter. Mixed-clef pitches use separate familiar staff images | `pos` |
+| 13 | 三音弹比 · Play and compare | Play three checked pitches on the screen keyboard from left to right, then tap the highest or lowest note. Similar adjacent and ledger pitches receive priority; requires three eligible pitches | `key` + `pos` |
+
+Every eligible checked pitch appears in each skill session. Base question counts may grow.
+Position skills 6–8 and 10 keep their original exercises and add checked-note staff/key
+review. Matching rounds rotate the selected pool and add a small round when needed.
+Skill 9 uses one clef if only one has a legal pair; unpairable notes receive staff/key
+review. Skill 12 similarly reviews smaller pools without inventing extra notes.
+
 
 The clef skill uses only the checked notes. C4 brings both spellings (treble and bass) of the
 same pitch. Checking D and E mixes D and E without adding an unchecked bass note. Their

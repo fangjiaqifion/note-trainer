@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页十二张卡、17 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页十三张卡、20 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -88,7 +88,9 @@ async function renderCases(){
   const stage = document.querySelector('#stage');
   const answer = document.querySelector('#answer');
   const savedDiff=d.G.diffKey; d.G.diffKey='hard';
-  const placement=d.buildQuestions(10)[0]; d.G.diffKey=savedDiff;
+  const placement=d.buildQuestions(10).filter(q=>!q.coverage)[0]; d.G.diffKey=savedDiff;
+  const savedSelected=d.S.selected;d.S.selected=['B3','D4','E4'];
+  const mixed=d.buildQuestions(12)[0];d.S.selected=savedSelected;
   const cases = [
     ['kbfind', d.SPOT_STEPS[0]('A4')],
     ['find', d.SPOT_STEPS[1]('A4')],
@@ -98,14 +100,17 @@ async function renderCases(){
     ['clef', d.SPOT_STEPS[5]('A4')],
     ['beats', d.SPOT_STEPS[7]('A4')],
     ['play', d.SPOT_STEPS[9]('A4')],
-    ['spot', d.buildQuestions(6)[0]],
-    ['pairdir', d.buildQuestions(7)[0]],
-    ['higher', d.buildQuestions(7).find(function(q){ return q.kind === 'higher'; })],
-    ['ledger', d.buildQuestions(8)[0]],
+    ['spot', d.buildQuestions(6).filter(q=>!q.coverage)[0]],
+    ['pairdir', d.buildQuestions(7).filter(q=>!q.coverage)[0]],
+    ['higher', d.buildQuestions(7).filter(q=>!q.coverage).find(function(q){ return q.kind === 'higher'; })],
+    ['ledger', d.buildQuestions(8).filter(q=>!q.coverage)[0]],
     ['contrast', d.buildQuestions(9)[0]],
-    ['staffPlacement', d.buildQuestions(10)[0]],
+    ['staffPlacement', d.buildQuestions(10).filter(q=>!q.coverage)[0]],
     ['matching', d.buildQuestions(11)[0]],
     ['threeNotes', d.buildQuestions(12)[0]],
+    ['playThree', d.buildQuestions(13)[0]],
+    ['playThreeCompare', d.buildQuestions(13)[0]],
+    ['threeNotesMixed', mixed],
     ['ledgerMove',placement]
   ];
   const out = [];
@@ -122,6 +127,11 @@ async function renderCases(){
     d.G.q = q;
     q.answered = true;
     q.render();
+    if(name==='playThreeCompare'){
+      q.answered=false;
+      q.choiceIds.forEach(function(id){document.querySelector('#answer [data-midi="'+d.NOTES[id].midi+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));});
+      q.answered=true;
+    }
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
     const s = stage.getBoundingClientRect();
     const a = answer.getBoundingClientRect();
@@ -143,7 +153,31 @@ async function layoutCheck(page){
     const rows = await page.evaluate(renderCases);
     const bad = rows.filter(function(r){ return !r.ok; });
     assert.deepEqual(bad, [], `layout overflow at ${width}x${height}: ${JSON.stringify(bad)}`);
+    if(process.env.NT_UI_SCREENSHOTS){
+      await page.evaluate(function(){
+        const d=window.__dbg;d.G.q=d.buildQuestions(13)[0];d.G.q.answered=false;
+        document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';
+        document.querySelector('#play').classList.remove('with-kb');d.G.q.render();
+      });
+      await page.screenshot({path:'/tmp/note-trainer-play-three-'+width+'x'+height+'.png'});
+    }
   }
+}
+
+async function homeNavigationCheck(page){
+  for(const [width,height] of [[1280,720],[844,390],[390,844],[820,1180]]){
+    await page.setViewportSize({width,height});
+    await page.evaluate(function(){
+      document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+      document.querySelector('#home').classList.add('active');
+    });
+    for(const which of ['first','last']){
+      const card=which==='first'?page.locator('.level-card').first():page.locator('.level-card').last();
+      await card.scrollIntoViewIfNeeded();
+      await card.click({trial:true,timeout:3000});
+    }
+  }
+  await page.setViewportSize({width:820,height:1180});
 }
 
 async function singleChoiceCheck(page){
@@ -317,7 +351,7 @@ async function repeatCheck(page){
       }
     }
     for(let k = 0; k < 100; k++){
-      const qs = d.buildQuestions(8);
+      const qs = d.buildQuestions(8).filter(q=>!q.coverage);
       for(let i = 1; i < qs.length; i++){
         if(qs[i].clef + '|' + qs[i].spot === qs[i - 1].clef + '|' + qs[i - 1].spot){
           bad.push('skill 8 position repeated');
@@ -367,8 +401,9 @@ async function selectionVarietyCheck(page){
         const active = d.activeNotes(d.SKILLS[skill - 1].needs);
         if(skill === 9 && !d.buildQuestions(9).length) return;
         for(let k = 0; k < 30; k++){
-          const qs = d.buildQuestions(skill);
+          const qs = d.buildQuestions(skill).filter(q=>!q.coverage);
           if(!qs.length){
+            if(skill===9)return;
             problems.push(c.name + ' skill ' + skill + ' empty');
             break;
           }
@@ -439,7 +474,7 @@ async function selectionVarietyCheck(page){
 async function ledgerCheck(page){
   const info = await page.evaluate(function(){
     const d = window.__dbg;
-    const qs = d.buildQuestions(8);
+    const qs = d.buildQuestions(8).filter(q=>!q.coverage);
     const q = qs[0];
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
     document.querySelector('#play').classList.add('active');
@@ -468,32 +503,67 @@ async function comparisonSelectionCheck(page){
     const d=window.__dbg, old={selected:d.S.selected,progress:d.S.progress,diff:d.G.diffKey};
     const errors=[];
     try{
-      d.S.selected=['B3','C4','D4','E4','A3'];
-      d.S.progress=Object.fromEntries(d.S.selected.map(id=>[id,{pos:1,key:1,fin:1}]));
+      d.S.selected=['B3','C4','D4','E4'];
+      d.S.progress=Object.fromEntries(d.NOTE_ORDER.map(id=>[id,{pos:1,key:1,fin:1}]));
       for(const tier of ['easy','normal','hard']){
         d.G.diffKey=tier;
-        for(let run=0;run<30;run++)for(const skill of [9,12]){
-          const qs=d.buildQuestions(skill);
-          if(!qs.length)errors.push('empty '+skill);
-          let bass=false;
-          for(const q of qs){
-            if(q.clef==='bass')bass=true;else if(bass)errors.push('clefs interleaved');
-            const allowed=q.clef==='treble'?['C4','D4','E4']:['A3','B3','C4'];
-            if(q.choiceIds.some(id=>!allowed.includes(id)))errors.push('unselected/unfamiliar spelling');
-            if(q.choiceIds[q.target]!==q.noteId)errors.push('wrong target');
-            if(skill===12 && (q.choiceIds.length!==3 || new Set(q.choiceIds).size!==3))errors.push('not three distinct notes');
-          }
+        const orders=new Set();
+        for(let run=0;run<40;run++){
+          const qs=d.buildQuestions(9),targets=qs.map(q=>q.noteId);
+          orders.add(targets.join('|'));
+          if(d.S.selected.some(id=>!targets.includes(id)))errors.push('missing selected target');
+          qs.forEach(function(q,i){
+            if(q.coverage)errors.push('BCDE should be real comparison items');
+            if(i && q.clef===qs[i-1].clef)errors.push('not alternating');
+            if(i && q.pair===qs[i-1].pair)errors.push('immediate reversed pair');
+            const allowed=q.clef==='treble'?['C4','D4','E4']:['B3','C4'];
+            if(q.choiceIds.some(id=>!allowed.includes(id)))errors.push('unfamiliar spelling');
+          });
         }
+        if(orders.size<5)errors.push('order not random enough');
       }
+      d.S.selected=['C4','D4','E4'];
       const q=d.buildQuestions(12)[0];d.G.q=q;q.answered=false;q.render();
       if(document.querySelectorAll('#stage .note-hit').length!==3)errors.push('missing hit regions');
       document.querySelector('#stage .note-hit[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
       if(!q.answered)errors.push('correct tap not accepted');
-      d.S.selected=['E4'];if(d.buildQuestions(9).length || d.buildQuestions(12).length)errors.push('invalid group generated');
+      d.S.selected=['E4'];
+      for(const skill of [9,12])if(!d.buildQuestions(skill).some(q=>q.noteId==='E4'))errors.push('single selection missing');
     }finally{d.S.selected=old.selected;d.S.progress=old.progress;d.G.diffKey=old.diff;}
+    return errors.slice(0,10);
+  });
+  assert.deepEqual(result,[],'selected-note and alternating-clef comparison regression');
+}
+
+async function playThreeCheck(page){
+  const result=await page.evaluate(function(){
+    const d=window.__dbg,old={sel:d.S.selected,progress:d.S.progress,diff:d.G.diffKey};
+    const errors=[];
+    try{
+      d.S.selected=['A3','C4','E4'];d.S.progress=Object.fromEntries(d.S.selected.map(id=>[id,{key:1,pos:1,fin:1}]));
+      d.G.diffKey='normal';
+      const qs=d.buildQuestions(13);
+      if(new Set(qs.map(q=>q.ask)).size!==2)errors.push('missing higher/lower');
+      for(const q of qs.slice(0,2)){
+        d.G.busy=false;d.G.q=q;q.answered=false;q.render();
+        if(q.clef!=='treble')errors.push('CA ledger comparison missing');
+        if(document.querySelectorAll('#stage .note-hit').length)errors.push('comparison enabled early');
+        const press=m=>document.querySelector('#answer [data-midi="'+m+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+        const midis=q.choiceIds.map(id=>d.NOTES[id].midi);
+        press(midis[1]);if(q.played!==0||q.wrong!==1||q.answered)errors.push('wrong key advanced');
+        midis.forEach((m,i)=>{press(m);if(q.played!==i+1)errors.push('wrong play step');});
+        if(q.phase!=='compare'||q.answered)errors.push('missing comparison phase');
+        const wrong=(q.target+1)%3;
+        document.querySelector('#stage .note-hit[data-i="'+wrong+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+        if(q.answered)errors.push('wrong extreme accepted');
+        document.querySelector('#stage .note-hit[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+        if(!q.answered)errors.push('correct extreme rejected');
+      }
+      d.S.selected=['C4','E4'];if(d.buildQuestions(13).length)errors.push('ambiguous under-three pool');
+    }finally{d.S.selected=old.sel;d.S.progress=old.progress;d.G.diffKey=old.diff;}
     return errors;
   });
-  assert.deepEqual(result,[],'selected-note and three-note comparison regression');
+  assert.deepEqual(result,[],'three-note keyboard sequence and extreme selection');
 }
 
 async function newSkillsCheck(page){
@@ -501,14 +571,14 @@ async function newSkillsCheck(page){
     const d=window.__dbg, old=d.G.diffKey;
     const stage=document.querySelector('#stage'),answer=document.querySelector('#answer');
     function render(q){stage.innerHTML='';answer.innerHTML='';d.G.q=q;q.answered=false;q.render();}
-    d.G.diffKey='normal';render(d.buildQuestions(8)[0]);
+    d.G.diffKey='normal';render(d.buildQuestions(8).filter(q=>!q.coverage)[0]);
     const icons=answer.querySelectorAll('.ledger-sentence select, .symbol-trigger').length;
     const digits=Array.from(answer.querySelector('select[data-key="num"]').options).slice(1).map(o=>o.textContent);
     const symbols=Array.from(answer.querySelectorAll('.symbol-menu [role=option]')).every(o=>o.querySelector('svg') || ['↑','↓'].includes(o.textContent));
-    const placements=['easy','normal','hard'].map(function(tier){d.G.diffKey=tier;return d.buildQuestions(10).map(q=>({kind:q.kind,y:q.y1}));});
+    const placements=['easy','normal','hard'].map(function(tier){d.G.diffKey=tier;return d.buildQuestions(10).filter(q=>!q.coverage).map(q=>({kind:q.kind,y:q.y1}));});
     d.G.diffKey='normal';
     const basic=d.buildQuestions(9).map(q=>({clef:q.clef,y:q.noteId,ys:[q.y1,q.y2]}));
-    d.G.diffKey='hard';const q=d.buildQuestions(10)[0];render(q);
+    d.G.diffKey='hard';const q=d.buildQuestions(10).filter(q=>!q.coverage)[0];render(q);
     const svg=stage.querySelector('svg');svg.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
     stage.querySelector('svg').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
     const moved=stage.querySelector('.note ellipse').getAttribute('cy');
@@ -527,7 +597,7 @@ async function newSkillsCheck(page){
   assert.deepEqual(info.digits,['1','2','3','4','5','6','7','8']);
   assert.ok(info.basic.some(q=>q.clef==='treble') && info.basic.some(q=>q.clef==='bass'));
   for(const q of info.basic){
-    assert.ok((q.clef==='treble'?['C4','D4','E4','F4','G4']:['F3','G3','A3','B3','C4']).includes(q.y));
+    assert.ok((q.clef==='treble'?['C4','D4','E4','F4','G4','A4']:['A3','B3','C4']).includes(q.y));
     assert.ok(q.ys.every(y=>y>=-1&&y<=5),'basic contrast has at most one ledger line');
   }
   assert.equal(info.moved,'1','two arrow keys move the note two half staff steps');
@@ -536,7 +606,7 @@ async function newSkillsCheck(page){
   const placed=await page.evaluate(function(){
     const d=window.__dbg,results=[];
     for(const tier of ['easy','normal','hard']){
-      d.startLevel(10);d.G.diffKey=tier;d.G.qs=d.buildQuestions(10);
+      d.startLevel(10);d.G.diffKey=tier;d.G.qs=d.buildQuestions(10).filter(q=>!q.coverage);
       for(const q of d.G.qs){
         d.G.session++;d.G.busy=false;d.G.q=q;q.answered=false;
         document.querySelector('#answer').innerHTML='';q.render();
@@ -549,7 +619,7 @@ async function newSkillsCheck(page){
   });
   assert.equal(placed.length,18);assert.ok(placed.every(Boolean),'all six placement tasks complete in every tier');
   const corrected=await page.evaluate(function(){
-    const d=window.__dbg;document.querySelector('#answer').innerHTML='';const q=d.buildQuestions(8)[0];d.G.busy=false;d.G.q=q;q.answered=false;q.render();
+    const d=window.__dbg;document.querySelector('#answer').innerHTML='';const q=d.buildQuestions(8).filter(q=>!q.coverage)[0];d.G.busy=false;d.G.q=q;q.answered=false;q.render();
     function choose(key,value){
       document.querySelector('.symbol-trigger[data-key="'+key+'"]').click();
       document.querySelector('#ledger-'+key+'-options [data-value="'+value+'"]').click();
@@ -684,8 +754,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('十二个技能') >= 0, 'report must say twelve skills');
-  assert.equal(report.headers.length, 14, 'matrix must have date + 12 skills + total');
+  assert.ok(report.text.indexOf('十三个技能') >= 0, 'report must say thirteen skills');
+  assert.equal(report.headers.length, 15, 'matrix must have date + 13 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -809,8 +879,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 12, 'home must show twelve skill cards');
-    console.log('PASS home: 12 skill cards');
+    assert.equal(cards, 13, 'home must show thirteen skill cards');
+    console.log('PASS home: 13 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -818,8 +888,9 @@ async function main(){
     assert.equal(build.settings, '构建 ' + build.meta, 'settings must display the actual page build');
     console.log('PASS build: settings matches page build ' + build.meta);
 
+    await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 17 question types x 4 viewports');
+    console.log('PASS layout: 20 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -840,12 +911,13 @@ async function main(){
 
     await newSkillsCheck(page);
     await comparisonSelectionCheck(page);
+    await playThreeCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: twelve-skill matrix');
+    console.log('PASS report: thirteen-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

@@ -1,6 +1,6 @@
 # Skills and Note-Set Design
 
-Last updated: 2026-11-10
+Last updated: 2026-11-11
 
 Internal instructional-design reference, maintained in English. The README introduces
 the product; AGENTS owns technical constraints; the progress tracker owns implementation
@@ -11,7 +11,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at twelve cards. The note axis grows through
+The skill axis is fixed at thirteen cards. The note axis grows through
 B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
@@ -22,7 +22,7 @@ practice access. Cloud roles are separately authorized.
 |---|---|---|
 | My notes chips | Checked pool, learning note, and unlearned notes | Home top |
 | Daily practice | Ten review/key/duration/finger/staff items | Main home button |
-| Twelve skill cards | Practice one skill | Home cards |
+| Thirteen skill cards | Practice one skill | Home cards |
 | First lesson | Fourteen new-note items | Any unlearned chip |
 | Single-note review | Six items using the note and neighbors | Teacher report review button |
 | Next note | Adult chooses when to expand the set | Home footer |
@@ -86,7 +86,9 @@ Learned chips toggle selection; at least one remains checked. Completing a lesso
 the note automatically. A current/unlearned chip opens its first lesson rather than toggling.
 Skills using named notes take checked ∩ learned ∩ required flags. Skill 3 honors selection;
 C4B is the same pitch as checked C4, not an unchecked contrast target. Skills 6–8 use
-abstract positions; skills 9 and 12 use checked clef-specific groups; skill 10 uses abstract positions and skill 11 uses checked key+pos notes. A distractor card
+abstract positions with selected-note staff/key review; skills 9 and 12 use checked
+pitches; skill 10 uses placements with selected-note review. Skills 11 and 13 use
+checked key+pos notes. A distractor card
 in skill 2 may use a base note when only one target is checked; it does not expand targets.
 
 ### Adaptation and scheduling
@@ -102,9 +104,11 @@ skill 3 balances note names. Plan counts before ordering with `spaceOut`. Daily 
 least recently practiced notes. One target necessarily repeats; multiple targets should
 not be adjacent when spacing is feasible. Weights cannot manufacture unchecked targets.
 
-## Twelve skills
+## Thirteen skills
 
-Counts are Easy / Normal / Hard.
+Counts below are base counts for Easy / Normal / Hard. Every eligible checked pitch
+must appear; sessions grow as needed. Position skills 6–8 and 10 append a staff/key
+review of each checked pitch. Skill 1 covers letter names across octaves.
 
 | # | ID | Task | Prerequisites/pool | Count |
 |---|---|---|---|---|
@@ -115,11 +119,12 @@ Counts are Easy / Normal / Hard.
 | 5 | play | Hand → finger → hold | checked key + pos + fin | 6 / 6 / 8 |
 | 6 | spot | Tap numbered line/space | abstract staff | 8 / 8 / 10 |
 | 7 | twoNotes | Direction and relative height | abstract staff | 8 / 8 / 10 |
-| 8 | ledger | Name ledger position | fixed positions, independent of selection | 6 / 6 / 6 |
-| 9 | contrast | Tap named note in separate clef groups | checked treble CDE / bass ABC, then selected treble extensions | 8 / 8 / 10 |
+| 8 | ledger | Name ledger position | fixed position tasks plus checked-note review | 6 / 6 / 6 |
+| 9 | contrast | Tap named note with alternating available clefs | checked familiar spellings, varied pairs | 8 / 8 / 10 |
 | 10 | ledgerMove | Place one staff note, then five ledger notes | abstract positions | 6 / 6 / 6 |
-| 11 | matching | Match face-up representations and durations | checked key + pos | 4 rounds in all tiers |
-| 12 | threeNotes | Tap the named note among three adjacent notes | checked complete treble CDE / bass ABC groups | 8 / 8 / 10 |
+| 11 | matching | Match face-up representations and durations | checked key + pos | 4 rounds minimum, extra rounds for full coverage |
+| 12 | threeNotes | Tap the named note among three adjacent notes | checked triples, familiar staff images | 8 / 8 / 10 |
+| 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby and ledger comparisons | 8 / 8 / 10 |
 
 ### Skill behavior
 
@@ -157,32 +162,41 @@ Counts are Easy / Normal / Hard.
    the shared clef SVG and position diagrams so options require no text reading. All four fields must be set; wrong answers remain
    editable. Six unique positions cover both clefs and both directions. Easy/Normal reach
    two ledger lines; Hard reaches three. Read the complete correct position after success.
-9. **Confusable notes:** use only checked notes with the staff-position flag. Practice
-   treble C4/D4/E4 first, bass A3/B3/C4 second, then an optional selected treble
-   C4–A4 extension. Omit groups with fewer than two eligible notes. Middle C may use
-   either core spelling; other notes retain their familiar clef. All tiers follow these
-   boundaries, with no automatic alternate-clef ledger pitches. The new-note finale
-   retains its separate learned-note comparisons.
+9. **Confusable notes:** cover every eligible selected target. Alternate treble and bass
+   whenever both contain a legal pair; randomize the first clef and reserve enough slots
+   for exclusive targets. Middle C may use either familiar spelling. Choose distractors
+   with pair-use penalties and proximity preference, avoiding consecutive reversed pairs
+   when alternatives exist. Neither tier adds unchecked or unfamiliar ledger pitches.
+   An unpairable selected note receives staff/key review; a one-clef pool uses that clef.
 10. **Position placement:** all tiers contain six placement questions. First hear/read a
     requested line or space inside the treble or bass staff. The remaining five request
     ledger lines/spaces above or below a staff, covering both clefs and directions.
     Drag or tap to place the note, then confirm; arrow keys move by half a staff step.
     Easy/Normal reach two ledger lines; Hard reaches three. Retries preserve the request.
-11. **Card matching:** four rounds pair name↔keyboard, name↔staff, keyboard↔staff, and duration↔beat count.
+11. **Card matching:** at least four rounds pair name↔keyboard, name↔staff, keyboard↔staff, and duration↔beat count.
     Each round fixes one representation in the left column and the other in the right,
     shuffling the two columns independently. Students select one card from each side;
     selecting another card on the same side changes the selection without an error.
     Keyboard cards scale the entire standard keyboard, preserving its key aspect ratios,
     borders, corners, black-key proportions, and middle-C landmark. All cards start face up. Selected cards are outlined, successful pairs stay marked,
-    and mismatches remain visible after feedback. Easy uses up to two checked pitches; Normal/Hard up to three. One checked
+    and mismatches remain visible after feedback. Easy uses up to two checked pitches per round; Normal/Hard up to three.
+    Rotate the entire selected pool across rounds; add a round if the first three pitch
+    rounds cannot cover it before the duration round. One checked
     pitch remains playable. Name cards match letters across octaves; keyboard↔staff requires
     the exact pitch. One completed round produces one answer row; mismatches count as errors.
-12. **Three-note recognition:** show C4/D4/E4 in treble clef or A3/B3/C4 in bass clef
-    together, with randomized horizontal order. Ask “请问这三个音中哪个是 E？”
-    (substitute the target letter). All three notes must be checked and position-learned.
-    Finish the treble block before the bass block. Balance targets within each block,
-    retain wrong-tap feedback and reveal, and record one answer per question. If no
-    complete group exists, explain which three notes to select. No extra ledger group.
+12. **Three-note recognition:** draw three distinct checked notes, favor nearby pitches
+    and similar line positions while ensuring all selected pitches appear in the session.
+    Randomize horizontal order and ask “请问这三个音中哪个是 E？” (substitute target).
+    Use one staff for familiar common-clef triples; otherwise show three familiar staff
+    cards. With fewer than three selected notes, use staff/key review of those notes.
+13. **Play and compare three notes:** favor nearby pitches and similar line positions,
+    including treble A3/C4/E4. Every selected pitch appears in a trio during the session.
+    First play the exact three pitches on the on-screen keyboard from left to right.
+    Wrong keys do not advance the sequence; selecting an extreme is unavailable until
+    all three are correct. Then alternate highest/lowest requests and tap a displayed
+    note. Count one completed question, retaining mistakes from both phases. A hint
+    identifies the next required key or the requested extreme. Require three distinct
+    eligible notes; do not manufacture unchecked pitches for smaller pools.
 
 ## Note queue
 
@@ -268,7 +282,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → twelve cards. Wide screens use three columns,
+Home order: My notes → daily button → thirteen cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.
@@ -279,7 +293,7 @@ Short landscape under 520px uses question-left/answer-right with width-scaled no
 
 Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functions.
 
-1. Twelve home cards/chips/daily/settings render without console errors.
+1. Thirteen home cards/chips/daily/settings render without console errors.
 2. Find-key uses checked letters, correct session count, advancement, and result/stars.
 3. Staff/key supports both directions, exact octave, question-before-answer layout, and
    at least two staff options with one target checked.
@@ -308,7 +322,7 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
     upgrade. Never manually increment the cache version or erase learner storage.
 20. Skill 8 covers compact symbolic dropdowns, Arabic 1–8, line/space diagrams, editable answers, six unique
     positions, one/two/three ledgers by tier, full-sentence speech, and no pitch-name question.
-21. Skill 9 respects checked notes and familiar clefs in separate core groups,
+21. Skill 9 respects checked notes, alternates available familiar clefs, varies pairs, and verifies all targets,
     feedback/hints/log fields, and one-per-learned-comparison new-note finale.
 22. A chips disambiguate octaves; A speech is /eɪ/, not /aɪ/.
 23. Skill 10 uses placement in all tiers: one staff position, then five ledger positions;

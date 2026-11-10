@@ -1,6 +1,6 @@
 # Note Trainer: Internal Development Guide
 
-Last updated: 2026-11-10
+Last updated: 2026-11-11
 
 This is an independent repository, registered as a submodule in the music-materials
 workspace. When nested there, inherit the parent and `games/AGENTS.md`; when cloned
@@ -46,12 +46,23 @@ an installed automatic hook or permission to push/deploy.
   Do not add unchecked target notes to manufacture clef variety.
 - Skill 3 may use C4B as the same pitch as checked C4. D/E must both appear when checked,
   even though both answers are treble clef.
-- Skills 6–8 and 10 concern abstract positions and ignore selected notes. Skills 9 and 12 use only checked, position-learned notes in separate treble
-  C4/D4/E4 and bass A3/B3/C4 blocks. Skill 9 may follow with selected treble
-  extensions; no difficulty adds unchecked pitches or unfamiliar alternate-clef spellings.
-  Skill 12 requires all three notes in a core group and shows them together. Skill 11 uses checked key+pos notes for three representation-pair rounds plus duration-to-beat matching.
-  Skill 10 always starts with one in-staff placement, followed by five ledger placements;
-  every difficulty uses placement rather than position naming.
+- Every skill session covers every checked note eligible for that skill. Skill 1 covers
+  letter names (A3/A4 share A). Grow the session if the normal count would omit notes.
+  Skills 6–8 and 10 retain abstract position tasks and append selected-note staff/key
+  review. Coverage items belong to the owning skill in reports.
+- Skill 9 uses familiar clefs and alternates them whenever both have a legal pair.
+  Reserve slots for every eligible target and penalize reused pairs; do not ask a pair
+  and its reverse consecutively when a different pair exists. Randomize the first clef,
+  targets, distractors, and horizontal order. A one-clef pool cannot alternate without
+  inventing notes. Unpairable selected pitches receive explicit staff/key review.
+- Skill 12 draws selected-note triples, preferring close pitches. Mixed-clef trios use
+  separate familiar staff cards rather than unfamiliar spellings. With fewer than three
+  notes, provide selected-note review. Skill 13 requires three distinct selected pitches,
+  exact left-to-right keyboard playing, then a highest/lowest selection. It explicitly
+  permits selected A3/B3 below treble for ledger comparisons such as A3/C4/E4.
+- Skill 11 rotates selected notes across small face-up rounds, adding a matching round
+  when needed before duration/beat matching. Skill 10 retains one staff placement and
+  five ledger placements in every tier, followed by selected-note review.
   The new-note contrast finale retains its separate learned-note pool.
 - Plan note counts before ordering. One eligible target necessarily repeats; with multiple
   targets, avoid adjacent repeats whenever feasible.
@@ -104,7 +115,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × twelve skills and daily practice, totaling 59,670 sessions.
+answer histories × three seeds × thirteen skills and daily practice, totaling 64,260 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and

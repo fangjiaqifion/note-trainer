@@ -17,8 +17,14 @@ export async function generationAudit(page){
       const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count
         ? d.SKILLS[skill - 1].count(d.DIFFS[g.diffKey].count) : d.DIFFS[g.diffKey].count;
       // 易混音只允许已定义的相邻/易混对子；没有合法对子时为空。
-      if([9,12].includes(skill) && !qs.length) return;
-      check(qs.length === n, prefix + ' count ' + qs.length + '/' + n);
+      if(skill===13 && sel.length<3){check(qs.length===0,prefix+' under-three pool');return;}
+      check(qs.length >= ([9,12].includes(skill)&&qs.every(q=>q.coverage)?sel.length:skill===5?Math.max(n,sel.length):n), prefix + ' count ' + qs.length + '/' + n);
+      const covered=new Set();
+      qs.forEach(q=>{
+        (q.noteIds||q.choiceIds||(q.noteId?[q.noteId==='C4B'?'C4':q.noteId]:[])).forEach(id=>covered.add(id));
+        if(q.kind==='find')sel.filter(id=>d.NOTES[id].letter===q.letter).forEach(id=>covered.add(id));
+      });
+      if(skill!=='daily')sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
       const key = q => skill === 1 ? q.letter : skill === 3 ? d.NOTES[q.noteId].letter
         : skill === 8 ? q.clef + '|' + q.spot : q.noteId;
       const keys = qs.map(key).filter(Boolean);
@@ -33,16 +39,28 @@ export async function generationAudit(page){
           if(q.kind === 'find') check(sel.some(id => d.NOTES[id].letter === q.letter), prefix + ' unselected letter ' + q.letter);
         });
       }
-      if([9,12].includes(skill)) qs.forEach(q=>{
+      if([9,12,13].includes(skill)) qs.filter(q=>!q.coverage).forEach(q=>{
         check(q.choiceIds.every(id=>sel.includes(id)),prefix+' unselected comparison choice');
-        check(q.choiceIds.length===(skill===12?3:2),prefix+' choice count');
+        check(q.choiceIds.length===(skill===9?2:3),prefix+' choice count');
+        if(skill===12 && q.choiceIds.filter(id=>d.NOTES[id].letter===q.letter).length>1)
+          check(q.targetLabel.includes('中央 C'),prefix+' ambiguous octave target');
       });
-      if(skill === 9) qs.forEach(q=>{
+      if(skill===9){
+        const actual=qs.filter(q=>!q.coverage);
+        if(new Set(actual.map(q=>q.clef)).size===2)
+          check(actual.every((q,i)=>!i||q.clef!==actual[i-1].clef),prefix+' consecutive same clef');
+        sel.forEach(id=>{
+          const clef=d.NOTES[id].clef;
+          const pool=sel.filter(other=>other==='C4'||d.NOTES[other].clef===clef);
+          if(pool.length>=2)check(actual.some(q=>q.noteId===id),prefix+' missing comparison target '+id);
+        });
+      }
+      if(skill === 9) qs.filter(q=>!q.coverage).forEach(q=>{
         const base=q.clef==='treble'?2:4;
         const letterAt=y=>((base+Math.round((4-y)*2))%7+7)%7;
         check(letterAt(q.y1)!==letterAt(q.y2),prefix+' ambiguous same-letter pair');
       });
-      if(skill === 8) check(new Set(keys).size === n, prefix + ' duplicate position');
+      if(skill === 8){const positions=qs.filter(q=>!q.coverage).map(q=>q.clef+'|'+q.spot);check(new Set(positions).size === n,prefix+' duplicate position');}
       if([1,2,3,4,5].includes(skill) && new Set(keys).size > 1){
         const counts = keys.reduce((a,k) => (a[k] = (a[k] || 0) + 1, a), {});
         if(Math.max(...Object.values(counts)) <= Math.ceil(keys.length / 2)){
@@ -93,6 +111,6 @@ export async function generationAudit(page){
     return {failures,sessions,samples};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 12 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 14 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }

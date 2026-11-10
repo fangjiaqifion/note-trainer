@@ -1,6 +1,6 @@
 # Note Trainer
 
-Last updated: 2026-11-10
+Last updated: 2026-11-11
 
 A single-page, offline-capable notation trainer for young piano beginners. It drills one
 chain: note name → key on the keyboard → staff and clef → duration → hand and finger, then
@@ -8,7 +8,7 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same twelve skills.
+14-question first lesson, then folded into the same thirteen skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
@@ -19,8 +19,15 @@ after E the book moves to A, then back to F and G. A3 is the left-hand third fin
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
 or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
 skill 11 also uses checked notes. Skills 6–8 and 10 teach abstract staff positions.
-Skills 9 and 12 use checked notes with the staff-position flag: first treble C4/D4/E4, then bass A3/B3/C4. Skill 9 can finish with selected upper treble notes; difficulty does not add unselected pitches or unfamiliar alternate-clef spellings. Skill 12 presents all three core notes together and asks the child to tap a named note.
-The twelve skill cards remain stable as new lesson notes join the selected pool.
+Every skill session includes every eligible checked note. Position exercises retain
+their line/space tasks and add a staff-to-key review of the checked notes. Sessions grow
+when needed to cover the pool. Skill 9 alternates available clefs, varies comparison
+pairs, and covers all selected pitches. Skill 12 shows three selected notes together;
+mixed-clef notes use separate familiar staff images. Skill 13 asks the child to play
+three selected notes from left to right, then choose the highest or lowest. Nearby
+pitches and similar line positions receive priority, including treble A3/C4/E4 ledger
+comparisons. Three distinct eligible notes are required for skill 13.
+The thirteen skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
@@ -48,7 +55,7 @@ three minutes a day.
   its application files for offline use.
 
 Sound is synthesized at runtime with the Web Audio API; there are no audio files to download.
-The keyboard uses an additive piano voice: twelve partials with the slight stretch of a real
+The keyboard uses an additive piano voice: thirteen partials with the slight stretch of a real
 string, two strings detuned by 0.35 cent so their average is the exact equal-tempered pitch, a
 two-stage decay with no steady sustain, hammer and damper noise, and a light room reverb
 generated in code. The fundamental is always the exact equal-tempered frequency, and no
@@ -73,9 +80,10 @@ separate record for each learner profile.
 
 ## Learning activities
 
-Twelve skill cards cover finding a keyboard key, connecting staff and keyboard, choosing a
+Thirteen skill cards cover finding a keyboard key, connecting staff and keyboard, choosing a
 clef, reading and holding note values, hand/finger choices, lines and spaces, relative
-pitch positions, ledger naming and placement, confusable notes, and card matching. A ten-question daily mix uses
+pitch positions, ledger naming and placement, confusable notes, card matching, and
+three-note keyboard/high-low comparisons. A ten-question daily mix uses
 the checked learned notes. Each new note has a fourteen-question first lesson that saves
 its place after every completed answer.
 

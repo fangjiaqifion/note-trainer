@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="87cfb76b40">
+<meta name="app-build" content="f96c43f1e8">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -134,7 +134,7 @@
   /* 技能卡排成两列。星星按技能存，和新音无关。
      行高 136，加上 chips、今日练习、页脚，iPad 竖屏一屏放得下；
      七张卡比六张多一行，矮屏上允许从卡片区滚动。 */
-  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:center;grid-auto-rows:136px;min-height:0;overflow-y:auto}
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:safe center;grid-auto-rows:136px;min-height:0;overflow-y:auto}
   .level-card{
     display:flex;flex-direction:column;gap:6px;text-align:left;
     background:var(--card);border:2px solid var(--line);border-radius:22px;padding:13px 16px;
@@ -510,7 +510,7 @@
   }
   /* 宽屏用三列：九张卡排三行，iPad 横屏和桌面上不用滚动。 */
   @media (min-width:900px){
-    .levels{grid-template-columns:repeat(3,1fr);align-content:center}
+    .levels{grid-template-columns:repeat(3,1fr);align-content:safe center}
     .levels .level-card:last-child:nth-child(odd){grid-column:auto;justify-self:stretch;width:auto}
   }
   /* iPad 竖屏（521–899px）：九张卡是五行，行高压到 120，
@@ -1150,7 +1150,7 @@ const SKILLS = [
     needs:[], pool:'none', make:makeLedger,
     count:function(){ return 6; } },
   { id:9, key:'contrast', name:'易混音', title:'容易混的音',
-    desc:'先分开比较高音 CDE、低音 ABC，再练扩展音', color:'#6C63B5',
+    desc:'交替谱号，随机比较勾选的易混音', color:'#6C63B5',
     needs:['pos'], pool:'active', make:makeContrast },
   { id:10, key:'ledgerMove', name:'加线定位', title:'认位置与摆音符',
     desc:'听位置摆音符，先练谱表内，再练加线加间', color:'#43858D',
@@ -1160,7 +1160,10 @@ const SKILLS = [
     needs:['key','pos'], pool:'active', make:makeMatching, count:function(){ return 4; } },
   { id:12, key:'threeNotes', name:'三音辨认', title:'三个音中找目标音',
     desc:'高音 CDE、低音 ABC，三个相邻音中找一找', color:'#AA7050',
-    needs:['pos'], pool:'active', make:makeThreeNotes }
+    needs:['pos'], pool:'active', make:makeThreeNotes },
+  { id:13, key:'playThree', name:'三音弹比', title:'弹三个音，再比高低',
+    desc:'先在键盘上弹出三个音，再找最高或最低音', color:'#596FA4',
+    needs:['key','pos'], pool:'active', make:makePlayThree }
 ];
 
 /* ---------------------------------------------------------------------
@@ -1656,6 +1659,7 @@ function eventSkill(e){
     case 'ledgerName': case 'ledgerMove': return 10;
     case 'matching': return 11;
     case 'threeNotes': return 12;
+    case 'playThree': return 13;
   }
   return 0;
 }
@@ -3534,7 +3538,7 @@ function qWhichHigher(ys, clef, intro, ask){
   let svg = null;
 
   function noteEl(i){
-    return svg ? svg.querySelector('.note[data-i="' + i + '"]') : null;
+    return svg ? svg.querySelector('.note[data-i="' + i + '"],button[data-i="' + i + '"]') : null;
   }
   function pitchOf(i){
     return staffPitch(clef, ys[i]).midi;
@@ -3559,7 +3563,7 @@ function qWhichHigher(ys, clef, intro, ask){
          有谱号时点哪个就响哪个，谱号和音高的对应关系当场听得到。 */
       svg.addEventListener('pointerdown', function(e){
         if(G.q.answered || !svg) return;
-        const hit = e.target.closest ? e.target.closest('.note-hit') : null;
+        const hit = e.target.closest ? e.target.closest('.note-hit,button[data-i]') : null;
         if(!hit) return;
         e.preventDefault();
         const i = Number(hit.dataset.i);
@@ -3802,25 +3806,15 @@ function clefPool(ids){
 /* 谱号关：先按音名均分，再放回具体写法。C4 和 C4B 都显示成「中央 C」，
    按 id 均分会让 C 占掉一半题目；按字母排，每个音名约 1/k。
    spaceOut 保证相邻两题不是同一个音名（C4 和 C4B 也算同一个），
-   同一个字母出现多次时，C 的两种写法交替出现。 */
+   同一个字母出现多次时，C 的两种写法交替出现；A3/A4 分别保留名额。 */
 function makeClef(ids, n){
-  const pool = clefPool(ids);
-  if(!pool.length) return [];
-
-  const byLetter = {};
-  pool.forEach(function(id){
-    const letter = NOTES[id].letter;
-    (byLetter[letter] = byLetter[letter] || []).push(id);
+  if(!ids.length)return [];
+  let bass=Math.random()<.5;
+  const qs=weightedRepeatTo(ids,Math.max(n,ids.length)).map(function(id){
+    if(id==='C4'){bass=!bass;return qClef(bass?'C4B':'C4');}
+    return qClef(id);
   });
-  Object.keys(byLetter).forEach(function(letter){ byLetter[letter] = shuffle(byLetter[letter]); });
-  const letters = spaceOut(repeatTo(Object.keys(byLetter), n), function(x){ return x; });
-  const cursor = {};
-  return letters.map(function(letter){
-    const list = byLetter[letter] || pool;
-    const i = cursor[letter] || 0;
-    cursor[letter] = i + 1;
-    return qClef(list[i % list.length]);
-  });
+  return spaceOut(qs,function(q){return NOTES[q.noteId].letter;});
 }
 
 function makeBeats(ids, n){
@@ -4223,27 +4217,29 @@ function qContrast(pair, targetId){
   const ys = order.map(function(i){ return notes[i].y; });
   const target = order.indexOf(want);
   const t = notes[want];
-  const label = positionLabel(pair.clef, t.y);
+  const label = positionLabel(pair.clef || t.clef, t.y);
+  const targetLabel=notes.filter(note=>note.letter===t.letter).length>1
+    ? t.letter+(t.midi<60?'（比中央 C 低）':'（比中央 C 高）'):t.letter;
   let svg = null;
 
   function noteEl(i){
-    return svg ? svg.querySelector('.note[data-i="' + i + '"]') : null;
+    return svg ? svg.querySelector('.note[data-i="' + i + '"],button[data-i="' + i + '"]') : null;
   }
 
   return {
-    kind:notes.length===3?'threeNotes':'contrast', valueId:'whole',
+    kind:notes.length===3?'threeNotes':'contrast', valueId:'whole', targetLabel:targetLabel,
     noteId: t.id, letter: t.letter, clef: pair.clef,
     y1: ys[0], y2: ys[1], ys:ys, choiceIds:order.map(function(i){return notes[i].id;}), target: target, pair: pair.key,
     wrong: 0, chosen: '',
     render: function(){
-      const prompt=notes.length===3?'请问这三个音中哪个是 ' + t.letter + '？':'点出 ' + t.letter;
+      const prompt=notes.length===3?'请问这三个音中哪个是 ' + targetLabel + '？':'点出 ' + targetLabel;
       setPrompt(prompt, prompt);
-      stageEl.innerHTML = staffPairBlock({ ys:ys, xs:notes.length===3?[5.3,9,12.7]:undefined, clef:pair.clef, hits:true });
-      svg = stageEl.querySelector('svg');
+      stageEl.innerHTML = comparisonMarkup(order.map(function(i){return notes[i];}),pair.clef,true);
+      svg = pair.clef ? stageEl.querySelector('svg') : stageEl.firstElementChild;
       answerEl.innerHTML = '<div class="spot-cap">点一下那个音</div>';
       svg.addEventListener('pointerdown', function(e){
         if(G.q.answered || !svg) return;
-        const hit = e.target.closest ? e.target.closest('.note-hit') : null;
+        const hit = e.target.closest ? e.target.closest('.note-hit,button[data-i]') : null;
         if(!hit) return;
         e.preventDefault();
         const i = Number(hit.dataset.i);
@@ -4274,42 +4270,137 @@ function qContrast(pair, targetId){
   };
 }
 
-/* Checked pitches keep their familiar clef. Middle C is shared between both groups.
-   The core groups precede extensions in every difficulty; difficulty never adds pitches. */
-function comparisonGroups(ids, triples){
-  const layouts=[
-    {clef:'treble', ids:['C4','D4','E4']},
-    {clef:'bass', ids:['A3','B3','C4']}
-  ];
-  if(!triples) layouts.push({clef:'treble',ids:['C4','D4','E4','F4','G4','A4']});
-  return layouts.map(function(group){
-    return {clef:group.clef,notes:group.ids.filter(function(id){return ids.includes(id);}).map(function(id){
-      const p=CONTRAST_POS[id].find(function(p){return p.clef===group.clef;});
-      return {id:id,letter:NOTES[id].letter,y:p.y,midi:NOTES[id].midi};
+/* Alternate available clefs while reserving enough slots for every exclusive target.
+   Shared middle C fills the clef with spare capacity. Pair history penalizes repeats. */
+function makeContrast(ids,n){
+  const groups=['treble','bass'].map(function(clef){
+    return {clef:clef,notes:ids.filter(function(id){return id==='C4'||NOTES[id].clef===clef;}).map(function(id){
+      const p=CONTRAST_POS[id].find(function(p){return p.clef===clef;});
+      return {id:id,letter:NOTES[id].letter,midi:NOTES[id].midi,y:p.y};
     })};
-  }).filter(function(group,i,all){
-    return group.notes.length >= (triples?3:2) &&
-      !all.slice(0,i).some(function(g){return g.clef===group.clef && g.notes.map(n=>n.id).join('|')===group.notes.map(n=>n.id).join('|');});
-  });
-}
-
-function makeComparison(ids,n,triples){
-  const groups=comparisonGroups(ids,triples);
+  }).filter(function(g){return g.notes.length>=2;});
   if(!groups.length)return [];
-  const qs=[];
-  groups.forEach(function(group,gi){
-    const count=Math.floor(n/groups.length)+(gi<n%groups.length?1:0);
-    const targets=spaceOut(weightedRepeatTo(group.notes.map(function(note){return note.id;}),count),function(id){return id;},qs.length?qs[qs.length-1].noteId:undefined);
-    targets.forEach(function(id){
-      const a=group.notes.find(function(note){return note.id===id;});
-      const notes=triples?group.notes:[a,shuffle(group.notes.filter(function(note){return note.id!==id;}))[0]];
-      qs.push(qContrast({clef:group.clef,notes:notes,key:notes.map(function(note){return note.id;}).sort().join('|')},id));
+  if(groups.length===2)n=Math.max(n,2*Math.max(...groups.map(g=>g.notes.filter(note=>note.id!=='C4').length)));
+  const sequence=groups.length===2?alternateClefs(n):Array(n).fill(groups[0].clef);
+  const seen=new Set(),counts={},pairs={},qs=[];
+  sequence.forEach(function(clef,i){
+    const group=groups.find(g=>g.clef===clef);
+    const remaining=sequence.slice(i).filter(c=>c===clef).length;
+    const exclusive=group.notes.filter(note=>note.id!=='C4'&&!seen.has(note.id));
+    const candidates=remaining<=exclusive.length?exclusive:group.notes;
+    const ranked=shuffle(candidates).sort(function(a,b){
+      return Number(seen.has(a.id))-Number(seen.has(b.id)) ||
+        Number(a.id===(qs[i-1]||{}).noteId)-Number(b.id===(qs[i-1]||{}).noteId) || (counts[a.id]||0)-(counts[b.id]||0);
     });
+    const target=ranked[0];seen.add(target.id);counts[target.id]=(counts[target.id]||0)+1;
+    const others=shuffle(group.notes.filter(note=>note.id!==target.id && note.letter!==target.letter));
+    if(!others.length)return;
+    function key(note){return [target.id,note.id].sort().join('|');}
+    others.sort(function(a,b){
+      return Number(key(a)===(qs[i-1]||{}).pair)-Number(key(b)===(qs[i-1]||{}).pair) ||
+        (pairs[clef+'|'+key(a)]||0)-(pairs[clef+'|'+key(b)]||0) || Math.abs(a.y-target.y)-Math.abs(b.y-target.y);
+    });
+    const other=others[0],pair=key(other);pairs[clef+'|'+pair]=(pairs[clef+'|'+pair]||0)+1;
+    qs.push(qContrast({clef:clef,notes:[target,other],key:pair},target.id));
   });
   return qs;
 }
-function makeContrast(ids,n){return makeComparison(ids,n,false);}
-function makeThreeNotes(ids,n){return makeComparison(ids,n,true);}
+
+/* Enumerate only selected pitches. Prefer nearby pitches and comparable line positions.
+   New spellings below treble are enabled only for the explicit play/compare exercise. */
+function triplePlans(ids,n,ledger){
+  if(ids.length<3)return [];
+  const candidates=[];
+  for(let a=0;a<ids.length-2;a++)for(let b=a+1;b<ids.length-1;b++)for(let c=b+1;c<ids.length;c++){
+    const trio=[ids[a],ids[b],ids[c]];
+    const bass=trio.every(id=>['A3','B3','C4'].includes(id));
+    const same=trio.every(id=>id==='C4'||NOTES[id].clef==='treble');
+    const clef=bass?'bass':same||ledger?'treble':null;
+    const notes=trio.map(function(id){
+      const clefFor=clef||NOTES[id].clef;
+      const pos=CONTRAST_POS[id].find(p=>p.clef===clefFor);
+      return {id:id,letter:NOTES[id].letter,midi:NOTES[id].midi,y:pos.y,clef:clefFor};
+    });
+    const pitches=notes.map(note=>note.midi);
+    const span=Math.max(...pitches)-Math.min(...pitches);
+    const sameLines=notes.filter(note=>Number.isInteger(note.y)).length;
+    candidates.push({clef:clef,notes:notes,key:trio.slice().sort().join('|'),score:span-sameLines});
+  }
+  const seen=new Set(),used={},plans=[];
+  for(let i=0;i<n;i++){
+    const ranked=shuffle(candidates).sort(function(a,b){
+      const missing=g=>g.notes.filter(note=>!seen.has(note.id)).length;
+      return missing(b)-missing(a) || Number(a.key===(plans[i-1]||{}).key)-Number(b.key===(plans[i-1]||{}).key) ||
+        (used[a.key]||0)-(used[b.key]||0) || a.score-b.score;
+    });
+    const plan=ranked[0];plans.push(plan);used[plan.key]=(used[plan.key]||0)+1;plan.notes.forEach(note=>seen.add(note.id));
+  }
+  return plans;
+}
+function makeThreeNotes(ids,n){
+  const counts={};
+  return triplePlans(ids,n,false).map(function(plan){
+    const target=shuffle(plan.notes).sort((a,b)=>(counts[a.id]||0)-(counts[b.id]||0))[0];
+    counts[target.id]=(counts[target.id]||0)+1;
+    return qContrast(plan,target.id);
+  });
+}
+
+function comparisonMarkup(notes,clef,hits){
+  if(clef)return staffPairBlock({ys:notes.map(note=>note.y),xs:notes.length===3?[5.3,9,12.7]:undefined,clef:clef,hits:hits});
+  return '<div class="opts">'+notes.map(function(note,i){
+    return '<button type="button" class="opt" data-i="'+i+'" aria-label="第 '+(i+1)+' 个音">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'</button>';
+  }).join('')+'</div>';
+}
+
+function makePlayThree(ids,n){
+  const asks=alternateAsks(n);
+  return triplePlans(ids,n,true).map(function(plan,i){return qPlayThree(plan,asks[i]);});
+}
+function qPlayThree(plan,ask){
+  const notes=shuffle(plan.notes),highest=ask==='higher';
+  const pitch=Math[highest?'max':'min'](...notes.map(note=>note.midi));
+  const target=notes.findIndex(note=>note.midi===pitch);
+  let step=0,ready=false;
+  const q={kind:'playThree',noteId:notes[target].id,noteIds:notes.map(note=>note.id),choiceIds:notes.map(note=>note.id),
+    clef:plan.clef,pair:plan.key,ask:ask,target:target,wrong:0,played:0,phase:'play',
+    render:function(){
+      step=0;ready=false;q.played=0;q.phase='play';
+      setPrompt('从左到右，在键盘上弹出这三个音','从左到右，在键盘上弹出这三个音');
+      stageEl.innerHTML=comparisonMarkup(notes,plan.clef,false);
+      answerEl.innerHTML='';
+      function finishPlaying(){
+        ready=true;q.phase='compare';
+        const text='请选出这三个音中'+(highest?'最高':'最低')+'的音';setPrompt(text,text);
+        answerEl.innerHTML='<div class="spot-cap">三个音都弹对了，现在点谱面上的音</div>';
+        stageEl.innerHTML=comparisonMarkup(notes,plan.clef,true);
+        stageEl.firstElementChild.addEventListener('pointerdown',selectExtreme);
+      }
+      const kb=makeKB({labels:S.labels,onDown:function(midi,el){
+        if(q.answered||ready)return;
+        if(midi!==notes[step].midi){q.wrong++;el.classList.add('wrong');toast('再看第 '+(step+1)+' 个音','bad');return;}
+        el.classList.remove('wrong');el.classList.add('correct');step++;q.played=step;
+        if(step===3){finishPlaying();return;}
+        setPrompt('已弹对 '+step+' 个，请弹第 '+(step+1)+' 个音',false);
+      }});
+      answerEl.appendChild(kb);
+      function selectExtreme(e){
+        if(G.q!==q||!ready||q.answered)return;
+        const hit=e.target.closest('.note-hit,button[data-i]');if(!hit)return;e.preventDefault();
+        const i=Number(hit.dataset.i);q.chosen=notes[i].id;playMidi(notes[i].midi,.7);
+        if(i!==target&&!q.wrongChoice)q.wrongChoice=notes[i].id;
+        judge(i===target,i===target?'对！这是'+(highest?'最高':'最低')+'的音':'再比较一下这三个音的高低');
+      };
+    },reveal:function(){
+      if(!ready){
+        const midi=notes[step].midi;answerEl.querySelectorAll('[data-midi]').forEach(el=>el.classList.toggle('hint',Number(el.dataset.midi)===midi));playMidi(midi,.7);
+      }else{
+        const el=stageEl.querySelector('[data-i="'+target+'"]');if(el)el.classList.add('hint');
+        setPrompt((highest?'最高':'最低')+'的音是 '+notes[target].letter,false);playMidi(pitch,.7);
+      }
+    }};
+  return q;
+}
 
 /* 新音学完后的收尾：只问这个新音，每次换一个对比音。
    以前只在 CONTRAST_PARTNERS 里找，而且每对正反各问一次；
@@ -4385,9 +4476,14 @@ window.addEventListener('resize',fitMatchingKeyboards);
 
 function makeMatching(ids,n){
   if(!ids.length)return [];
-  return [['name','key'],['name','staff'],['key','staff'],['duration','beats']].slice(0,n).map(function(types){
+  const ordered=shuffle(ids),limit=diff().key==='easy'?2:3;
+  let cursor=0;
+  const modes=[['name','key'],['name','staff'],['key','staff']];
+  while(modes.length*limit<ids.length)modes.push(['name','key']);
+  modes.push(['duration','beats']);
+  return modes.map(function(types){
     const rhythm=types[0]==='duration';
-    const notes=shuffle(rhythm?VALUE_IDS:ids).slice(0, diff().key==='easy'?2:3);
+    const notes=rhythm?shuffle(VALUE_IDS).slice(0,limit):Array.from({length:Math.min(limit,ids.length)},function(){return ordered[cursor++%ordered.length];});
     const left=shuffle(notes),right=shuffle(notes);
     const cards=left.flatMap(function(id,row){return [
       {id:id,type:types[0],side:'left'},
@@ -4401,7 +4497,7 @@ function makeMatching(ids,n){
       if(card.type==='staff')return staffSVG({noteId:card.id,value:'whole',compact:true});
       return '<div class="keyboard-preview"><div class="kb keyboard card-keyboard"></div></div>';
     }
-    return {kind:'matching',pair:types.join('-'),target:notes.length,wrong:0,
+    return {kind:'matching',pair:types.join('-'),noteIds:rhythm?[]:notes.slice(),target:notes.length,wrong:0,
       render:function(){
         first=null;matched=new Set();
         setPrompt(rhythm?'把左边的音符和右边的拍数配对':'左右各选一张，把同一个音配对',rhythm?'把音符和拍数配对':'选两张牌，把同一个音配对');
@@ -4443,11 +4539,23 @@ function makeMatching(ids,n){
 function buildQuestions(skillId){
   const skill = SKILLS[skillId - 1];
   if(!skill) return [];
-  const n = skill.count ? skill.count(diff().count) : diff().count;
+  let n = skill.count ? skill.count(diff().count) : diff().count;
   const ids = (skill.pool === 'active') ? activeNotes(skill.needs)
             : (skill.pool === 'fixed') ? skill.ids.slice()
             : [];
-  return skill.make(ids, n);
+  if(skill.pool==='active' && skillId!==11)n=Math.max(n,ids.length);
+  if(skillId===13 && ids.length<3)return [];
+  const qs=skill.make(ids,n);
+  const eligible=activeNotes(skill.needs);
+  const covered=new Set();
+  qs.forEach(function(q){
+    (q.noteIds||q.choiceIds||(q.noteId?[q.noteId==='C4B'?'C4':q.noteId]:[])).forEach(id=>covered.add(id));
+    if(q.kind==='find')eligible.filter(id=>NOTES[id].letter===q.letter).forEach(id=>covered.add(id));
+  });
+  eligible.filter(id=>!covered.has(id)).forEach(function(id){
+    const q=qStaffToKey(id);q.coverage=true;q.ownerSkill=skillId;qs.push(q);
+  });
+  return qs;
 }
 
 /* 新音导入：从第 from 步开始取 count 步。
@@ -4534,9 +4642,7 @@ function startLevel(id){
     toast('勾选的音还没学过这一项', 'bad');
     return;
   }
-  if((id===9 || id===12) && !comparisonGroups(activeNotes(skill.needs),id===12).length){
-    toast(id===12?'先勾选并学会高音 CDE 或低音 ABC 三个音':'先勾选并学会同组的两个音：高音 CDE 或低音 ABC','bad');return;
-  }
+  if(id===13 && activeNotes(skill.needs).length<3){toast('先勾选至少三个学过键位和谱位的音','bad');return;}
   G.mode = 'skill';
   G.level = id;
   G.spotNote = null; G.spotFrom = 0; G.spotCount = 0;
@@ -5586,7 +5692,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是十二个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是十三个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){

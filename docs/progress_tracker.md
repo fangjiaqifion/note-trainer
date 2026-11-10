@@ -1,10 +1,50 @@
 # Note Trainer Internal Progress Tracker
 
-Last updated: 2026-11-10
+Last updated: 2026-11-11
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
+
+## Full selected-note coverage and play-three practice, 2026-11-11
+
+Skill 9 now alternates available familiar clefs, randomizes the first clef and targets,
+reserves enough questions for every eligible selected target, and penalizes reused
+pairs. With B3/C4/D4/E4 selected, every target occurs and treble/bass strictly alternate.
+A single legal pair cannot acquire new distractors without adding unchecked notes;
+it can recur, separated by other-clef questions when possible. Unpairable pitches
+receive selected-note review rather than unfamiliar spellings.
+
+Every skill session now verifies selected-note coverage. Skills 6–8 and 10 keep their
+position tasks and append staff/key review, as explicitly chosen by the user. Skill 5
+grows when its base count is too small. Skill 3 preserves both selected A octaves and
+spaces their letter names. Skill 11 rotates the pool and adds a small matching round
+before duration matching as needed. Skill 12 uses variable nearby triples, separate
+familiar staff cards for mixed clefs, and explicit above/below-middle-C wording when
+same-letter octaves coexist. Smaller pools receive staff/key review.
+
+New skill 13 shows three selected pitches, favoring adjacent notes and similar line
+positions including treble A3/C4/E4. The learner first plays all three on the screen
+keyboard from left to right, then chooses the highest or lowest displayed note.
+Wrong keys do not advance; comparison cannot start early. Three distinct eligible
+pitches are required. This avoids invented unchecked distractors in smaller pools.
+
+Final local build `f96c43f1e8` passed the complete required release suite: 54 Node
+tests, 1,144 scheduling boundaries, 64,260 generated sessions, twenty rendering cases
+at four viewports, menu hit tests, and all sync/backup/cloud/portal/storage/offline
+browser suites. All release-file hashes match both local origins. Four actual
+Safari/Chrome boot receipts on 127.0.0.1:8774 and localhost:8774 acknowledge this exact
+build; local status is ready. Chrome extension DOM inspection timed out after reset,
+but the independent loopback game-boot receipts confirmed both actual loads.
+Preview: `http://127.0.0.1:8774/index.html?build=f96c43f1e8`.
+No push or remote deployment was performed. Physical iPad touch remains unverified.
+See the [acceptance audit](audit_20261111_play_three/audit.md).
+
+Documentation updated: AGENTS, LEVELS, README, development guide, user guide, this
+tracker, and audit. Cloud operations and teacher portal procedures reviewed unchanged:
+no schema, permission, authentication, or synchronization changes. Parent/games guides
+and parent README remain applicable; the parent tracker/submodule pointer records
+local delivery after the game commit. Historical audits remain unchanged.
 
 ## Selected comparison and three-note recognition, 2026-11-10
 
