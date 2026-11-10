@@ -1,10 +1,35 @@
 # Note Trainer Internal Progress Tracker
 
-Last updated: 2026-11-09
+Last updated: 2026-11-10
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
+
+## Selected comparison and three-note recognition, 2026-11-10
+
+Local build `87cfb76b40` corrects skill 9 to checked, position-learned pitches.
+Treble C4/D4/E4 and bass A3/B3/C4 are practiced in separate blocks, before optional
+selected upper-treble extensions. Difficulty no longer injects unchecked or unfamiliar
+alternate-clef ledger spellings. New skill 12 shows three shuffled adjacent notes
+on one staff and asks the child to tap a target letter. A complete checked/learned
+core trio is required; incomplete selections produce a useful selection message.
+The report includes the twelfth skill. See the [audit](audit_20261110_comparison/audit.md).
+
+Verification passed: the complete required release suite (54 Node tests, 1,144
+scheduling boundaries, 59,670 generated sessions, 17 question variants at four
+viewports, and all storage/backup/sync/portal/offline browser suites). All release
+file hashes match both local origins. Four actual Safari/Chrome reset and boot
+receipts across 127.0.0.1:8774 and localhost:8774 confirm this build; local status
+is ready. Preview: `http://127.0.0.1:8774/index.html?build=87cfb76b40`.
+No push or deployment has been authorized for this task; the accepted remote release
+below remains the publication baseline. Physical iPad touch behavior remains unverified.
+
+Documentation updated: AGENTS, LEVELS, README, development guide, user guide, this
+tracker, and audit. Cloud operations and teacher portal docs reviewed unchanged:
+no storage, authentication, permission, migration, or cloud workflow changes.
+Parent/game area guides remain applicable; the parent tracker records coordination
+and the local submodule pointer after game commits. Historical audits are preserved.
 
 ## Left/right matching release, 2026-11-09
 

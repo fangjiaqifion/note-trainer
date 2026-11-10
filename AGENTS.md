@@ -1,6 +1,6 @@
 # Note Trainer: Internal Development Guide
 
-Last updated: 2026-11-09
+Last updated: 2026-11-10
 
 This is an independent repository, registered as a submodule in the music-materials
 workspace. When nested there, inherit the parent and `games/AGENTS.md`; when cloned
@@ -46,9 +46,10 @@ an installed automatic hook or permission to push/deploy.
   Do not add unchecked target notes to manufacture clef variety.
 - Skill 3 may use C4B as the same pitch as checked C4. D/E must both appear when checked,
   even though both answers are treble clef.
-- Skills 6–8 and 10 concern abstract positions and ignore selected notes. Skill 9 uses
-  fixed treble C4–G4 and bass F3–C4 groups, independent of selections; Hard adds ledger
-  pitches. Skill 11 uses checked key+pos notes for three representation-pair rounds plus duration-to-beat matching.
+- Skills 6–8 and 10 concern abstract positions and ignore selected notes. Skills 9 and 12 use only checked, position-learned notes in separate treble
+  C4/D4/E4 and bass A3/B3/C4 blocks. Skill 9 may follow with selected treble
+  extensions; no difficulty adds unchecked pitches or unfamiliar alternate-clef spellings.
+  Skill 12 requires all three notes in a core group and shows them together. Skill 11 uses checked key+pos notes for three representation-pair rounds plus duration-to-beat matching.
   Skill 10 always starts with one in-staff placement, followed by five ledger placements;
   every difficulty uses placement rather than position naming.
   The new-note contrast finale retains its separate learned-note pool.
@@ -103,7 +104,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × eleven skills and daily practice, totaling 55,080 sessions.
+answer histories × three seeds × twelve skills and daily practice, totaling 59,670 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and

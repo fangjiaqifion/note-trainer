@@ -17,7 +17,7 @@ export async function generationAudit(page){
       const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count
         ? d.SKILLS[skill - 1].count(d.DIFFS[g.diffKey].count) : d.DIFFS[g.diffKey].count;
       // 易混音只允许已定义的相邻/易混对子；没有合法对子时为空。
-      if(skill === 9 && !qs.length) return;
+      if([9,12].includes(skill) && !qs.length) return;
       check(qs.length === n, prefix + ' count ' + qs.length + '/' + n);
       const key = q => skill === 1 ? q.letter : skill === 3 ? d.NOTES[q.noteId].letter
         : skill === 8 ? q.clef + '|' + q.spot : q.noteId;
@@ -33,13 +33,17 @@ export async function generationAudit(page){
           if(q.kind === 'find') check(sel.some(id => d.NOTES[id].letter === q.letter), prefix + ' unselected letter ' + q.letter);
         });
       }
+      if([9,12].includes(skill)) qs.forEach(q=>{
+        check(q.choiceIds.every(id=>sel.includes(id)),prefix+' unselected comparison choice');
+        check(q.choiceIds.length===(skill===12?3:2),prefix+' choice count');
+      });
       if(skill === 9) qs.forEach(q=>{
         const base=q.clef==='treble'?2:4;
         const letterAt=y=>((base+Math.round((4-y)*2))%7+7)%7;
         check(letterAt(q.y1)!==letterAt(q.y2),prefix+' ambiguous same-letter pair');
       });
       if(skill === 8) check(new Set(keys).size === n, prefix + ' duplicate position');
-      if([1,2,3,4,5,9].includes(skill) && new Set(keys).size > 1){
+      if([1,2,3,4,5].includes(skill) && new Set(keys).size > 1){
         const counts = keys.reduce((a,k) => (a[k] = (a[k] || 0) + 1, a), {});
         if(Math.max(...Object.values(counts)) <= Math.ceil(keys.length / 2)){
           check(keys.every((k,i) => i === 0 || k !== keys[i-1]), prefix + ' adjacent ' + keys.join(','));
@@ -72,7 +76,7 @@ export async function generationAudit(page){
               let state = seed * 100003 + mask;
               Math.random = function(){ state = (Math.imul(state,1664525) + 1013904223) >>> 0; return state / 4294967296; };
               const prefix = sel.join('+') + '/' + difficulty + '/history' + history + '/seed' + seed;
-              for(let skill=1;skill<=11;skill++) inspect(d.buildQuestions(skill),skill,sel,prefix + '/skill' + skill);
+              for(let skill=1;skill<=d.SKILLS.length;skill++) inspect(d.buildQuestions(skill),skill,sel,prefix + '/skill' + skill);
               inspect(d.buildDailySession(),'daily',sel,prefix);
               if(mask === 12 && difficulty === 'normal' && history === 0)
                 samples.push(d.buildQuestions(3).map(q => q.noteId).join(','));

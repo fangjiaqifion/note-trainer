@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页十一张卡、16 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页十二张卡、17 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -105,6 +105,7 @@ async function renderCases(){
     ['contrast', d.buildQuestions(9)[0]],
     ['staffPlacement', d.buildQuestions(10)[0]],
     ['matching', d.buildQuestions(11)[0]],
+    ['threeNotes', d.buildQuestions(12)[0]],
     ['ledgerMove',placement]
   ];
   const out = [];
@@ -364,7 +365,7 @@ async function selectionVarietyCheck(page){
 
       skills.forEach(function(skill){
         const active = d.activeNotes(d.SKILLS[skill - 1].needs);
-        if(skill === 9 && active.length < 2) return;
+        if(skill === 9 && !d.buildQuestions(9).length) return;
         for(let k = 0; k < 30; k++){
           const qs = d.buildQuestions(skill);
           if(!qs.length){
@@ -460,6 +461,39 @@ async function ledgerCheck(page){
   assert.equal(info.count, 6, 'skill 8 must have six questions');
   assert.deepEqual(info.numbers, ['1', '2', '3', '4', '5', '6', '7', '8'],
     'skill 8 number choices must always be 1-8');
+}
+
+async function comparisonSelectionCheck(page){
+  const result=await page.evaluate(function(){
+    const d=window.__dbg, old={selected:d.S.selected,progress:d.S.progress,diff:d.G.diffKey};
+    const errors=[];
+    try{
+      d.S.selected=['B3','C4','D4','E4','A3'];
+      d.S.progress=Object.fromEntries(d.S.selected.map(id=>[id,{pos:1,key:1,fin:1}]));
+      for(const tier of ['easy','normal','hard']){
+        d.G.diffKey=tier;
+        for(let run=0;run<30;run++)for(const skill of [9,12]){
+          const qs=d.buildQuestions(skill);
+          if(!qs.length)errors.push('empty '+skill);
+          let bass=false;
+          for(const q of qs){
+            if(q.clef==='bass')bass=true;else if(bass)errors.push('clefs interleaved');
+            const allowed=q.clef==='treble'?['C4','D4','E4']:['A3','B3','C4'];
+            if(q.choiceIds.some(id=>!allowed.includes(id)))errors.push('unselected/unfamiliar spelling');
+            if(q.choiceIds[q.target]!==q.noteId)errors.push('wrong target');
+            if(skill===12 && (q.choiceIds.length!==3 || new Set(q.choiceIds).size!==3))errors.push('not three distinct notes');
+          }
+        }
+      }
+      const q=d.buildQuestions(12)[0];d.G.q=q;q.answered=false;q.render();
+      if(document.querySelectorAll('#stage .note-hit').length!==3)errors.push('missing hit regions');
+      document.querySelector('#stage .note-hit[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+      if(!q.answered)errors.push('correct tap not accepted');
+      d.S.selected=['E4'];if(d.buildQuestions(9).length || d.buildQuestions(12).length)errors.push('invalid group generated');
+    }finally{d.S.selected=old.selected;d.S.progress=old.progress;d.G.diffKey=old.diff;}
+    return errors;
+  });
+  assert.deepEqual(result,[],'selected-note and three-note comparison regression');
 }
 
 async function newSkillsCheck(page){
@@ -650,8 +684,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('十一个技能') >= 0, 'report must say eleven skills');
-  assert.equal(report.headers.length, 13, 'matrix must have date + 11 skills + total');
+  assert.ok(report.text.indexOf('十二个技能') >= 0, 'report must say twelve skills');
+  assert.equal(report.headers.length, 14, 'matrix must have date + 12 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -775,8 +809,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 11, 'home must show eleven skill cards');
-    console.log('PASS home: 11 skill cards');
+    assert.equal(cards, 12, 'home must show twelve skill cards');
+    console.log('PASS home: 12 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -785,7 +819,7 @@ async function main(){
     console.log('PASS build: settings matches page build ' + build.meta);
 
     await layoutCheck(page);
-    console.log('PASS layout: 16 question types x 4 viewports');
+    console.log('PASS layout: 17 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -805,12 +839,13 @@ async function main(){
     console.log('PASS level 8: 6 questions, numbers 1-8');
 
     await newSkillsCheck(page);
+    await comparisonSelectionCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: eleven-skill matrix');
+    console.log('PASS report: twelve-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

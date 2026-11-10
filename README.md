@@ -1,6 +1,6 @@
 # Note Trainer
 
-Last updated: 2026-11-09
+Last updated: 2026-11-10
 
 A single-page, offline-capable notation trainer for young piano beginners. It drills one
 chain: note name → key on the keyboard → staff and clef → duration → hand and finger, then
@@ -8,7 +8,7 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same eleven skills.
+14-question first lesson, then folded into the same twelve skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
@@ -19,8 +19,8 @@ after E the book moves to A, then back to F and G. A3 is the left-hand third fin
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
 or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
 skill 11 also uses checked notes. Skills 6–8 and 10 teach abstract staff positions.
-Skill 9 separately practices treble C4–G4 and bass F3–C4; Hard adds ledger notes.
-The eleven skill cards remain stable as new lesson notes join the selected pool.
+Skills 9 and 12 use checked notes with the staff-position flag: first treble C4/D4/E4, then bass A3/B3/C4. Skill 9 can finish with selected upper treble notes; difficulty does not add unselected pitches or unfamiliar alternate-clef spellings. Skill 12 presents all three core notes together and asks the child to tap a named note.
+The twelve skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
@@ -73,7 +73,7 @@ separate record for each learner profile.
 
 ## Learning activities
 
-Eleven skill cards cover finding a keyboard key, connecting staff and keyboard, choosing a
+Twelve skill cards cover finding a keyboard key, connecting staff and keyboard, choosing a
 clef, reading and holding note values, hand/finger choices, lines and spaces, relative
 pitch positions, ledger naming and placement, confusable notes, and card matching. A ten-question daily mix uses
 the checked learned notes. Each new note has a fourteen-question first lesson that saves
