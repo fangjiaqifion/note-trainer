@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="40f587c5e3">
+<meta name="app-build" content="15b2f9779c">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -320,6 +320,38 @@
   .rhythm-choices .opt{width:clamp(76px,19vw,130px);padding:8px 4px;min-height:110px}
   .rhythm-choices svg{width:48px;height:65px}
   .rhythm-choices .unit{font-size:12px}
+
+  .meter-choices svg{width:54px;height:125px}
+  .meter-choices .opt{min-width:88px;padding:4px 14px}
+  .irregular-stage{width:100%}
+  .irregular-cards{display:flex;gap:10px;justify-content:center;width:100%;max-width:660px}
+  .irregular-card{flex:1;min-width:0;max-width:200px;min-height:110px;padding:8px;background:#fff;border:3px solid var(--line);border-radius:20px;box-shadow:0 4px 0 #EADDCB;cursor:pointer}
+  .irregular-card svg.staff{width:100%;height:auto;max-height:150px}
+  .irregular-card .card-letter{font-size:44px;font-weight:800;color:var(--ink)}
+  .irregular-card sub{font-size:.45em}
+  .irregular-card.selected{border-color:var(--blue);box-shadow:0 4px 0 #BCD6F5}
+  .irregular-card.matched{border-color:var(--green);background:#E9F7EF;opacity:.7}
+  .irregular-board{width:100%;max-width:900px;text-align:center}
+  .irregular-heading{font-size:16px;font-weight:800;color:#6B6156}
+  .irregular-heading span{font-size:12px;font-weight:500;margin-left:10px}
+  .irregular-keyboard{width:100%;height:auto;max-height:48vh;display:block;margin:8px auto;touch-action:manipulation}
+  .irregular-key{stroke:#554E47;stroke-width:2;stroke-linejoin:round;cursor:pointer}
+  .irregular-key.white{fill:#fff}
+  .irregular-key.black{fill:#27242A}
+  .irregular-key.wrong{fill:#F1B8B1}
+  .irregular-key.matched{fill:#A9DCC0}
+  .irregular-key:focus-visible{stroke:#3C7DD9;stroke-width:5;outline:none}
+  .irregular-labels{pointer-events:none}
+  .irregular-progress{font-size:13px;color:#6B6156;min-height:20px}
+  @media(max-height:520px) and (orientation:landscape){
+    .irregular-cards{flex-direction:column;align-items:center;gap:7px}
+    .irregular-card{width:160px;min-height:68px;padding:3px;max-height:83px}
+    .irregular-card svg.staff{max-height:70px}
+    .irregular-card .card-letter{font-size:36px}
+    .irregular-keyboard{max-height:calc(100vh - 175px);margin:3px auto}
+    .irregular-heading span{display:none}
+  }
+
   .number-choice{padding:12px 18px;background:transparent;border:0;box-shadow:none}
   @media(max-width:520px){.note-number{width:48px;height:48px;font-size:30px}.large-notation .notation-cards > .opt{padding:4px}}
   @media(max-height:520px) and (orientation:landscape){
@@ -1118,8 +1150,7 @@ const VALUES = {
   dotted:  { id:'dotted',  beats:3, name:'附点二分音符', filled:false, stem:true,  dot:true  },
   whole:   { id:'whole',   beats:4, name:'全音符',     filled:false, stem:false, dot:false }
 };
-const RHYTHM_VALUES = ['quarter','half','dottedQuarter','whole'];
-VALUES.dottedQuarter = {id:'dottedQuarter',beats:1.5,name:'附点四分音符',filled:true,stem:true,dot:true};
+const RHYTHM_VALUES = ['quarter','half','dotted','whole'];
 const VALUE_IDS = ['quarter','half','dotted','whole'];
 
 /* ---------------------------------------------------------------------
@@ -1196,7 +1227,13 @@ const SKILLS = [
     needs:['pos'], pool:'active', make:makeFlashNotes, count:function(){return 10;} },
   { id:16, key:'rhythmFill', name:'节奏填空', title:'补全小节',
     desc:'看拍号，选择缺少的音符，共六小节', color:'#527B8A',
-    needs:[], pool:'none', make:makeRhythmFill, count:function(){return 6;} }
+    needs:[], pool:'none', make:makeRhythmFill, count:function(){return 6;} },
+  { id:17, key:'meterChoice', name:'选择拍号', title:'这两小节是几拍子',
+    desc:'读两个完整小节，选出正确的拍号', color:'#947447',
+    needs:[], pool:'none', make:makeMeterChoice, count:function(){return 6;} },
+  { id:18, key:'irregularMatch', name:'变形键盘', title:'卡片与变形键盘配对',
+    desc:'环形、丝带等八种键盘上找音', color:'#6E739F',
+    needs:['key','pos'], pool:'active', make:makeIrregularMatch, count:function(){return 8;} }
 ];
 
 /* ---------------------------------------------------------------------
@@ -1696,6 +1733,8 @@ function eventSkill(e){
     case 'grandThree': return 14;
     case 'flashNotes': return 15;
     case 'rhythmFill': return 16;
+    case 'meterChoice': return 17;
+    case 'irregularMatch': return 18;
   }
   return 0;
 }
@@ -4435,7 +4474,14 @@ function makeGrandThree(ids,n){
     return qPlayThree({...plan,clef:'grand',notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))},asks[i],i===0);
   });
 }
-// Rhythm uses quarter-note beats, including half-beat arithmetic.
+// Curated beginning patterns, not arbitrary partitions of a bar.
+// See docs/rhythm_notation.md for sources, conventional exceptions, and scope.
+const RHYTHM_PATTERNS = {
+  2:[['quarter','quarter'],['half']],
+  3:[['quarter','quarter','quarter'],['half','quarter'],['quarter','half'],['dotted']],
+  4:[['quarter','quarter','quarter','quarter'],['half','half'],
+     ['half','quarter','quarter'],['quarter','quarter','half'],['dotted','quarter'],['whole']]
+};
 function rhythmGlyph(id,x,y){
   const v=VALUES[id],rx=id==='whole'?9:7;
   return '<g transform="translate('+x+' '+y+')" fill="#111" stroke="#111" stroke-linecap="round">'+
@@ -4443,41 +4489,163 @@ function rhythmGlyph(id,x,y){
     '<ellipse rx="'+rx+'" ry="5" transform="rotate(-18)" fill="'+(v.filled?'#111':'white')+'" stroke-width="2"/>'+
     (v.dot?'<circle cx="16" cy="-2" r="2.5"/>':'')+'</g>';
 }
+function meterGlyph(meter,x){
+  return '<g fill="#111" font-family="Times New Roman" font-weight="bold" font-size="36" text-anchor="middle"><text x="'+x+'" y="59">'+meter+'</text><text x="'+x+'" y="96">4</text></g>';
+}
+function rhythmMeasuresMarkup(measures,meter,missing){
+  const left=meter?65:20,width=meter?485:530;
+  let body=meter?meterGlyph(meter,27):'';
+  measures.forEach(function(values,row){
+    const start=left+row*width/measures.length,span=width/measures.length;
+    body+='<path d="M'+start+' 24V112" stroke="#111" stroke-width="3"/>';
+    values.forEach(function(id,i){
+      const x=start+28+(i+.5)*(span-56)/values.length;
+      body+=row===0&&i===missing?'<rect x="'+(x-22)+'" y="40" width="44" height="60" rx="9" fill="white" stroke="#111" stroke-width="2" stroke-dasharray="5 4"/><text x="'+x+'" y="82" text-anchor="middle" font-size="34">?</text>':rhythmGlyph(id,x,89);
+    });
+  });
+  body+='<path d="M550 24V112" stroke="#111" stroke-width="3"/>';
+  return '<div class="paper rhythm-paper"><svg class="rhythm-bar" viewBox="0 0 580 136" xmlns="http://www.w3.org/2000/svg" aria-label="'+(meter?meter+'/4 拍':'请选择拍号')+'，'+measures.length+'个小节">'+body+'</svg></div>';
+}
 function makeRhythmFill(){
-  // Each session covers all four answers and includes two dotted-quarter complements.
-  const plans=shuffle([
-    {meter:2,values:['quarter','quarter'],missing:0},
-    {meter:3,values:['quarter','half'],missing:1},
-    {meter:3,values:['dottedQuarter','dottedQuarter'],missing:0},
-    {meter:4,values:['whole'],missing:0},
-    {meter:4,values:['quarter','dottedQuarter','dottedQuarter'],missing:2},
-    {meter:4,values:['half','quarter','quarter'],missing:1}
+  const specs=shuffle([
+    {meter:2,answer:'quarter'},{meter:2,answer:'half'},
+    {meter:3,answer:'dotted'},{meter:4,answer:'whole'},
+    {meter:3,answer:'quarter'},{meter:4,answer:'half'}
   ]);
-  return plans.map(function(plan){
-    const correct=plan.values[plan.missing];
-    const q={kind:'rhythmFill',meter:plan.meter,values:plan.values.slice(),missing:plan.missing,valueId:correct,wrong:0,
+  return specs.map(function(spec){
+    const values=pick(RHYTHM_PATTERNS[spec.meter].filter(values=>values.includes(spec.answer))).slice();
+    const positions=values.map((id,i)=>id===spec.answer?i:-1).filter(i=>i>=0);
+    const missing=pick(positions),correct=spec.answer;
+    const q={kind:'rhythmFill',meter:spec.meter,values:values,missing:missing,valueId:correct,wrong:0,
       render:function(){
         setPrompt('看拍号，补上缺少的音符');
-        function draw(filled){
-          let body='<path d="M60 24V112 M550 24V112" stroke="#111" stroke-width="3"/>'+
-            '<text x="27" y="59" text-anchor="middle" font-family="Times New Roman" font-weight="bold" font-size="36">'+plan.meter+'</text>'+
-            '<text x="27" y="96" text-anchor="middle" font-family="Times New Roman" font-weight="bold" font-size="36">4</text>';
-          plan.values.forEach(function(id,i){
-            const x=90+(i+.5)*430/plan.values.length;
-            body+=i===plan.missing&&!filled?'<rect x="'+(x-22)+'" y="40" width="44" height="60" rx="9" fill="white" stroke="#111" stroke-width="2" stroke-dasharray="5 4"/><text x="'+x+'" y="82" text-anchor="middle" font-size="34">?</text>':rhythmGlyph(id,x,89);
-          });
-          stageEl.innerHTML='<div class="paper rhythm-paper"><svg class="rhythm-bar" viewBox="0 0 580 136" xmlns="http://www.w3.org/2000/svg" aria-label="'+plan.meter+'/4 拍节奏小节">'+body+'</svg></div>';
-        }
-        draw(false);
+        q.draw=function(filled){stageEl.innerHTML=rhythmMeasuresMarkup([values],spec.meter,filled?-1:missing);};
+        q.draw(false);
         answerEl.innerHTML='<div class="opts rhythm-choices">'+shuffle(RHYTHM_VALUES).map(id=>'<button class="opt" data-value="'+id+'" aria-label="'+VALUES[id].name+'"><svg viewBox="0 0 48 65">'+rhythmGlyph(id,18,51)+'</svg><span class="unit">'+VALUES[id].name+'</span></button>').join('')+'</div>';
         answerEl.querySelectorAll('button').forEach(function(button){button.onclick=function(){
           if(q.answered)return;
           const ok=button.dataset.value===correct;q.chosen=button.dataset.value;
-          button.classList.add(ok?'correct':'wrong');if(ok)draw(true);
+          button.classList.add(ok?'correct':'wrong');if(ok)q.draw(true);
           judge(ok,ok?'对，小节的拍数正好！':'再算一算，还缺几拍？');
         };});
-        q.draw=draw;
       },reveal:function(){q.draw(true);setPrompt('缺少的是'+VALUES[correct].name,false);}
+    };
+    return q;
+  });
+}
+function makeMeterChoice(){
+  return shuffle([2,2,3,3,4,4]).map(function(meter){
+    const patterns=shuffle(RHYTHM_PATTERNS[meter]);
+    const measures=patterns.slice(0,2).map(values=>values.slice());
+    const q={kind:'meterChoice',meter:meter,measures:measures,target:meter,wrong:0,
+      render:function(){
+        setPrompt('这两小节应该用哪个拍号？');
+        stageEl.innerHTML=rhythmMeasuresMarkup(measures);
+        answerEl.innerHTML='<div class="opts meter-choices">'+shuffle([2,3,4]).map(n=>'<button class="opt" data-meter="'+n+'" aria-label="'+n+'/4 拍"><svg viewBox="0 0 54 125">'+meterGlyph(n,27)+'</svg></button>').join('')+'</div>';
+        answerEl.querySelectorAll('button').forEach(function(button){button.onclick=function(){
+          if(q.answered)return;
+          const chosen=Number(button.dataset.meter),ok=chosen===meter;q.chosen=chosen+'/4';
+          button.classList.add(ok?'correct':'wrong');
+          if(ok)stageEl.innerHTML=rhythmMeasuresMarkup(measures,meter);
+          judge(ok,ok?'对，每小节都是'+meter+'拍！':'分别数一数，每小节有几拍？');
+        };});
+      },reveal:function(){setPrompt('每小节'+meter+'拍，选四分音符为一拍的'+meter+'拍子',false);}
+    };
+    return q;
+  });
+}
+
+// Ordered white keys plus complete 3–2–3 black-key groups, F3 through B4.
+// The middle-C marker anchors octave-specific matching on every deformation.
+const IRREGULAR_MIDIS=[53,55,57,59,60,62,64,65,67,69,71];
+const IRREGULAR_LAYOUTS=[
+  {id:'ring',name:'环形',viewBox:'210 0 420 430'},
+  {id:'oval',name:'椭圆',viewBox:'70 25 700 370'},
+  {id:'arch',name:'彩虹',viewBox:'0 0 840 310'},
+  {id:'wave',name:'波浪',viewBox:'0 0 840 310'},
+  {id:'ribbon',name:'丝带',viewBox:'0 0 840 310'},
+  {id:'rising',name:'上坡',viewBox:'0 0 840 310'},
+  {id:'falling',name:'下坡',viewBox:'0 0 840 310'},
+  {id:'zigzag',name:'折线',viewBox:'0 0 840 310'}
+];
+function irregularPoint(layout,t,d){
+  if(['ring','oval'].includes(layout)){
+    const angle=(120+300*t)*Math.PI/180;
+    const rx=(layout==='ring'?80:170)+(layout==='ring'?100:155)*d;
+    const ry=80+(layout==='ring'?100:75)*d;
+    return [420+rx*Math.cos(angle),210+ry*Math.sin(angle)];
+  }
+  let top=60;
+  if(layout==='arch')top=120-100*Math.sin(Math.PI*t);
+  if(layout==='wave')top=70+42*Math.sin(2*Math.PI*t);
+  if(layout==='ribbon')top=65+45*Math.sin(3*Math.PI*t);
+  if(layout==='rising')top=130-105*t;
+  if(layout==='falling')top=25+105*t;
+  if(layout==='zigzag')top=30+85*Math.abs(2*t-1);
+  return [30+780*t,top+130*d];
+}
+function irregularKeyPath(layout,start,end,depth){
+  const points=[];
+  for(let i=0;i<=8;i++)points.push(irregularPoint(layout,start+(end-start)*i/8,0));
+  for(let i=8;i>=0;i--)points.push(irregularPoint(layout,start+(end-start)*i/8,depth));
+  return 'M'+points.map(p=>p.map(n=>n.toFixed(2)).join(' ')).join('L')+'Z';
+}
+function irregularKeyboardMarkup(layout){
+  let white='',black='';
+  IRREGULAR_MIDIS.forEach(function(midi,i){
+    const start=i/11,end=(i+1)/11;
+    white+='<path class="irregular-key white" role="button" tabindex="0" aria-label="第'+(i+1)+'个白键" data-midi="'+midi+'" d="'+irregularKeyPath(layout.id,start,end,1)+'"/>';
+    if(i<10&&IRREGULAR_MIDIS[i+1]-midi===2){
+      const boundary=(i+1)/11,half=.26/11;
+      black+='<path class="irregular-key black" role="button" tabindex="0" aria-label="第'+(i+1)+'个白键后的黑键" data-midi="'+(midi+1)+'" d="'+irregularKeyPath(layout.id,boundary-half,boundary+half,.6)+'"/>';
+    }
+  });
+  const anchor=irregularPoint(layout.id,4.5/11,.82);
+  const low=irregularPoint(layout.id,.015,1.16),high=irregularPoint(layout.id,.985,1.16);
+  const labels='<g class="irregular-labels" text-anchor="middle" font-family="Songti SC,serif" font-size="'+(['ring','oval'].includes(layout.id)?20:26)+'" fill="#6B6156"><text x="'+anchor[0]+'" y="'+anchor[1]+'">中央C</text><text x="'+low[0]+'" y="'+low[1]+'">低</text><text x="'+high[0]+'" y="'+high[1]+'">高</text></g>';
+  return '<svg class="irregular-keyboard" data-layout="'+layout.id+'" viewBox="'+layout.viewBox+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+layout.name+'键盘，从低到高，中央C已标记">'+white+black+labels+'</svg>';
+}
+function makeIrregularMatch(ids){
+  if(!ids.length)return [];
+  const pool=shuffle(ids),perRound=Math.min(3,pool.length);
+  return shuffle(IRREGULAR_LAYOUTS).map(function(layout,round){
+    const cards=shuffle(Array.from({length:perRound},(_,i)=>{
+      const index=round*perRound+i,slot=index%pool.length;
+      return {id:pool[slot],type:(Math.floor(index/pool.length)+slot)%2?'staff':'name'};
+    }));
+    let selected=-1,matched=new Set();
+    const q={kind:'irregularMatch',layout:layout.id,noteIds:cards.map(card=>card.id),cards:cards,target:cards.length,wrong:0,matched:0,pair:layout.id,
+      render:function(){
+        selected=-1;matched=new Set();q.matched=0;
+        setPrompt('选卡片，在变形键盘上找音');
+        stageEl.classList.add('irregular-stage');
+        stageEl.innerHTML='<div class="irregular-cards">'+cards.map((card,i)=>'<button class="irregular-card" data-card="'+i+'" aria-label="第'+(i+1)+'张'+(card.type==='staff'?'五线谱':'音名')+'卡片">'+(card.type==='staff'?staffSVG({noteId:card.id,value:'whole',compact:true}):'<span class="card-letter">'+NOTES[card.id].letter+'<sub>'+Math.floor(NOTES[card.id].midi/12-1)+'</sub></span>')+'</button>').join('')+'</div>';
+        answerEl.innerHTML='<div class="irregular-board"><div class="irregular-heading">'+layout.name+'键盘 <span>找到黑键的两枚、三枚分组</span></div>'+irregularKeyboardMarkup(layout)+'<div class="irregular-progress" aria-live="polite">已配对 0 / '+cards.length+'</div></div>';
+        const buttons=Array.from(stageEl.querySelectorAll('button'));
+        buttons.forEach(function(button,i){button.onclick=function(){
+          if(q.answered||matched.has(i))return;
+          selected=i;buttons.forEach((b,j)=>b.classList.toggle('selected',j===i));
+        };});
+        function choose(key){
+          if(q.answered)return;
+          if(selected<0){toast('先点一张卡片','bad');return;}
+          const card=cards[selected],midi=Number(key.dataset.midi);
+          q.chosen=String(midi);
+          if(midi!==NOTES[card.id].midi){
+            q.wrong++;q.wrongChoice=String(midi);key.classList.add('wrong');
+            toast('再看看黑键分组和中央 C 的位置','bad');return;
+          }
+          playMidi(midi,.6);matched.add(selected);q.matched=matched.size;
+          buttons[selected].classList.remove('selected');buttons[selected].classList.add('matched');buttons[selected].disabled=true;
+          key.classList.remove('wrong');key.classList.add('matched');
+          selected=-1;answerEl.querySelector('.irregular-progress').textContent='已配对 '+matched.size+' / '+cards.length;
+          if(matched.size===cards.length)judge(true,'这些音都找到了！');
+        }
+        answerEl.querySelectorAll('.irregular-key').forEach(function(key){
+          key.addEventListener('click',()=>choose(key));
+          key.addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(key);}});
+        });
+      },reveal:function(){setPrompt('先找中央 C，再看黑键两枚、三枚的分组',false);}
     };
     return q;
   });
@@ -4712,7 +4880,7 @@ function buildQuestions(skillId){
   if(skill.pool==='active' && skillId!==11)n=Math.max(n,ids.length);
   if(([13,14].includes(skillId) && ids.length<3)||(skillId===15 && ids.length<2))return [];
   const qs=skill.make(ids,n);
-  if(skillId===16)return qs;
+  if([16,17].includes(skillId))return qs;
   const eligible=activeNotes(skill.needs);
   const covered=new Set();
   qs.forEach(function(q){
@@ -5860,7 +6028,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是十六个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是十八个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){
@@ -6541,6 +6709,7 @@ window.__dbg = {
   get ACCOUNTS(){ return ACCOUNTS; },
   NOTES: NOTES, VALUES: VALUES, SKILLS: SKILLS,
   NOTE_ORDER: NOTE_ORDER, DIFFS: DIFFS,
+  RHYTHM_PATTERNS, IRREGULAR_LAYOUTS, IRREGULAR_MIDIS, irregularPoint,
   activeNotes: activeNotes,
   selectedNotes: selectedNotes,
   toggleSelectedNote: toggleSelectedNote,

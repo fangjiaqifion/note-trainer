@@ -111,6 +111,8 @@ async function renderCases(){
     ['grandThree', d.buildQuestions(14)[0]],
     ['flashNotes', d.buildQuestions(15)[0]],
     ['rhythmFill', d.buildQuestions(16)[0]],
+    ['meterChoice', d.buildQuestions(17)[0]],
+    ...d.buildQuestions(18).map(q=>['irregular-'+q.layout,q]),
     ['playThree', d.buildQuestions(13)[0]],
     ['playThreeCompare', d.buildQuestions(13)[0]],
     ['threeNotesMixed', mixed],
@@ -142,7 +144,21 @@ async function renderCases(){
     const rhythm=stage.querySelector('.rhythm-bar');
     const rhythmBounds=rhythm&&rhythm.getBoundingClientRect();
     const rhythmFits=!rhythmBounds||(rhythmBounds.left>=0&&rhythmBounds.right<=innerWidth&&rhythmBounds.top>=p.bottom);
-    const ok = rhythmFits && a.bottom <= innerHeight + 0.5 &&
+    const keyboard=answer.querySelector('.irregular-keyboard');
+    let keyboardFits=true;
+    if(keyboard){
+      const bounds=keyboard.getBoundingClientRect();
+      keyboardFits=bounds.left>=0 && bounds.right<=innerWidth && bounds.bottom<=innerHeight;
+      for(const midi of d.IRREGULAR_MIDIS){
+        const i=d.IRREGULAR_MIDIS.indexOf(midi);
+        const point=d.irregularPoint(q.layout,(i+.5)/11,.85);
+        const local=keyboard.createSVGPoint();local.x=point[0];local.y=point[1];
+        const screen=local.matrixTransform(keyboard.getScreenCTM());
+        const hit=document.elementFromPoint(screen.x,screen.y);
+        keyboardFits=keyboardFits&&hit?.dataset.midi===String(midi);
+      }
+    }
+    const ok = keyboardFits && rhythmFits && a.bottom <= innerHeight + 0.5 &&
       s.bottom <= innerHeight + 0.5 &&
       s.top >= p.bottom - 0.6 &&
       s.right <= innerWidth + 0.5 &&
@@ -166,7 +182,7 @@ async function layoutCheck(page){
         document.querySelector('#play').classList.remove('with-kb');d.G.q.render();
       });
       await page.screenshot({path:'/tmp/note-trainer-play-three-'+width+'x'+height+'.png'});
-      for(const skill of [15,16]){
+      for(const skill of [15,16,17,18]){
         await page.evaluate(skill=>{
           const d=window.__dbg;d.G.q=d.buildQuestions(skill)[0];d.G.q.answered=false;
           document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';
@@ -175,8 +191,59 @@ async function layoutCheck(page){
         await page.screenshot({path:'/tmp/note-trainer-skill-'+skill+'-'+width+'x'+height+'.png'});
       }
 
+      for(const layout of ['ring','oval','arch','wave','ribbon','rising','falling','zigzag']){
+        await page.evaluate(layout=>{
+          const d=window.__dbg;d.G.q=d.buildQuestions(18).find(q=>q.layout===layout);d.G.q.answered=false;
+          document.querySelector('#stage').className='stage';document.querySelector('#answer').className='answer';
+          document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';d.G.q.render();
+        },layout);
+        await page.screenshot({path:'/tmp/note-trainer-keyboard-'+layout+'-'+width+'x'+height+'.png'});
+      }
+
     }
   }
+}
+
+async function rhythmAndIrregularInteractionCheck(page){
+  const results=await page.evaluate(function(){
+    const d=window.__dbg,g=d.G,stage=document.querySelector('#stage'),answer=document.querySelector('#answer');
+    const saved={mode:g.mode,level:g.level};
+    function mount(q,level){
+      g.session++;g.busy=false;g.mode='skill';g.level=level;g.q=q;q.answered=false;
+      stage.className='stage';answer.className='answer';stage.innerHTML='';answer.innerHTML='';q.render();
+    }
+    const q=d.buildQuestions(17)[0];mount(q,17);
+    const options=[...answer.querySelectorAll('[data-meter]')].map(b=>Number(b.dataset.meter)).sort();
+    answer.querySelector('[data-meter="'+(q.meter===2?3:2)+'"]').click();
+    const meterWrong=q.wrong===1&&!q.answered;
+    answer.querySelector('[data-meter="'+q.meter+'"]').click();
+    const meterComplete=q.answered&&d.S.events.at(-1).skill===17;
+    const rounds=d.buildQuestions(18).map(function(q){
+      mount(q,18);
+      answer.querySelector('[data-midi="60"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+      const needsCard=q.wrong===0&&!q.answered;
+      stage.querySelector('[data-card="0"]').click();
+      answer.querySelector('[data-midi="54"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+      const wrongBlack=q.wrong===1&&!q.answered&&q.matched===0;
+      q.cards.forEach(function(card,i){
+        stage.querySelector('[data-card="'+i+'"]').click();
+        answer.querySelector('[data-midi="'+d.NOTES[card.id].midi+'"]').dispatchEvent(new KeyboardEvent('keydown',{key:i%2?'Enter':' ',bubbles:true}));
+      });
+      const complete=q.answered&&q.matched===q.cards.length&&d.S.events.at(-1).skill===18;
+      const before=d.S.events.length;
+      answer.querySelector('[data-midi="60"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+      return {layout:q.layout,needsCard,wrongBlack,complete,noDuplicate:d.S.events.length===before};
+    });
+    g.session++;g.busy=false;Object.assign(g,saved);
+    return {options,meterWrong,meterComplete,rounds};
+  });
+  assert.deepEqual(results.options,[2,3,4]);
+  assert.ok(results.meterWrong&&results.meterComplete,'meter choice rejects wrong answers and records completion');
+  assert.equal(results.rounds.length,8);
+  for(const round of results.rounds){
+    assert.ok(round.needsCard&&round.wrongBlack&&round.complete&&round.noDuplicate,JSON.stringify(round));
+  }
+  console.log('PASS skills 17–18: meter answers; eight keyboard matching rounds, black-key errors, keyboard access and records');
 }
 
 async function homeNavigationCheck(page){
@@ -822,8 +889,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('十六个技能') >= 0, 'report must say sixteen skills');
-  assert.equal(report.headers.length, 18, 'matrix must have date + 16 skills + total');
+  assert.ok(report.text.indexOf('十八个技能') >= 0, 'report must say eighteen skills');
+  assert.equal(report.headers.length, 20, 'matrix must have date + 18 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -947,8 +1014,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 16, 'home must show sixteen skill cards');
-    console.log('PASS home: 16 skill cards');
+    assert.equal(cards, 18, 'home must show eighteen skill cards');
+    console.log('PASS home: 18 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -958,7 +1025,7 @@ async function main(){
 
     await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 23 question types x 4 viewports');
+    console.log('PASS layout: 32 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -980,7 +1047,7 @@ async function main(){
       document.querySelector('.rhythm-choices [data-value="'+q.valueId+'"]').click();
       return {options,answered:q.answered,blank:!!document.querySelector('.rhythm-bar rect')};
     });
-    assert.deepEqual(rhythmResult.options.slice().sort(),['quarter','half','dottedQuarter','whole'].sort());
+    assert.deepEqual(rhythmResult.options.slice().sort(),['quarter','half','dotted','whole'].sort());
     assert.ok(rhythmResult.answered && !rhythmResult.blank,'rhythm answer fills missing note');
 
 
@@ -988,6 +1055,7 @@ async function main(){
     console.log('PASS level 8: 6 questions, numbers 1-8');
 
     await newSkillsCheck(page);
+    await rhythmAndIrregularInteractionCheck(page);
     await comparisonSelectionCheck(page);
     await concisePromptCheck(page);
     await playThreeCheck(page);
@@ -997,7 +1065,7 @@ async function main(){
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: sixteen-skill matrix');
+    console.log('PASS report: eighteen-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

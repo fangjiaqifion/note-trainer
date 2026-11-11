@@ -46,7 +46,7 @@ an installed automatic hook or permission to push/deploy.
   Do not add unchecked target notes to manufacture clef variety.
 - Skill 3 may use C4B as the same pitch as checked C4. D/E must both appear when checked,
   even though both answers are treble clef.
-- Every skill session covers every checked note eligible for that skill. Skill 1 covers
+- Every pitch-based skill session covers every checked note eligible for that skill. Skill 1 covers
   letter names (A3/A4 share A). Grow the session if the normal count would omit notes.
   Skills 6–8 and 10 retain abstract position tasks and append selected-note staff/key
   review. Coverage items belong to the owning skill in reports.
@@ -79,8 +79,14 @@ an installed automatic hook or permission to push/deploy.
   purposes; do not apply skill-card randomness indiscriminately.
 
 - Skill 16 is pitch-independent: exactly six rhythm measures, all four duration answers,
-  quarter-note beat unit, and exact measure totals. Dotted-quarter duration is 1.5 beats;
-  the existing dotted-half value remains available to earlier skills.
+  quarter-note beat unit, and exact measure totals. Skills 16–17 use only quarter, half,
+  dotted-half, and whole notes from the shared approved pattern bank. Follow
+  [rhythm notation guidance](docs/rhythm_notation.md); do not generate arbitrary partitions.
+- Skill 17 shows two complete measures of one meter and offers 2/4, 3/4, and 4/4.
+- Skill 18 has eight distinct keyboard layouts per session. Preserve chromatic order,
+  complete 3–2–3 black-key groups (F3–B4), and a middle-C anchor. Match only eligible
+  checked pitches; every pitch appears as both a name and staff card across the session.
+  Match exact MIDI pitches, including A3 versus A4; finish only after all cards match.
 - New-note order after A3 is F4, G4, then A4. Skill 15 number badges remain black and white.
 
 ## Runtime delivery requirements
@@ -128,7 +134,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × sixteen skills and daily practice, totaling 78,030 sessions.
+answer histories × three seeds × eighteen skills and daily practice, totaling 87,210 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and

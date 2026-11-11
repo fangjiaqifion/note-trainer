@@ -18,9 +18,31 @@ export async function generationAudit(page){
         check(qs.length===6,prefix+' six rhythm measures');
         check(new Set(qs.map(q=>q.valueId)).size===4,prefix+' four rhythm answers');
         qs.forEach(q=>{
-          check(q.values.every(id=>['quarter','half','dottedQuarter','whole'].includes(id)),prefix+' allowed durations');
+          check(q.values.every(id=>['quarter','half','dotted','whole'].includes(id)),prefix+' allowed durations');
           check(q.values.reduce((sum,id)=>sum+d.VALUES[id].beats,0)===q.meter,prefix+' exact measure total');
           check(q.valueId===q.values[q.missing],prefix+' missing answer');
+          check(d.RHYTHM_PATTERNS[q.meter].some(pattern=>pattern.join()===q.values.join()),prefix+' approved grouping');
+        });
+      }
+      if(skill===17){
+        check(qs.length===6,prefix+' six meter questions');
+        check([2,3,4].every(meter=>qs.filter(q=>q.meter===meter).length===2),prefix+' balanced meters');
+        qs.forEach(q=>{
+          check(q.measures.length===2,prefix+' two complete measures');
+          q.measures.forEach(values=>{
+            check(values.reduce((sum,id)=>sum+d.VALUES[id].beats,0)===q.meter,prefix+' meter matches both measures');
+            check(d.RHYTHM_PATTERNS[q.meter].some(pattern=>pattern.join()===values.join()),prefix+' approved meter grouping');
+          });
+        });
+      }
+      if(skill===18){
+        check(qs.length===8,prefix+' eight keyboard rounds');
+        check(new Set(qs.map(q=>q.layout)).size===8,prefix+' eight distinct layouts');
+        sel.forEach(id=>check(new Set(qs.flatMap(q=>q.cards).filter(card=>card.id===id).map(card=>card.type)).size===2,prefix+' both matching representations '+id));
+        qs.forEach(q=>{
+          check(q.cards.length===Math.min(3,sel.length),prefix+' matching card count');
+          check(new Set(q.noteIds).size===q.noteIds.length,prefix+' unique round pitches');
+          check(q.cards.every(card=>sel.includes(card.id)),prefix+' checked matching targets');
         });
       }
       const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count
@@ -33,7 +55,7 @@ export async function generationAudit(page){
         (q.noteIds||q.choiceIds||(q.noteId?[q.noteId==='C4B'?'C4':q.noteId]:[])).forEach(id=>covered.add(id));
         if(q.kind==='find')sel.filter(id=>d.NOTES[id].letter===q.letter).forEach(id=>covered.add(id));
       });
-      if(skill!=='daily' && skill!==16)sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
+      if(skill!=='daily' && ![16,17].includes(skill))sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
       const key = q => skill === 1 ? q.letter : skill === 3 ? d.NOTES[q.noteId].letter
         : skill === 8 ? q.clef + '|' + q.spot : q.noteId;
       const keys = qs.map(key).filter(Boolean);
@@ -121,6 +143,6 @@ export async function generationAudit(page){
     return {failures,sessions,samples};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 17 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 19 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }

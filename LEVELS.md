@@ -11,7 +11,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at sixteen cards. The note axis grows through
+The skill axis is fixed at eighteen cards. The note axis grows through
 B3 → C4 → D4 → E4 → A3 → F4 → G4 → A4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
@@ -104,10 +104,10 @@ skill 3 balances note names. Plan counts before ordering with `spaceOut`. Daily 
 least recently practiced notes. One target necessarily repeats; multiple targets should
 not be adjacent when spacing is feasible. Weights cannot manufacture unchecked targets.
 
-## Thirteen skills
+## Eighteen skills
 
 Counts below are base counts for Easy / Normal / Hard. Every eligible checked pitch
-must appear; sessions grow as needed. Position skills 6–8 and 10 append a staff/key
+must appear in pitch-based skills; sessions grow as needed. Position skills 6–8 and 10 append a staff/key
 review of each checked pitch. Skill 1 covers letter names across octaves.
 
 | # | ID | Task | Prerequisites/pool | Count |
@@ -128,6 +128,8 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
 | 14 | grandThree | Play and compare three notes on a braced grand staff | checked key + pos | 8 / 8 / 10 |
 | 15 | flashNotes | Two-second numbered-note recall | checked pos; two notes required | 10 |
 | 16 | rhythmFill | Complete a rhythm measure | no pitch prerequisites | 6 |
+| 17 | meterChoice | Choose a time signature for two measures | no pitch prerequisites | 6 |
+| 18 | irregularMatch | Match staff/name cards on eight deformed keyboards | checked key + pos | 8 |
 
 ### Skill behavior
 
@@ -219,9 +221,24 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     same-letter octaves in target wording. Switching questions invalidates old timers.
 
 16. **Rhythm completion:** six one-measure questions with a single missing note.
-    Show 2/4, 3/4, or 4/4. Always offer quarter, half, dotted-quarter (1.5 beats),
-    and whole notes. Cover all four answers, including paired dotted quarters;
+    Show 2/4, 3/4, or 4/4. Always offer quarter, half, dotted-half (3 beats),
+    and whole notes. Cover all four answers using the approved rhythm bank;
     completed durations must sum to the numerator. Do not append pitch review.
+
+17. **Choose the meter:** show two complete measures without their time signature.
+    Offer 2/4, 3/4, and 4/4. Both measures must have the correct total and use
+    approved patterns. Six questions cover each meter twice; no pitch review.
+18. **Deformed keyboard matching:** eight rounds, one per distinct layout: ring,
+    oval, arch, wave, ribbon, rising slope, falling slope, and zigzag. Present up
+    to three distinct selected-note cards per round. Select a card, then its exact
+    key; complete every card to finish the round. Every selected eligible pitch
+    appears as both name and staff across the session. Retain the ordered F3–B4
+    keys, complete 3–2–3 black-key groups, and marked middle C in all shapes.
+    Name cards include octave numbers; staff cards use familiar clefs.
+    Black keys remain real distractors. Wrong matches keep the card available.
+
+Skills 16–17 share the [beginning rhythm notation rules](docs/rhythm_notation.md).
+The bank is intentionally limited; total duration alone is not its acceptance rule.
 
 ## Note queue
 
@@ -307,7 +324,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → sixteen cards. Wide screens use three columns,
+Home order: My notes → daily button → eighteen cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.

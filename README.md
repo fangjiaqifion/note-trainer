@@ -8,7 +8,7 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same sixteen skills.
+14-question first lesson, then folded into the same eighteen skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
@@ -19,7 +19,7 @@ left-hand A3 after E4, then F4 and G4, and finally upper A4. A3 is the left-hand
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
 or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
 skill 11 also uses checked notes. Skills 6–8 and 10 teach abstract staff positions.
-Every skill session includes every eligible checked note. Position exercises retain
+Every pitch-based skill session includes every eligible checked note. Position exercises retain
 their line/space tasks and add a staff-to-key review of the checked notes. Sessions grow
 when needed to cover the pool. Skill 9 alternates available clefs, varies comparison
 pairs, and covers all selected pitches. Skill 12 shows three selected notes together;
@@ -32,8 +32,13 @@ notes on a braced grand staff. Skill 15 briefly shows numbered notes for two sec
 then hides them for higher-pitch and target-note recall, progressing from two notes
 to three after five questions. Three distinct eligible notes are required for skills
 13–14; skill 15 requires two.
-Skill 16 provides six rhythm measures per session. Read the 2/4, 3/4, or 4/4 time signature and choose the missing quarter, half, dotted-quarter, or whole note. It requires no selected pitches.
-The sixteen skill cards remain stable as new lesson notes join the selected pool.
+Skill 16 provides six rhythm measures per session. Read the 2/4, 3/4, or 4/4
+time signature and choose the missing quarter, half, dotted-half, or whole note.
+It requires no selected pitches. Skill 17 shows two complete measures and asks for
+2/4, 3/4, or 4/4. Both use a shared bank of simple, readable rhythm patterns.
+Skill 18 matches selected-note staff and name cards to eight keyboard shapes,
+including rings and ribbons, with black-key groups and middle C as landmarks.
+The eighteen skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked

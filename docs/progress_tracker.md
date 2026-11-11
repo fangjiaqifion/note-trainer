@@ -6,6 +6,32 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Rhythm grouping, meter choice, and deformed keyboards, 2026-11-11
+
+Local build `15b2f9779c` corrects skill 16 to quarter, half, dotted-half,
+and whole notes from a curated readable pattern bank. The prior dotted-quarter
+example is removed. Skill 17 shows two complete measures and asks for 2/4,
+3/4, or 4/4; each meter occurs twice in six questions. Both are pitch-independent.
+Skill 18 matches selected-note cards on eight distinct keyboard shapes. Every
+eligible selected pitch appears as both name and staff across the session.
+Exact octaves, complete black-key groups, and middle C remain consistent.
+
+The complete required local release suite passed: 54 Node tests, 1,144 scheduling
+cases, 87,210 generated sessions, 32 rendering fixtures at four viewports, focused
+interactions, and every keyboard's white-key hit positions. All sync, backup,
+cloud, portal, storage, and offline/upgrade browser suites passed. Both local
+origins matched all release-file hashes; four actual Safari/Chrome boot receipts
+confirmed this build on port 8775. Local status is ready; existing profiles remain.
+Preview: http://127.0.0.1:8775/index.html?build=15b2f9779c.
+See the [acceptance audit](audit_20261111_meter_keyboards/audit.md) and
+[rhythm notation rules and sources](rhythm_notation.md).
+Updated AGENTS, LEVELS, README, development guide, user guide, this tracker,
+and rhythm/source guidance. Cloud operations and teacher portal docs reviewed
+unchanged because schemas, permissions, synchronization, and release mechanics
+remain applicable. Parent/games guides and parent README reviewed unchanged:
+ownership, scope, and publishing boundaries are unaffected. No push/deployment.
+Physical iPad interaction remains unverified.
+
 ## Rhythm completion and monochrome numbers, 2026-11-11
 
 Local build `40f587c5e3` adds skill 16: exactly six rhythm measures with
