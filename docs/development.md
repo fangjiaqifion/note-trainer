@@ -103,6 +103,10 @@ This example illustrates the registry structure; choose an unused ID for a new s
 `needs` says which note flags the skill requires; `pool` is `'active'` (eligible checked notes),
 `'fixed'` (the `ids` list) or `'none'` (no notes). `make(ids, n)` returns an array of question
 objects with the same `{ kind, render(), reveal() }` interface as the existing factories.
+Use an optional, idempotent `dispose()` for owned timers and voices. Navigation, a new
+session, and question transitions invoke it; identity guards alone do not cancel pending
+work when the old question remains in `G.q`. Listening also exposes `playing` so the
+prompt-repeat button cannot insert speech into the sequence.
 `buildQuestions` is a registry lookup now, not a chain of `if`/`else`, so adding a skill does
 not touch the note data or the other skills. `id` is also the display number and the star key;
 it must stay unique, and adding another card changes the home grid.
@@ -264,6 +268,9 @@ clears the browser caches and prints the remote link. If the poll times out, the
 Production cloud behavior is in `cloud_client.mjs` and `cloud_ui.mjs`; sync and
 transport modules remain separate from the core page. Ordered database migrations live
 in `scripts/migrations/`. See [cloud operations](cloud_operations.md) for procedures.
+
+The smoke suite also checks abandoned flash timers, listening cancellation, prompt-repeat
+suppression during playback, and first-error retention after repeated wrong answers.
 
 The package test command also runs Node regressions, the scheduling audit, real local
 PostgreSQL-engine permission/transaction tests, and isolated browser suites for sync,

@@ -62,7 +62,8 @@ three minutes a day.
 
 - Answers are given by tapping keys on a drawn keyboard or by choosing one of a few staff
   images, never by typing.
-- Every question is read aloud by the system voice, so no reading is required.
+- Spoken prompts support early readers. Listening questions use a visible play/replay
+  control and suppress prompt repetition during the tone sequence.
 - Feedback is immediate and positive; a wrong answer is "try again", never "wrong".
 - The game is a static single-page app with local modules and no compilation or third-party runtime dependencies, and no network
   requests for piano samples. Cloud profiles automatically synchronize allowlisted practice data and private display labels. It runs from a static host and caches

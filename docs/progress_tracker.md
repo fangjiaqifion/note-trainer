@@ -6,6 +6,23 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Code quality audit, 2026-11-11
+
+Build `75f7d37c63` adds idempotent question cleanup for abandoned flash timers and
+listening playback, suppresses spoken prompt repetition during tone sequences, and
+preserves the first incorrect listening choice. Updated stale page/share skill counts.
+The full local release suite passed: 54 Node tests, 1,144 scheduling cases, 100,980
+generated sessions, 43 four-viewport fixtures, new lifecycle/error regressions, and all
+sync/backup/cloud/portal/storage/offline suites. The local release was prepared with
+`--no-open`; file checks passed for both local origins, but this preparation alone
+is not browser acceptance. Authorized deployment evidence follows in the
+[code quality audit](audit_20261111_code_quality/audit.md).
+
+Updated AGENTS, README, development guide, user guide, this tracker, and audit.
+LEVELS, cloud operations, and portal docs reviewed unchanged because instructional
+rules and cloud protocols are unaffected. Parent/games guides and public overviews
+reviewed unchanged: ownership and publishing boundaries remain applicable.
+
 ## Listening skills and notation refinement, 2026-11-11
 
 Local build `170f3e845b` adds skills 19–21: twelve direction questions in four-/three-/two-note blocks; highest/lowest numbered listening with three notes followed by pairs; and single-pitch letter-name identification with three options. Listening hides notation and gates answers until playback finishes. Replay is available. Skill 20 reveals numbered staff cards and the extreme after a correct answer. Selected-pitch prerequisites and small-pool behavior are documented in LEVELS.
@@ -518,8 +535,8 @@ Runtime paths, never print or commit their contents:
 
 The synthetic Supabase project is `note-trainer-synthetic-test`, Singapore region;
 isolated table/RPC: `nt_sync_events`/`nt_sync_batch`. Production tables are separate.
-The last accepted release used a dedicated local server on port 8771; check its source fingerprint before reuse
-and never kill an unknown process. `sync_test=1` selects the isolated test entry.
+The historical cloud acceptance used port 8771; recent instructional previews use
+port 8775. Check the server source fingerprint before reuse and never kill an unknown process. `sync_test=1` selects the isolated test entry.
 
 Commands, only as needed:
 

@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页十八张卡、40 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页二十一张卡、43 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -703,10 +703,42 @@ async function listeningCheck(page){
       const d=window.__dbg,q=d.G.q;
       document.querySelector('[data-ear="'+((q.target+1)%3)+'"]').click();
       if(q.answered)throw Error('wrong listening answer accepted');
+      document.querySelector('[data-ear="'+((q.target+2)%3)+'"]').click();
+      if(q.wrongChoice!==String((q.target+1)%3))throw Error('first listening error was overwritten');
       document.querySelector('[data-ear="'+q.target+'"]').click();
       if(!q.answered)throw Error('listening answer rejected');
     });
     if(skill===20)assert.ok(await page.locator('#stage svg').count()>0,'answer reveals notation');
+  }
+}
+
+async function questionLifecycleCheck(page){
+  await page.evaluate(()=>{
+    const d=window.__dbg;d.startLevel(19);
+    window.__auditSpeech=0;
+    window.__auditSpeak=window.speechSynthesis.speak;
+    window.speechSynthesis.speak=()=>window.__auditSpeech++;
+    d.S.speech=true;
+  });
+  try{
+    await page.locator('.ear-replay').click();
+    assert.equal(await page.evaluate(()=>window.__dbg.G.q.playing),true);
+    await page.locator('#btnSpeak').click();
+    await page.waitForTimeout(150);
+    assert.equal(await page.evaluate(()=>window.__auditSpeech),0,'repeat prompt must not mask listening');
+    await page.locator('#btnBack').click();
+    assert.equal(await page.evaluate(()=>window.__dbg.G.q.playing),false,'leaving must cancel playback immediately');
+    const status=await page.locator('.ear-status').textContent();
+    await page.waitForTimeout(950);
+    assert.equal(await page.locator('.ear-status').textContent(),status,'cancelled sequence must not start its next note');
+    assert.ok(await page.locator('#answer button').first().isDisabled(),'cancelled sequence must not unlock answers');
+    await page.evaluate(()=>{const d=window.__dbg;d.S.speech=false;d.startLevel(15);});
+    await page.locator('#btnBack').click();
+    await page.waitForTimeout(3200);
+    assert.equal(await page.evaluate(()=>window.__dbg.G.q.phase),'observe','abandoned flash timer must not enter answer phase');
+    assert.equal(await page.locator('#answer button').count(),0);
+  }finally{
+    await page.evaluate(()=>{window.speechSynthesis.speak=window.__auditSpeak;window.__dbg.S.speech=false;});
   }
 }
 
@@ -1131,6 +1163,7 @@ async function main(){
     await playThreeCheck(page);
     await flashCheck(page);
     await listeningCheck(page);
+    await questionLifecycleCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');

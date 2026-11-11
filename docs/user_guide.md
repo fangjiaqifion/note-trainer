@@ -473,3 +473,7 @@ or the answer is shown in the prompt, but the player is never told "that is wron
 ## Listening skills 19–21
 
 Press **播放 / 再听一次** and listen before choosing. Skill 19 asks up/down/same, with four-, three-, then two-note sequences. Skill 20 asks for the highest or lowest numbered sound, first among three notes and then two; correct answers reveal the staff notes. Skill 21 asks for the letter name of one heard note among three choices. Replay is always available before completion.
+
+While a listening sequence plays, the top speaker button stays silent so speech does
+not mask the notes. Leaving the exercise stops its playback. Leaving flash recall
+also cancels the hidden timer, preventing a later spoken prompt on the home screen.

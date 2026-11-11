@@ -159,3 +159,11 @@ The independent management entry is `manage.html`; its discoverable URL is not a
 See `docs/teacher_portal.md` for owner setup/recovery and rollout boundaries.
 
 Skills 19–21 hide notation during listening and unlock choices only after the full sequence. Skill 19 has twelve questions in 4/3/2-note blocks and an independent pitch pool. Skills 20–21 use selected eligible pitches; skill 20 requires two and progresses from three-note to two-note comparisons. Skill 21 offers three letter choices. Speech must not overlap playback; pending sequence notes must stop after navigation.
+
+## Question lifecycle
+
+Question factories may define `dispose()` to cancel owned timers, pending playback, and
+active voices. The shared navigation, session-start, and question-transition paths call
+it before abandoning a question. Cleanup must be safe to repeat. Listening questions
+expose `playing` while the sequence is active so the prompt-repeat control stays silent.
+Keep the first incorrect choice in `wrongChoice` for answer-log consistency.

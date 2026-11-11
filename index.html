@@ -10,9 +10,9 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="170f3e845b">
+<meta name="app-build" content="75f7d37c63">
 <title>识谱小练习 · 我的音</title>
-<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
+<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十一项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
      但不需要被搜索引擎收录：noindex 让爬虫不要建索引，
      nofollow 不追踪页面里的链接，noarchive 不留快照。
@@ -22,7 +22,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="识谱小练习">
 <meta property="og:title" content="识谱小练习 · 我的音">
-<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。九项技能按孩子的进度加入新音，三档难度，可离线。">
+<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。二十一项技能按孩子的进度加入新音，三档难度，可离线。">
 <meta property="og:url" content="https://fangjiaqifion.github.io/note-trainer/">
 <meta property="og:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -30,7 +30,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="识谱小练习 · 我的音">
-<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。九项技能按孩子的进度加入新音。">
+<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。二十一项技能按孩子的进度加入新音。">
 <meta name="twitter:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -131,9 +131,7 @@
   .daily-title{font-size:20px;font-weight:800;letter-spacing:2px}
   .daily-sub{font-size:12px;font-weight:600;opacity:.9}
 
-  /* 技能卡排成两列。星星按技能存，和新音无关。
-     行高 136，加上 chips、今日练习、页脚，iPad 竖屏一屏放得下；
-     七张卡比六张多一行，矮屏上允许从卡片区滚动。 */
+  /* Skill cards use fixed rows inside a scrollable grid. Stars belong to skills. */
   .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:start;grid-auto-rows:136px;min-height:0;overflow-y:auto}
   .level-card{
     display:flex;flex-direction:column;gap:6px;text-align:left;min-height:0;overflow:hidden;
@@ -562,7 +560,7 @@
     .who-grid{grid-template-columns:1fr 1fr;gap:10px}
     .gate-head h1{font-size:26px}
   }
-  /* 宽屏用三列：九张卡排三行，iPad 横屏和桌面上不用滚动。 */
+  /* Wide screens use three columns; the skill grid remains scrollable. */
   @media (min-width:900px){
     .levels{grid-template-columns:repeat(3,1fr);align-content:start}
     .levels .level-card:last-child:nth-child(odd){grid-column:auto;justify-self:stretch;width:auto}
@@ -2724,7 +2722,11 @@ function recordAnswer(q){
 /* 换题：先停掉上一题的按住与长音，再清空舞台、答案区、状态，
    最后交给题目自己的 render()。
    注意每次都重建 DOM，不复用节点，避免上一题的监听器残留。 */
+function disposeQuestion(){
+  if(G.q && G.q.dispose) G.q.dispose();
+}
 function renderQuestion(){
+  disposeQuestion();
   if(activePad){ activePad.stop(); activePad = null; }
   stopAllTones();
   const q = G.qs[G.i];
@@ -4672,32 +4674,40 @@ function qIrregularMatch(id,type,layout){
 }
 // Listening choices never expose notation until the correct answer is selected.
 function qListening(kind,notes,options,target,prompt,feedback){
-  let playing=false,run=0;
+  let playing=false,run=0,timer=null,wake=null,voice=null;
+  function cancelPlayback(){
+    run++;playing=false;q.playing=false;
+    clearTimeout(timer);timer=null;
+    if(wake){wake();wake=null;}
+    if(voice){voice.stop(.08);voice=null;}
+  }
   const q={kind:kind,noteId:notes[0].id,noteIds:notes.map(n=>n.id),choiceIds:notes.map(n=>n.id),target:target,wrong:0,
     render:function(){
-      const session=G.session;playing=false;run++;
+      cancelPlayback();
+      const session=G.session;
       setPrompt(prompt,false);
       stageEl.innerHTML='<button class="primary-btn ear-replay" type="button">▶ 播放 / 再听一次</button><p class="ear-status" aria-live="polite">点播放，听完再选择</p>';
       answerEl.innerHTML='<div class="opts">'+options.map((label,i)=>'<button class="opt" style="font-size:clamp(24px,4vw,40px);font-weight:700" data-ear="'+i+'" disabled>'+label+'</button>').join('')+'</div>';
       const buttons=[...answerEl.querySelectorAll('[data-ear]')],replay=stageEl.querySelector('button'),status=stageEl.querySelector('.ear-status');
       replay.onclick=async function(){
         if(playing||q.answered)return;
-        playing=true;const token=++run;stopSay();replay.disabled=true;buttons.forEach(b=>b.disabled=true);
+        playing=true;q.playing=true;const token=++run;stopSay();replay.disabled=true;buttons.forEach(b=>b.disabled=true);
         for(let i=0;i<notes.length;i++){
           if(G.q!==q||G.session!==session||run!==token)return;
-          status.textContent='正在播放第 '+(i+1)+' 个音';playMidi(notes[i].midi,.65,.4,true);
-          await new Promise(resolve=>setTimeout(resolve,850));
+          status.textContent='正在播放第 '+(i+1)+' 个音';
+          voice=pianoVoice(notes[i].midi,{dur:.65,vol:.4});
+          await new Promise(resolve=>{wake=resolve;timer=setTimeout(()=>{wake=null;timer=null;resolve();},850);});
         }
         if(G.q!==q||G.session!==session||run!==token)return;
-        playing=false;replay.disabled=false;buttons.forEach(b=>b.disabled=false);status.textContent='听完了，请选择，也可以再听一次';
+        playing=false;q.playing=false;voice=null;replay.disabled=false;buttons.forEach(b=>b.disabled=false);status.textContent='听完了，请选择，也可以再听一次';
       };
       buttons.forEach((button,i)=>button.onclick=function(){
         if(playing||q.answered||G.q!==q)return;
         q.chosen=String(i);
-        if(i!==target){q.wrongChoice=String(i);judge(false,'再听一次试试看');return;}
+        if(i!==target){if(!q.wrongChoice)q.wrongChoice=String(i);judge(false,'再听一次试试看');return;}
         stageEl.innerHTML=feedback();buttons.forEach(b=>b.disabled=true);judge(true,'对！',3500);
       });
-    },reveal:function(){setPrompt(prompt+'，可以再听一次',false);}
+    },dispose:cancelPlayback,reveal:function(){setPrompt(prompt+'，可以再听一次',false);}
   };return q;
 }
 function makeEarDirection(){
@@ -4765,7 +4775,7 @@ function qFlashNotes(notes,ask,id){
           judge(i===target,i===target?'对！':'再想想刚才的位置');
         };});
       },3000);
-    },reveal:function(){
+    },dispose:function(){clearTimeout(timer);},reveal:function(){
       if(q.phase==='answer')setPrompt('答案是第 '+(target+1)+' 个音',false);
     }};
   return q;
@@ -5030,6 +5040,7 @@ function startSession(tag, build, opts){
      640ms 的换段回调靠它判断自己有没有过期。如果先生成题目再 +1，
      新题目的 session 一出生就过期，第 5 关会卡在第一段。 */
   G.session++;
+  disposeQuestion();
   if(activePad){ activePad.stop(); activePad = null; }
   stopAllTones();
   /* 难度和记录号也要在 build 之前定好：qKeyToStaff / qBeats 在创建时
@@ -5295,6 +5306,7 @@ function showScreen(name){
   $$('.screen').forEach(function(s){ s.classList.remove('active'); });
   $('#' + name).classList.add('active');
   if(name !== 'play'){
+    disposeQuestion();
     document.body.classList.remove('in-play');
     if(activePad){ activePad.stop(); activePad = null; }
     stopAllTones();
@@ -5555,6 +5567,8 @@ $('#btnReset').addEventListener('click', function(){
    防止孩子把界面缩花了。 */
 $('#btnBack').addEventListener('click', showHome);
 $('#btnSpeak').addEventListener('click', function(){
+  // Keep spoken instructions from masking an active listening sequence.
+  if(G.q && G.q.playing)return;
   /* 第 1 关的题干不含音名，题目自己带 sayText（那个字母）；其他关读题干。 */
   say((G.q && G.q.sayText) || promptEl.textContent);
 });
@@ -6783,7 +6797,7 @@ function bootApp(){
 }
 
 /* 调试接口：控制台里可以直接看进度、音集和当前题。
-   它只读，不参与游戏流程；删掉也不影响玩，留着方便回归检查。 */
+   它暴露可变状态和操作入口供回归检查，不应作为权限边界。 */
 window.__dbg = {
   get G(){ return G; },
   get S(){ return S; },
