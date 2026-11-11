@@ -90,7 +90,7 @@ async function renderCases(){
   const savedDiff=d.G.diffKey; d.G.diffKey='hard';
   const placement=d.buildQuestions(10).filter(q=>!q.coverage)[0]; d.G.diffKey=savedDiff;
   const savedSelected=d.S.selected;d.S.selected=['B3','D4','E4'];
-  const mixed=d.buildQuestions(12)[0];d.S.selected=savedSelected;
+  const mixed=d.buildQuestions(12).at(-1);d.S.selected=savedSelected;
   const cases = [
     ['kbfind', d.SPOT_STEPS[0]('A4')],
     ['find', d.SPOT_STEPS[1]('A4')],
@@ -537,6 +537,29 @@ async function comparisonSelectionCheck(page){
   assert.deepEqual(result,[],'selected-note and alternating-clef comparison regression');
 }
 
+async function concisePromptCheck(page){
+  const result=await page.evaluate(function(){
+    const d=window.__dbg,sel=d.S.selected,progress=d.S.progress,errors=[];
+    try{
+      d.S.selected=['A3','B3','C4','D4','E4'];d.S.progress=Object.fromEntries(d.S.selected.map(id=>[id,{key:1,pos:1,fin:1}]));
+      const qs=d.buildQuestions(12);
+      if(qs.slice(0,-3).some(q=>!q.clef))errors.push('early mixed clefs');
+      if(qs.slice(-3).some(q=>q.clef))errors.push('finale not mixed');
+      if(!qs.slice(0,-3).some(q=>q.clef==='bass')||!qs.slice(0,-3).some(q=>q.clef==='treble'))errors.push('missing separate clef block');
+      for(const skill of [13,14]){
+        const qs=d.buildQuestions(skill);
+        for(let i=0;i<2;i++){
+          const q=qs[i];d.G.q=q;q.answered=false;d.G.busy=false;q.render();
+          const text=document.querySelector('.prompt').textContent;
+          if(text.includes('从左到右')!==(i===0))errors.push('repeated direction '+skill);
+        }
+      }
+    }finally{d.S.selected=sel;d.S.progress=progress;}
+    return errors;
+  });
+  assert.deepEqual(result,[],'clef progression and concise prompts');
+}
+
 async function flashCheck(page){
   await page.evaluate(function(){
     const d=window.__dbg;
@@ -943,6 +966,7 @@ async function main(){
 
     await newSkillsCheck(page);
     await comparisonSelectionCheck(page);
+    await concisePromptCheck(page);
     await playThreeCheck(page);
     await flashCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');

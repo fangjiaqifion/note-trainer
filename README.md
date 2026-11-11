@@ -23,7 +23,8 @@ Every skill session includes every eligible checked note. Position exercises ret
 their line/space tasks and add a staff-to-key review of the checked notes. Sessions grow
 when needed to cover the pool. Skill 9 alternates available clefs, varies comparison
 pairs, and covers all selected pitches. Skill 12 shows three selected notes together;
-mixed-clef notes use separate familiar staff images. Skill 13 asks the child to play
+same-clef practice precedes three final mixed-clef questions when available.
+Mixed-clef notes use separate familiar staff images. Skill 13 asks the child to play
 three selected notes from left to right, then choose the highest or lowest. Nearby
 pitches and similar line positions receive priority, including treble A3/C4/E4 ledger
 comparisons. Mixed groups also use familiar bass-clef cards. Skill 14 places the three

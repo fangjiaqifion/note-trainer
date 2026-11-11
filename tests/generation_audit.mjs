@@ -41,7 +41,8 @@ export async function generationAudit(page){
       }
       if([9,12,13,14,15].includes(skill)) qs.filter(q=>!q.coverage).forEach(q=>{
         check(q.choiceIds.every(id=>sel.includes(id)),prefix+' unselected comparison choice');
-        check((skill===15?[2,3].includes(q.choiceIds.length):q.choiceIds.length===(skill===9?2:3)),prefix+' choice count');
+        check(([12,15].includes(skill)?[2,3].includes(q.choiceIds.length):q.choiceIds.length===(skill===9?2:3)),prefix+' choice count');
+        if(skill===12 && qs.indexOf(q)<qs.length-3)check(!!q.clef,prefix+' mixed clefs before finale');
         if(skill===12 && q.choiceIds.filter(id=>d.NOTES[id].letter===q.letter).length>1)
           check(q.targetLabel.includes('中央 C'),prefix+' ambiguous octave target');
       });

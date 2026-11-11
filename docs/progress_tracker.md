@@ -6,6 +6,38 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Enlarged notation and concise prompts, 2026-11-11
+
+Build `6f69a75390` keeps skill 12 comparisons within one clef until the final three
+questions, which use mixed-clef triples when available. Same-clef pools with only two
+selected pitches use a pair; no unchecked notes are added. Skills 13–14 explain
+left-to-right order only on the first question, then say “弹出这三个音”. Extreme
+prompts say “点出最高的音” or “点出最低的音”. Skills 12–15 enlarge notation, with
+additional grand-staff space after the keyboard disappears. Skill 15 uses rounded
+pastel number badges consistently across observation and answers.
+
+Verification and local delivery evidence are recorded in the
+[refinement audit](audit_20261111_notation_refinement/audit.md). The generation matrix
+passes all 73,440 sessions; focused checks cover clef staging and first-question-only
+direction prompts. Enlarged grand-staff and flash-card screenshots were inspected.
+The mixed-clef finale rendering fixture now explicitly selects the last question.
+The complete required local release suite passed, including 54 Node tests, 1,144
+scheduling boundaries, 73,440 generation sessions, four-viewport layouts, and all
+sync/backup/cloud/portal/storage/offline suites. The supplementary smoke run with
+the mixed-clef finale fixture also passed. All release-file hashes matched both
+local origins. Four actual Safari/Chrome boot receipts across 127.0.0.1:8775 and
+localhost:8775 confirmed build `6f69a75390`; local status is ready.
+Physical iPad touch and pronunciation remain unverified. No push or deployment is
+included. Preview remains on the existing port 8775, retaining its stored profiles:
+`http://127.0.0.1:8775/index.html?build=6f69a75390`.
+
+Documentation updated: AGENTS, LEVELS, README, user guide, this tracker, and audit.
+Development, cloud operations, and teacher portal procedures reviewed unchanged:
+release mechanics, schemas, permissions, and synchronization are unaffected.
+Parent/games guides and parent README remain applicable unchanged; parent tracker
+and local submodule pointer record the completed local unit. Historical audits remain
+unchanged.
+
 ## Grand staff and flash recall, 2026-11-11
 
 Local build `b2c556dd20` shortens skill 12 speech while retaining the complete written

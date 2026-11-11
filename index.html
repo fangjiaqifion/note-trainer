@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="b2c556dd20">
+<meta name="app-build" content="6f69a75390">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -305,6 +305,24 @@
   .opt.dir svg{width:clamp(58px,8vw,72px);height:auto;display:block}
   .opt.dir .unit{font-size:13px;font-weight:700;color:#6B6156}
   .opts{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+
+
+  .large-notation .notation-cards{width:min(100%,1100px);flex-wrap:nowrap;gap:clamp(6px,2vw,22px)}
+  .large-notation .notation-cards > .opt{flex:1;min-width:0;max-width:360px;padding:8px;height:auto}
+  .large-notation .notation-cards svg{width:100%;height:auto;max-height:46vh;max-width:none;flex-shrink:0}
+  #play .large-notation .paper{max-width:1200px}
+  #play .large-notation .paper .staff{height:min(52vh,560px);width:100%;object-fit:contain}
+  #play.with-kb .large-notation .paper .staff{height:min(36vh,420px)}
+  .note-number{flex-shrink:0;display:inline-grid;place-items:center;width:64px;height:64px;border-radius:44% 52% 45% 50%;background:#FFE6AC;color:#956026;border:3px solid #fff;font-family:ui-rounded,'Arial Rounded MT Bold',sans-serif;font-size:38px;font-weight:900;line-height:1;box-shadow:0 5px 0 #EBCB8A;transform:rotate(-6deg)}
+  .note-number.number-1{background:#DCEFE9;color:#397B70;box-shadow:0 5px 0 #B3D8CC;transform:rotate(5deg)}
+  .note-number.number-2{background:#EBDFF5;color:#8057A1;box-shadow:0 5px 0 #D1B8E5;transform:rotate(-4deg)}
+  .number-choice{padding:12px 18px;background:transparent;border:0;box-shadow:none}
+  @media(max-width:520px){.note-number{width:48px;height:48px;font-size:30px}.large-notation .notation-cards > .opt{padding:4px}}
+  @media(max-height:520px) and (orientation:landscape){
+    #play .large-notation .paper .staff,#play.with-kb .large-notation .paper .staff{height:auto;max-height:calc(100vh - 150px)}
+    .large-notation .notation-cards svg{max-height:calc(100vh - 230px)}
+    .note-number{width:42px;height:42px;font-size:28px}
+  }
 
   .card-btn{flex:1 1 0;max-width:220px;background:#fff;border:2px solid var(--line);border-radius:18px;padding:6px;box-shadow:0 5px 0 #EADDCB;transition:transform .08s}
   .card-btn:active{transform:translateY(3px)}
@@ -4242,6 +4260,7 @@ function qContrast(pair, targetId){
     render: function(){
       const prompt=notes.length===3?'请问这三个音中哪个是 ' + targetLabel + '？':'点出 ' + targetLabel;
       setPrompt(prompt, '找出 '+targetLabel+' 音');
+      if(this.largeNotation)stageEl.classList.add('large-notation');
       stageEl.innerHTML = comparisonMarkup(order.map(function(i){return notes[i];}),pair.clef,true);
       svg = pair.clef ? stageEl.querySelector('svg') : stageEl.firstElementChild;
       answerEl.innerHTML = '<div class="spot-cap">点一下那个音</div>';
@@ -4346,18 +4365,31 @@ function triplePlans(ids,n,ledger){
   return plans;
 }
 function makeThreeNotes(ids,n){
-  const counts={};
-  return triplePlans(ids,n,false).map(function(plan){
+  if(ids.length<3)return [];
+  const groups=['treble','bass'].map(function(clef){
+    const pool=ids.filter(id=>id==='C4'||NOTES[id].clef===clef);
+    const notes=pool.map(function(id){const pos=CONTRAST_POS[id].find(p=>p.clef===clef);return {...NOTES[id],clef:clef,y:pos.y};});
+    return notes.length>=3?triplePlans(pool,n,false):notes.length===2?[{clef:clef,notes:notes,key:pool.join('|')}]:[];
+  }).flat();
+  const mixed=triplePlans(ids,Math.max(n,12),false).filter(plan=>!plan.clef);
+  const finale=mixed.length?3:0,seen=new Set(),counts={},qs=[];
+  for(let i=0;i<n;i++){
+    const choices=i>=n-finale?mixed:groups;
+    if(!choices.length){
+      const id=ids.find(id=>!seen.has(id))||ids[i%ids.length];seen.add(id);qs.push(qStaffToKey(id));continue;
+    }
+    const plan=shuffle(choices).sort((a,b)=>b.notes.filter(note=>!seen.has(note.id)).length-a.notes.filter(note=>!seen.has(note.id)).length)[0];
     const target=shuffle(plan.notes).sort((a,b)=>(counts[a.id]||0)-(counts[b.id]||0))[0];
-    counts[target.id]=(counts[target.id]||0)+1;
-    return qContrast(plan,target.id);
-  });
+    counts[target.id]=(counts[target.id]||0)+1;plan.notes.forEach(note=>seen.add(note.id));
+    const q=qContrast(plan,target.id);q.kind='threeNotes';q.largeNotation=true;qs.push(q);
+  }
+  return qs;
 }
 
 function comparisonMarkup(notes,clef,hits){
   if(clef==='grand')return grandStaffMarkup(notes,hits);
   if(clef)return staffPairBlock({ys:notes.map(note=>note.y),xs:notes.length===3?[5.3,9,12.7]:undefined,clef:clef,hits:hits});
-  return '<div class="opts">'+notes.map(function(note,i){
+  return '<div class="opts notation-cards">'+notes.map(function(note,i){
     return '<button type="button" class="opt" data-i="'+i+'" aria-label="第 '+(i+1)+' 个音">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'</button>';
   }).join('')+'</div>';
 }
@@ -4368,7 +4400,7 @@ function makePlayThree(ids,n){
     if(i%2===1 && plan.notes.some(note=>NOTES[note.id].clef==='bass')){
       plan={...plan,clef:null,notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))};
     }
-    return qPlayThree(plan,asks[i]);
+    return qPlayThree(plan,asks[i],i===0);
   });
 }
 function grandStaffMarkup(notes,hits){
@@ -4390,7 +4422,7 @@ function grandStaffMarkup(notes,hits){
 function makeGrandThree(ids,n){
   const asks=alternateAsks(n);
   return triplePlans(ids,n,false).map(function(plan,i){
-    return qPlayThree({...plan,clef:'grand',notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))},asks[i]);
+    return qPlayThree({...plan,clef:'grand',notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))},asks[i],i===0);
   });
 }
 function makeFlashNotes(ids,n){
@@ -4410,15 +4442,15 @@ function qFlashNotes(notes,ask,id){
   let timer;
   const q={kind:'flashNotes',noteId:chosen.id,noteIds:notes.map(note=>note.id),choiceIds:notes.map(note=>note.id),target:target,ask:ask,wrong:0,phase:'observe',
     render:function(){
-      clearTimeout(timer);q.phase='observe';
+      clearTimeout(timer);q.phase='observe';stageEl.classList.add('large-notation');
       setPrompt('记住这'+(notes.length===2?'两':'三')+'个音的位置','看一看，记住位置');
-      stageEl.innerHTML='<div class="opts">'+notes.map((note,i)=>'<div class="opt">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'<div>'+(i+1)+'</div></div>').join('')+'</div>';
+      stageEl.innerHTML='<div class="opts notation-cards flash-cards">'+notes.map((note,i)=>'<div class="opt">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'<span class="note-number number-'+i+'">'+(i+1)+'</span></div>').join('')+'</div>';
       answerEl.innerHTML='';
       timer=setTimeout(function(){
         if(G.q!==q||q.answered)return;
         q.phase='answer';stageEl.innerHTML='<div class="spot-cap">音符藏起来了</div>';
         setPrompt(ask==='higher'?'哪个音更高？':'找出 '+label+' 音的位置');
-        answerEl.innerHTML='<div class="opts">'+notes.map((note,i)=>'<button class="opt" data-i="'+i+'">'+(i+1)+'</button>').join('')+'</div>';
+        answerEl.innerHTML='<div class="opts">'+notes.map((note,i)=>'<button class="opt number-choice" data-i="'+i+'" aria-label="第 '+(i+1)+' 个音"><span class="note-number number-'+i+'">'+(i+1)+'</span></button>').join('')+'</div>';
         answerEl.querySelectorAll('button').forEach(function(button){button.onclick=function(){
           if(G.q!==q||q.answered)return;
           const i=Number(button.dataset.i);q.chosen=notes[i].id;
@@ -4431,7 +4463,7 @@ function qFlashNotes(notes,ask,id){
     }};
   return q;
 }
-function qPlayThree(plan,ask){
+function qPlayThree(plan,ask,intro){
   const notes=shuffle(plan.notes),highest=ask==='higher';
   const pitch=Math[highest?'max':'min'](...notes.map(note=>note.midi));
   const target=notes.findIndex(note=>note.midi===pitch);
@@ -4440,12 +4472,15 @@ function qPlayThree(plan,ask){
     clef:plan.clef,pair:plan.key,ask:ask,target:target,wrong:0,played:0,phase:'play',
     render:function(){
       step=0;ready=false;q.played=0;q.phase='play';
-      setPrompt('从左到右，在键盘上弹出这三个音','从左到右，在键盘上弹出这三个音');
+      stageEl.classList.add('large-notation');
+      const instruction=intro?'从左到右，弹出这三个音':'弹出这三个音';
+      setPrompt(instruction,instruction);
       stageEl.innerHTML=comparisonMarkup(notes,plan.clef,false);
       answerEl.innerHTML='';
       function finishPlaying(){
         ready=true;q.phase='compare';
-        const text='请选出这三个音中'+(highest?'最高':'最低')+'的音';setPrompt(text,text);
+        $('#play').classList.remove('with-kb');
+        const text='点出'+(highest?'最高':'最低')+'的音';setPrompt(text,text);
         answerEl.innerHTML='<div class="spot-cap">三个音都弹对了，现在点谱面上的音</div>';
         stageEl.innerHTML=comparisonMarkup(notes,plan.clef,true);
         stageEl.firstElementChild.addEventListener('pointerdown',selectExtreme);

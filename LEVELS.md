@@ -190,24 +190,29 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     and similar line positions while ensuring all selected pitches appear in the session.
     Randomize horizontal order and ask “请问这三个音中哪个是 E？” (substitute target).
     Speak only “找出 E 音” while retaining the complete written prompt.
-    Use one staff for familiar common-clef triples; otherwise show three familiar staff
-    cards. With fewer than three selected notes, use staff/key review of those notes.
+    Use same-clef comparisons before the final three questions. Prefer triples;
+    use a selected same-clef pair when only two pitches are available for that clef.
+    Reserve the final three questions for mixed-clef staff cards when a mixed trio
+    exists. Otherwise retain same-clef practice throughout. Enlarge notation cards. With fewer than three selected notes, use staff/key review of those notes.
 13. **Play and compare three notes:** favor nearby pitches and similar line positions,
     including treble A3/C4/E4. Alternate mixed groups with familiar separate
     bass/treble cards so selected bass pitches retain bass-clef practice. Every selected pitch appears in a trio during the session.
     First play the exact three pitches on the on-screen keyboard from left to right.
+    Explain that direction in the first question only; later questions say “弹出这三个音”.
     Wrong keys do not advance the sequence; selecting an extreme is unavailable until
-    all three are correct. Then alternate highest/lowest requests and tap a displayed
+    all three are correct. Then say “点出最高的音” or “点出最低的音” and tap a displayed
     note. Count one completed question, retaining mistakes from both phases. A hint
     identifies the next required key or the requested extreme. Require three distinct
     eligible notes; do not manufacture unchecked pitches for smaller pools.
 
 14. **Grand-staff play and comparison:** use the skill 13 play-then-compare sequence,
     displaying both clefs, a brace, and three notes ordered horizontally across the
-    two staves. Use each selected pitch’s familiar clef. Do not invent unchecked bass
+    two staves. Give the left-to-right reminder only on the first question. Enlarge
+    the staff further after removing the keyboard for comparison. Use each selected pitch’s familiar clef. Do not invent unchecked bass
     pitches when the selection contains only treble pitches.
 15. **Flash recall:** show numbered staff cards for 2,000 ms with no answer buttons,
-    then hide the notes and offer numbered choices. Questions 1–2 ask which is higher;
+    then hide the notes and offer matching colorful rounded number badges.
+    Enlarge staff cards to use the available width. Questions 1–2 ask which is higher;
     questions 3–5 ask for a selected target letter, including D when selected. From
     question 6, show three notes if available. Otherwise retain two notes. Distinguish
     same-letter octaves in target wording. Switching questions invalidates old timers.

@@ -56,7 +56,8 @@ an installed automatic hook or permission to push/deploy.
   targets, distractors, and horizontal order. A one-clef pool cannot alternate without
   inventing notes. Unpairable selected pitches receive explicit staff/key review.
 - Skill 12 draws selected-note triples, preferring close pitches. Mixed-clef trios use
-  separate familiar staff cards rather than unfamiliar spellings. With fewer than three
+  separate familiar staff cards only in the final three questions, after same-clef
+  comparisons. Use a selected pair when that clef has only two pitches. With fewer than three
   notes, provide selected-note review. Skill 13 requires three distinct selected pitches,
   exact left-to-right keyboard playing, then a highest/lowest selection. It explicitly
   permits selected A3/B3 below treble for ledger comparisons such as A3/C4/E4.
@@ -64,7 +65,9 @@ an installed automatic hook or permission to push/deploy.
   the same exact-key sequence and extreme selection on a braced grand staff. Skill 15
   shows numbered notes for two seconds, hides them before numbered choices, and
   progresses from five two-note questions to three notes when the selection permits.
-  Skills 13–14 require three pitches; skill 15 requires two.
+  Skills 13–14 require three pitches; skill 15 requires two. Teach left-to-right
+  playing only in the first question of skills 13–14; subsequent prompts say
+  “弹出这三个音”, followed by “点出最高的音” or “点出最低的音”.
 - Skill 11 rotates selected notes across small face-up rounds, adding a matching round
   when needed before duration/beat matching. Skill 10 retains one staff placement and
   five ledger placements in every tier, followed by selected-note review.

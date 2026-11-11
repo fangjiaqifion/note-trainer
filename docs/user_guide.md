@@ -233,6 +233,13 @@ clef is audible as well as visible. A correct answer in skill 7 shows confetti a
 note green but gives no "correct" toast and no speech; the question's audio is stopped. The
 skill uses no note pool and starts without any learned notes.
 
+Skills 12–15 use enlarged notation. Skill 12 keeps comparisons within one clef
+until the final three questions; mixed clefs appear only in that finale when the
+selected pool permits. A clef with only two eligible pitches uses a pair. Skills
+13–14 explain left-to-right playing once per session, then say “弹出这三个音”.
+Comparison prompts say “点出最高的音” or “点出最低的音”. Skill 15 uses matching
+colorful rounded number badges for observation and answer choices.
+
 ## New notes: a 14-question first lesson
 
 A new note is not a new level. It is one 14-question lesson that opens three flags.
