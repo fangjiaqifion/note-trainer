@@ -11,7 +11,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at eighteen cards. The note axis grows through
+The skill axis is fixed at twenty-one cards. The note axis grows through
 B3 → C4 → D4 → E4 → A3 → F4 → G4 → A4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
@@ -126,10 +126,13 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
 | 12 | threeNotes | Tap the named note among three adjacent notes | checked triples, familiar staff images | 8 / 8 / 10 |
 | 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby, ledger, and familiar bass comparisons | 8 / 8 / 10 |
 | 14 | grandThree | Play and compare three notes on a braced grand staff | checked key + pos | 8 / 8 / 10 |
-| 15 | flashNotes | Two-second numbered-note recall | checked pos; two notes required | 10 |
+| 15 | flashNotes | Three-second numbered-note recall | checked pos; two notes required | 10 |
 | 16 | rhythmFill | Complete a rhythm measure | no pitch prerequisites | 6 |
 | 17 | meterChoice | Choose a time signature for two measures | no pitch prerequisites | 6 |
 | 18 | irregularMatch | Match staff/name cards on eight deformed keyboards | checked key + pos | 8 |
+| 19 | earDirection | Hear ascending, descending, or repeated pitches | independent C4–A4 pool | 12 |
+| 20 | earExtreme | Hear the highest/lowest numbered pitch | checked pos; two pitches required | 12 minimum |
+| 21 | earName | Hear a single pitch and choose its letter name | checked notes | 12 minimum |
 
 ### Skill behavior
 
@@ -209,11 +212,11 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     eligible notes; do not manufacture unchecked pitches for smaller pools.
 
 14. **Grand-staff play and comparison:** use the skill 13 play-then-compare sequence,
-    displaying both clefs, a brace, and three notes ordered horizontally across the
+    displaying both clefs, a brace, a closing barline across both staves, and three notes ordered horizontally across the
     two staves. Give the left-to-right reminder only on the first question. Enlarge
     the staff further after removing the keyboard for comparison. Use each selected pitch’s familiar clef. Do not invent unchecked bass
     pitches when the selection contains only treble pitches.
-15. **Flash recall:** show numbered staff cards for 2,000 ms with no answer buttons,
+15. **Flash recall:** show numbered staff cards for 3,000 ms with no answer buttons,
     then hide the notes and offer matching black-and-white cartoon number badges.
     Enlarge staff cards to use the available width. Questions 1–2 ask which is higher;
     questions 3–5 ask for a selected target letter, including D when selected. From
@@ -331,7 +334,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → eighteen cards. Wide screens use three columns,
+Home order: My notes → daily button → twenty-one cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.
@@ -419,3 +422,13 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
 Account management, long-term retention, and cloud operating limits are infrastructure
 items in the progress tracker. The old 8,000 cap and “cloud is another project” notes
 are superseded; optional cloud has been implemented, while long-term/device limits remain.
+
+## Skills 19–21: Listening
+
+Skill 19 has exactly twelve questions: four four-note sequences, four three-note sequences, and four two-note sequences. Each block includes ascending, descending, and repeated pitches, with three direction choices. Its independent C4–A4 pool does not require staff knowledge.
+
+Skill 20 uses selected position-learned pitches, six three-note questions followed by six two-note questions. With only two selected pitches, all questions use two notes; fewer than two disables the session. Highest and lowest alternate. Playback hides notation; numbered choices unlock after playback. A correct response reveals the complete numbered staff cards and highlights the extreme for 3.5 seconds.
+
+Skill 21 plays one selected pitch and offers three distinct letter names. Distractor letters may be unselected; sounding targets are always selected. Each session covers selected targets. This trains absolute pitch-name matching without a reference tone.
+
+All listening tasks start with an explicit play button, allow replay, suppress speech during playback, and cancel pending sequence notes after leaving the question.

@@ -63,7 +63,7 @@ an installed automatic hook or permission to push/deploy.
   permits selected A3/B3 below treble for ledger comparisons such as A3/C4/E4.
 - Skill 13 alternates mixed groups with familiar bass/treble cards. Skill 14 uses
   the same exact-key sequence and extreme selection on a braced grand staff. Skill 15
-  shows numbered notes for two seconds, hides them before numbered choices, and
+  shows numbered notes for three seconds, hides them before numbered choices, and
   progresses from five two-note questions to three notes when the selection permits.
   Skills 13–14 require three pitches; skill 15 requires two. Teach left-to-right
   playing only in the first question of skills 13–14; subsequent prompts say
@@ -143,7 +143,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × eighteen skills and daily practice, totaling 87,210 sessions.
+answer histories × three seeds × twenty-one skills and daily practice, totaling 100,980 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and
@@ -157,3 +157,5 @@ teachers must not upload a configuration file. It grants no administrator author
 secret/service-role keys, sessions, teacher credentials, or invitation plaintext in published assets.
 The independent management entry is `manage.html`; its discoverable URL is not an access control.
 See `docs/teacher_portal.md` for owner setup/recovery and rollout boundaries.
+
+Skills 19–21 hide notation during listening and unlock choices only after the full sequence. Skill 19 has twelve questions in 4/3/2-note blocks and an independent pitch pool. Skills 20–21 use selected eligible pitches; skill 20 requires two and progresses from three-note to two-note comparisons. Skill 21 offers three letter choices. Speech must not overlap playback; pending sequence notes must stop after navigation.

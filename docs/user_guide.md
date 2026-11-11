@@ -98,7 +98,7 @@ half needs at least three questions, otherwise it says the sample is too small.
 
 Then:
 
-- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the eighteen skills plus a
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the twenty-one skills plus a
   total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
   above, orange from 60% to 79%, red below 60%.
 - **每关** (per skill): questions, total time, average time per question, first-try accuracy,
@@ -183,12 +183,12 @@ second keyboard step and no key has been found yet, the prompt names the exact o
 so the target is unambiguous.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-eighteen fixed skill cards below that. The chips are the only part that grows with the note set.
+twenty-one fixed skill cards below that. The chips are the only part that grows with the note set.
 Wide screens use three card columns, tablet portrait two, and phones one.
 
-## The eighteen skills
+## The twenty-one skills
 
-The eighteen cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The twenty-one cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -207,12 +207,12 @@ skill automatically once that flag is open.
 | 12 | 三音辨认 · Three-note recognition | Three shuffled checked notes, preferring nearby pitches; tap the requested letter. Mixed-clef pitches use separate familiar staff images | `pos` |
 | 13 | 三音弹比 · Play and compare | Play three checked pitches on the screen keyboard from left to right, then tap the highest or lowest note. Similar adjacent and ledger pitches receive priority; requires three eligible pitches | `key` + `pos` |
 | 14 | 大谱表弹比 · Grand staff | Play three selected notes from left to right on a braced treble/bass staff, then choose the highest or lowest | `key` + `pos` |
-| 15 | 闪现记音 · Flash recall | View numbered notes for two seconds, then choose a hidden note’s position. Start with five two-note questions, then three-note questions when available | `pos` |
+| 15 | 闪现记音 · Flash recall | View numbered notes for three seconds, then choose a hidden note’s position. Start with five two-note questions, then three-note questions when available | `pos` |
 | 16 | 节奏填空 · Rhythm completion | Complete six measures using quarter, half, dotted-half, or whole notes; read the time signature | none |
 | 17 | 选择拍号 · Choose the meter | Read two complete measures and choose 2/4, 3/4, or 4/4; six questions | none |
 | 18 | 变形键盘 · Deformed keyboard matching | Eight random keyboard shapes per session; find every matching key for name targets | key + pos |
 
-Every eligible checked pitch appears in each pitch-based skill session. Skills 16–17 are independent of pitch selection. Base question counts may grow.
+Every eligible checked pitch appears in each pitch-based skill session. Skills 16–17 and 19 are independent of pitch selection. Base question counts may grow.
 Position skills 6–8 and 10 keep their original exercises and add checked-note staff/key
 review. Matching rounds rotate the selected pool and add a small round when needed.
 Skill 9 uses one clef if only one has a legal pair; unpairable notes receive staff/key
@@ -469,3 +469,7 @@ or the answer is shown in the prompt, but the player is never told "that is wron
   letters B / C / D / E are spoken by an English voice as letter names. Without the voices
   the page falls back to text only.
 - In landscape the staff scales to fit the height, so it looks narrower than on paper.
+
+## Listening skills 19–21
+
+Press **播放 / 再听一次** and listen before choosing. Skill 19 asks up/down/same, with four-, three-, then two-note sequences. Skill 20 asks for the highest or lowest numbered sound, first among three notes and then two; correct answers reveal the staff notes. Skill 21 asks for the letter name of one heard note among three choices. Replay is always available before completion.

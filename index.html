@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="4b74ebb1b2">
+<meta name="app-build" content="170f3e845b">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -313,9 +313,9 @@
   #play .large-notation .paper{max-width:1200px}
   #play .large-notation .paper .staff{height:min(52vh,560px);width:100%;object-fit:contain}
   #play.with-kb .large-notation .paper .staff{height:min(36vh,420px)}
-  .note-number{flex-shrink:0;display:inline-grid;place-items:center;width:64px;height:64px;color:#111;background:#fff;border:3px solid #111;border-radius:43% 55% 46% 52%;font-family:'Arial Rounded MT Bold',sans-serif;font-size:46px;font-weight:900;line-height:1;box-shadow:3px 5px 0 #111;transform:rotate(-8deg);text-shadow:2px 1px 0 #fff;-webkit-text-stroke:1px #111}
-  .note-number.number-1{border-radius:54% 42% 55% 44%;transform:rotate(7deg)}
-  .note-number.number-2{transform:rotate(-5deg)}
+  .note-number{flex-shrink:0;display:inline-grid;place-items:center;width:64px;height:64px;color:#111;background:#fff;border:3px solid #111;border-radius:43% 55% 46% 52%;font-family:'Arial Rounded MT Bold',sans-serif;font-size:46px;font-weight:900;line-height:1;box-shadow:3px 5px 0 #111;transform:none;text-shadow:2px 1px 0 #fff;-webkit-text-stroke:1px #111}
+  .note-number.number-1{border-radius:54% 42% 55% 44%;transform:none}
+  .note-number.number-2{transform:none}
   .rhythm-paper{width:100%;max-width:640px;box-sizing:border-box}.rhythm-bar{width:100%;height:auto;display:block}
   .rhythm-choices .opt{width:clamp(76px,19vw,130px);padding:8px 4px;min-height:110px}
   .rhythm-choices svg{width:48px;height:65px}
@@ -1222,7 +1222,7 @@ const SKILLS = [
   { id:14, key:'grandThree', name:'大谱表弹比', title:'大谱表上的三个音',
     desc:'在大谱表上弹三个音，再找最高或最低音', color:'#557E79',
     needs:['key','pos'], pool:'active', make:makeGrandThree },
-  { id:15, key:'flashNotes', name:'闪现记音', title:'看两秒，记住音的位置',
+  { id:15, key:'flashNotes', name:'闪现记音', title:'看三秒，记住音的位置',
     desc:'先记两个音，再挑战三个音', color:'#946A9D',
     needs:['pos'], pool:'active', make:makeFlashNotes, count:function(){return 10;} },
   { id:16, key:'rhythmFill', name:'节奏填空', title:'补全小节',
@@ -1233,7 +1233,10 @@ const SKILLS = [
     needs:[], pool:'none', make:makeMeterChoice, count:function(){return 6;} },
   { id:18, key:'irregularMatch', name:'变形键盘', title:'卡片与变形键盘配对',
     desc:'随机变形键盘，找齐所有同名音', color:'#6E739F',
-    needs:['key','pos'], pool:'active', make:makeIrregularMatch, count:function(){return 8;} }
+    needs:['key','pos'], pool:'active', make:makeIrregularMatch, count:function(){return 8;} },
+  { id:19, key:'earDirection', name:'听音方向', title:'听音向哪里走', desc:'四个音、三个音、两个音，听上行、下行或保持', color:'#557E79', needs:[], pool:'none', make:makeEarDirection, count:function(){return 12;} },
+  { id:20, key:'earExtreme', name:'听音高低', title:'听出最高或最低音', desc:'先听三个音，再听两个音，用数字选择', color:'#596FA4', needs:['pos'], pool:'active', make:makeEarExtreme },
+  { id:21, key:'earName', name:'听音名', title:'听声音选音名', desc:'听一个音，从三个音名中选择', color:'#946A9D', needs:[], pool:'active', make:makeEarName }
 ];
 
 /* ---------------------------------------------------------------------
@@ -4465,7 +4468,7 @@ function grandStaffMarkup(notes,hits){
     });
     body+='</g>';
   });
-  body+='<path d="M1 0V12" stroke="'+INK+'" stroke-width=".12"/>';
+  body+='<path d="M1 0V12 M15.6 0V12" stroke="'+INK+'" stroke-width=".12"/>';
   return '<div class="paper pair"><svg class="staff pair" viewBox="-1.5 -2 18 17" xmlns="http://www.w3.org/2000/svg">'+body+'</svg></div>';
 }
 function makeGrandThree(ids,n){
@@ -4667,6 +4670,68 @@ function qIrregularMatch(id,type,layout){
   };
   return q;
 }
+// Listening choices never expose notation until the correct answer is selected.
+function qListening(kind,notes,options,target,prompt,feedback){
+  let playing=false,run=0;
+  const q={kind:kind,noteId:notes[0].id,noteIds:notes.map(n=>n.id),choiceIds:notes.map(n=>n.id),target:target,wrong:0,
+    render:function(){
+      const session=G.session;playing=false;run++;
+      setPrompt(prompt,false);
+      stageEl.innerHTML='<button class="primary-btn ear-replay" type="button">▶ 播放 / 再听一次</button><p class="ear-status" aria-live="polite">点播放，听完再选择</p>';
+      answerEl.innerHTML='<div class="opts">'+options.map((label,i)=>'<button class="opt" style="font-size:clamp(24px,4vw,40px);font-weight:700" data-ear="'+i+'" disabled>'+label+'</button>').join('')+'</div>';
+      const buttons=[...answerEl.querySelectorAll('[data-ear]')],replay=stageEl.querySelector('button'),status=stageEl.querySelector('.ear-status');
+      replay.onclick=async function(){
+        if(playing||q.answered)return;
+        playing=true;const token=++run;stopSay();replay.disabled=true;buttons.forEach(b=>b.disabled=true);
+        for(let i=0;i<notes.length;i++){
+          if(G.q!==q||G.session!==session||run!==token)return;
+          status.textContent='正在播放第 '+(i+1)+' 个音';playMidi(notes[i].midi,.65,.4,true);
+          await new Promise(resolve=>setTimeout(resolve,850));
+        }
+        if(G.q!==q||G.session!==session||run!==token)return;
+        playing=false;replay.disabled=false;buttons.forEach(b=>b.disabled=false);status.textContent='听完了，请选择，也可以再听一次';
+      };
+      buttons.forEach((button,i)=>button.onclick=function(){
+        if(playing||q.answered||G.q!==q)return;
+        q.chosen=String(i);
+        if(i!==target){q.wrongChoice=String(i);judge(false,'再听一次试试看');return;}
+        stageEl.innerHTML=feedback();buttons.forEach(b=>b.disabled=true);judge(true,'对！',3500);
+      });
+    },reveal:function(){setPrompt(prompt+'，可以再听一次',false);}
+  };return q;
+}
+function makeEarDirection(){
+  const qs=[];const pool=['C4','D4','E4','F4','G4','A4'].map(id=>NOTES[id]);
+  [4,3,2].forEach(function(count){
+    const directions=shuffle([0,1,2,pick([0,1,2])]);
+    directions.forEach(function(direction){
+      const start=Math.floor(Math.random()*(pool.length-count+1));let notes=pool.slice(start,start+count);
+      if(direction===1)notes.reverse();if(direction===2)notes=Array(count).fill(pick(pool));
+      const labels=['向上走','向下走','保持不变'];
+      qs.push(qListening('earDirection',notes,labels,direction,'听听这'+count+'个音：向上走、向下走，还是保持不变？',()=>'<div class="spot-cap">'+labels[direction]+'</div>'));
+    });
+  });return qs;
+}
+function makeEarExtreme(ids,n){
+  if(ids.length<2)return [];
+  const qs=[],targets=weightedRepeatTo(ids,Math.max(12,n));
+  targets.forEach(function(id,i){
+    const count=i<6?Math.min(3,ids.length):2;
+    const notes=shuffle([id,...shuffle(ids.filter(other=>other!==id)).slice(0,count-1)]).map(id=>NOTES[id]);
+    const high=i%2===0,extreme=Math[high?'max':'min'](...notes.map(n=>n.midi)),target=notes.findIndex(n=>n.midi===extreme);
+    qs.push(qListening('earExtreme',notes,notes.map((_,i)=>String(i+1)),target,'哪个音'+(high?'最高':'最低')+'？听完后选择数字',function(){
+      return '<div class="opts notation-cards">'+notes.map((note,j)=>'<div class="opt" style="'+(j===target?'border-color:#36a269;background:#eaf8ee':'')+'">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'<div>'+ (j+1)+(j===target?' ✓':'')+'</div></div>').join('')+'</div><p>第 '+(target+1)+' 个音'+(high?'最高':'最低')+'</p>';
+    }));
+  });return qs;
+}
+function makeEarName(ids,n){
+  if(!ids.length)return [];
+  return weightedRepeatTo(ids,Math.max(12,n)).map(function(id){
+    const note=NOTES[id],letters=shuffle([note.letter,...shuffle(['A','B','C','D','E','F','G'].filter(l=>l!==note.letter)).slice(0,2)]);
+    return qListening('earName',[note],letters,letters.indexOf(note.letter),'听这个音，选择它的音名',()=>'<div class="spot-cap">'+note.letter+'</div>'+staffSVG({noteId:id,value:'whole',compact:true}));
+  });
+}
+
 function makeFlashNotes(ids,n){
   if(ids.length<2)return [];
   const targets=weightedRepeatTo(ids,Math.max(10,n));
@@ -4699,7 +4764,7 @@ function qFlashNotes(notes,ask,id){
           if(i!==target&&!q.wrongChoice)q.wrongChoice=notes[i].id;
           judge(i===target,i===target?'对！':'再想想刚才的位置');
         };});
-      },2000);
+      },3000);
     },reveal:function(){
       if(q.phase==='answer')setPrompt('答案是第 '+(target+1)+' 个音',false);
     }};
@@ -4895,9 +4960,9 @@ function buildQuestions(skillId){
             : (skill.pool === 'fixed') ? skill.ids.slice()
             : [];
   if(skill.pool==='active' && skillId!==11)n=Math.max(n,ids.length);
-  if(([13,14].includes(skillId) && ids.length<3)||(skillId===15 && ids.length<2))return [];
+  if(([13,14].includes(skillId) && ids.length<3)||([15,20].includes(skillId) && ids.length<2))return [];
   const qs=skill.make(ids,n);
-  if([16,17].includes(skillId))return qs;
+  if([16,17,19].includes(skillId))return qs;
   const eligible=activeNotes(skill.needs);
   const covered=new Set();
   qs.forEach(function(q){
@@ -4995,7 +5060,7 @@ function startLevel(id){
     return;
   }
   if([13,14].includes(id) && activeNotes(skill.needs).length<3){toast('先勾选至少三个学过键位和谱位的音','bad');return;}
-  if(id===15 && activeNotes(skill.needs).length<2){toast('先勾选至少两个学过谱位的音','bad');return;}
+  if([15,20].includes(id) && activeNotes(skill.needs).length<2){toast('先勾选至少两个学过谱位的音','bad');return;}
   G.mode = 'skill';
   G.level = id;
   G.spotNote = null; G.spotFrom = 0; G.spotCount = 0;
@@ -6045,7 +6110,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是十八个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是二十一个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){

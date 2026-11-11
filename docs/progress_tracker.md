@@ -6,6 +6,16 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Listening skills and notation refinement, 2026-11-11
+
+Local build `170f3e845b` adds skills 19–21: twelve direction questions in four-/three-/two-note blocks; highest/lowest numbered listening with three notes followed by pairs; and single-pitch letter-name identification with three options. Listening hides notation and gates answers until playback finishes. Replay is available. Skill 20 reveals numbered staff cards and the extreme after a correct answer. Selected-pitch prerequisites and small-pool behavior are documented in LEVELS.
+
+Skill 14 now has a closing barline spanning both staves. Skill 15 uses upright badges and a three-second observation window. Skill 17's previously implemented initial-barline removal was verified before and after answering; no additional renderer change was needed.
+
+The complete required local release suite passed: 54 Node tests, 1,144 scheduling cases, 100,980 generation sessions, 43 four-viewport fixtures, listening interactions, and all sync/backup/cloud/portal/storage/offline suites. A focused isolated browser regression (`node tests/notation_refinement.mjs`, local server on port 8775) passed for the closing barline, upright badges, and observation beyond two seconds. Both local origins matched all runtime hashes; four actual Safari/Chrome boot receipts matched the final build. Local status is ready. Preview: http://127.0.0.1:8775/index.html?build=170f3e845b.
+
+Updated AGENTS, LEVELS, README, development guide, user guide, this tracker, and the [acceptance audit](audit_20261111_listening/audit.md). Cloud operations and teacher portal docs reviewed unchanged because schemas, enrollment, permissions, and sync are unaffected. Parent/games guides and parent README reviewed unchanged because ownership and release boundaries remain applicable. Existing profiles are preserved. No push/deployment; physical iPad interaction and audible listening acceptance remain unverified.
+
 ## Random keyboard variants and find-all targets, 2026-11-11
 
 Local build `4b74ebb1b2` expands skill 18 to sixteen keyboard shapes and

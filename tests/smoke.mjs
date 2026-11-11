@@ -112,6 +112,7 @@ async function renderCases(){
     ['flashNotes', d.buildQuestions(15)[0]],
     ['rhythmFill', d.buildQuestions(16)[0]],
     ['meterChoice', d.buildQuestions(17)[0]],
+    ...[19,20,21].map(id=>['listening-'+id,d.buildQuestions(id)[0]]),
     ...d.IRREGULAR_LAYOUTS.map(layout=>['irregular-'+layout.id,d.qIrregularMatch('C4','name',layout)]),
     ['playThree', d.buildQuestions(13)[0]],
     ['playThreeCompare', d.buildQuestions(13)[0]],
@@ -203,7 +204,7 @@ async function layoutCheck(page){
         document.querySelector('#play').classList.remove('with-kb');d.G.q.render();
       });
       await page.screenshot({path:'/tmp/note-trainer-play-three-'+width+'x'+height+'.png'});
-      for(const skill of [15,16,17,18]){
+      for(const skill of [15,16,17,18,19,20,21]){
         await page.evaluate(skill=>{
           const d=window.__dbg;d.G.q=d.buildQuestions(skill)[0];d.G.q.answered=false;
           document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';
@@ -682,6 +683,33 @@ async function concisePromptCheck(page){
   assert.deepEqual(result,[],'clef progression and concise prompts');
 }
 
+async function listeningCheck(page){
+  const plans=await page.evaluate(()=>{
+    const d=window.__dbg;
+    return {directions:d.buildQuestions(19).map(q=>q.noteIds.length),extremes:d.buildQuestions(20).map(q=>q.noteIds.length),names:d.buildQuestions(21).length};
+  });
+  assert.deepEqual(plans.directions,[4,4,4,4,3,3,3,3,2,2,2,2]);
+  assert.deepEqual(plans.extremes.slice(0,12),[3,3,3,3,3,3,2,2,2,2,2,2]);
+  assert.ok(plans.names>=12);
+  for(const skill of [19,20,21]){
+    await page.evaluate(skill=>{
+      const d=window.__dbg;d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=d.buildQuestions(skill)[0];d.G.q.answered=false;d.G.q.render();
+    },skill);
+    assert.equal(await page.locator('#stage svg').count(),0,'listening must hide notes');
+    assert.ok(await page.locator('#answer button').first().isDisabled());
+    await page.locator('.ear-replay').click();
+    await page.waitForFunction(()=>!document.querySelector('#answer button').disabled);
+    await page.evaluate(()=>{
+      const d=window.__dbg,q=d.G.q;
+      document.querySelector('[data-ear="'+((q.target+1)%3)+'"]').click();
+      if(q.answered)throw Error('wrong listening answer accepted');
+      document.querySelector('[data-ear="'+q.target+'"]').click();
+      if(!q.answered)throw Error('listening answer rejected');
+    });
+    if(skill===20)assert.ok(await page.locator('#stage svg').count()>0,'answer reveals notation');
+  }
+}
+
 async function flashCheck(page){
   await page.evaluate(function(){
     const d=window.__dbg;
@@ -691,7 +719,7 @@ async function flashCheck(page){
     d.G.q=qs[2];d.G.q.answered=false;d.G.busy=false;d.G.q.render();
     if(document.querySelector('#answer button'))throw Error('flash answers visible early');
   });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2400);
   assert.equal(await page.locator('#stage svg').count(),2,'notes remain during observation');
   await page.waitForFunction(()=>window.__dbg.G.q.phase==='answer');
   assert.equal(await page.locator('#stage svg').count(),0,'flash notes hidden');
@@ -931,8 +959,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('十八个技能') >= 0, 'report must say eighteen skills');
-  assert.equal(report.headers.length, 20, 'matrix must have date + 18 skills + total');
+  assert.ok(report.text.indexOf('二十一个技能') >= 0, 'report must say twenty-one skills');
+  assert.equal(report.headers.length, 23, 'matrix must have date + 21 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -1056,8 +1084,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 18, 'home must show eighteen skill cards');
-    console.log('PASS home: 18 skill cards');
+    assert.equal(cards, 21, 'home must show twenty-one skill cards');
+    console.log('PASS home: 21 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -1067,7 +1095,7 @@ async function main(){
 
     await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 40 question types x 4 viewports');
+    console.log('PASS layout: 43 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -1102,12 +1130,13 @@ async function main(){
     await concisePromptCheck(page);
     await playThreeCheck(page);
     await flashCheck(page);
+    await listeningCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: eighteen-skill matrix');
+    console.log('PASS report: twenty-one-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

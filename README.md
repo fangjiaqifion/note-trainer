@@ -8,7 +8,7 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same eighteen skills.
+14-question first lesson, then folded into the same twenty-one skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
@@ -28,7 +28,7 @@ Mixed-clef notes use separate familiar staff images. Skill 13 asks the child to 
 three selected notes from left to right, then choose the highest or lowest. Nearby
 pitches and similar line positions receive priority, including treble A3/C4/E4 ledger
 comparisons. Mixed groups also use familiar bass-clef cards. Skill 14 places the three
-notes on a braced grand staff. Skill 15 briefly shows numbered notes for two seconds,
+notes on a braced grand staff. Skill 15 briefly shows numbered notes for three seconds,
 then hides them for higher-pitch and target-note recall, progressing from two notes
 to three after five questions. Three distinct eligible notes are required for skills
 13–14; skill 15 requires two.
@@ -41,7 +41,7 @@ ribbons, stairs, and origami folds. Each question shows one selected note. Name
 targets use only A–G and ask for every matching key across two octaves; found keys
 stay marked until all matches are found. Staff targets retain one exact pitch.
 Black-key groups and middle C provide landmarks.
-The eighteen skill cards remain stable as new lesson notes join the selected pool.
+The twenty-one skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
@@ -194,3 +194,5 @@ separate, unlinked administrator page manages invitations and teacher access. It
 server-side administrator authorization and MFA. Database migration, administrator activation, and published-file/browser-load verification
 are complete. Teachers use username/key access; only administrators require MFA. See
 [portal operations and rollout status](docs/teacher_portal.md).
+
+Skills 19–21 add listening for melodic direction, highest/lowest pitch with numbered answers, and single-tone letter names. Notes remain hidden during listening; replay is available.
