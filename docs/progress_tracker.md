@@ -6,6 +6,27 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Rhythm completion and monochrome numbers, 2026-11-11
+
+Local build `40f587c5e3` adds skill 16: exactly six rhythm measures with
+quarter, half, dotted-quarter, and whole-note choices. Each session covers every
+answer type; totals match the displayed 2/4, 3/4, or 4/4 time signature.
+No selected-note review is appended. New notes now progress A3 → F4 → G4 → A4.
+Skill 15 uses matching black-and-white rounded cartoon numbers.
+
+The complete required local release suite passed: 54 Node tests, 1,144 scheduling
+cases, 78,030 generated sessions, 23 four-viewport rendering fixtures, and all
+sync/backup/cloud/portal/storage/offline browser suites. Both local origins matched
+all release-file hashes; four actual Safari/Chrome boot receipts confirmed this
+build on port 8775. Local release status is ready; existing profiles are preserved.
+Preview: http://127.0.0.1:8775/index.html?build=40f587c5e3. See the
+[rhythm audit](audit_20261111_rhythm/audit.md) for checks and documentation review.
+Updated AGENTS, LEVELS, README, development guide, user guide, and this tracker.
+Cloud operations and teacher portal procedures reviewed unchanged because schemas,
+permissions, synchronization, and release mechanics remain applicable.
+Parent/games guides and parent README reviewed unchanged because scope and ownership
+are unaffected. No push or deployment; physical iPad interaction remains unverified.
+
 ## Enlarged notation and concise prompts, 2026-11-11
 
 Build `6f69a75390` keeps skill 12 comparisons within one clef until the final three

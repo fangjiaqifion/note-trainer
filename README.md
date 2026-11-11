@@ -8,14 +8,14 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same fifteen skills.
+14-question first lesson, then folded into the same sixteen skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
-current new note, followed by A3, A4, F4 and G4. The order follows the student's method book:
-after E the book moves to A, then back to F and G. A3 is the left-hand third finger in the
+current new note, followed by A3, F4, G4 and A4. The teaching sequence introduces
+left-hand A3 after E4, then F4 and G4, and finally upper A4. A3 is the left-hand third finger in the
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
 or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
 skill 11 also uses checked notes. Skills 6–8 and 10 teach abstract staff positions.
@@ -32,7 +32,8 @@ notes on a braced grand staff. Skill 15 briefly shows numbered notes for two sec
 then hides them for higher-pitch and target-note recall, progressing from two notes
 to three after five questions. Three distinct eligible notes are required for skills
 13–14; skill 15 requires two.
-The fifteen skill cards remain stable as new lesson notes join the selected pool.
+Skill 16 provides six rhythm measures per session. Read the 2/4, 3/4, or 4/4 time signature and choose the missing quarter, half, dotted-quarter, or whole note. It requires no selected pitches.
+The sixteen skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked

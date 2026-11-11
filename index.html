@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="6f69a75390">
+<meta name="app-build" content="40f587c5e3">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -313,9 +313,13 @@
   #play .large-notation .paper{max-width:1200px}
   #play .large-notation .paper .staff{height:min(52vh,560px);width:100%;object-fit:contain}
   #play.with-kb .large-notation .paper .staff{height:min(36vh,420px)}
-  .note-number{flex-shrink:0;display:inline-grid;place-items:center;width:64px;height:64px;border-radius:44% 52% 45% 50%;background:#FFE6AC;color:#956026;border:3px solid #fff;font-family:ui-rounded,'Arial Rounded MT Bold',sans-serif;font-size:38px;font-weight:900;line-height:1;box-shadow:0 5px 0 #EBCB8A;transform:rotate(-6deg)}
-  .note-number.number-1{background:#DCEFE9;color:#397B70;box-shadow:0 5px 0 #B3D8CC;transform:rotate(5deg)}
-  .note-number.number-2{background:#EBDFF5;color:#8057A1;box-shadow:0 5px 0 #D1B8E5;transform:rotate(-4deg)}
+  .note-number{flex-shrink:0;display:inline-grid;place-items:center;width:64px;height:64px;color:#111;background:#fff;border:3px solid #111;border-radius:43% 55% 46% 52%;font-family:'Arial Rounded MT Bold',sans-serif;font-size:46px;font-weight:900;line-height:1;box-shadow:3px 5px 0 #111;transform:rotate(-8deg);text-shadow:2px 1px 0 #fff;-webkit-text-stroke:1px #111}
+  .note-number.number-1{border-radius:54% 42% 55% 44%;transform:rotate(7deg)}
+  .note-number.number-2{transform:rotate(-5deg)}
+  .rhythm-paper{width:100%;max-width:640px;box-sizing:border-box}.rhythm-bar{width:100%;height:auto;display:block}
+  .rhythm-choices .opt{width:clamp(76px,19vw,130px);padding:8px 4px;min-height:110px}
+  .rhythm-choices svg{width:48px;height:65px}
+  .rhythm-choices .unit{font-size:12px}
   .number-choice{padding:12px 18px;background:transparent;border:0;box-shadow:none}
   @media(max-width:520px){.note-number{width:48px;height:48px;font-size:30px}.large-notation .notation-cards > .opt{padding:4px}}
   @media(max-height:520px) and (orientation:landscape){
@@ -1080,7 +1084,7 @@ const NOTES = {
    A3 插在 E4 之后、A4 之前：它是左手在 middle C 手位的第三个音，
    和 E4 凑成一对（右手 3 指对左手 3 指）。
    加音只改这里和 NOTES；SKILLS 会自动按进度把新音收进对应的练习。 */
-const NOTE_ORDER = ['B3','C4','D4','E4','A3','A4','F4','G4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','A3','F4','G4','A4'];
 /* 一个字母可能对应多个八度（A3、A4）。第 1 关只考字母、不记八度，
    报告里必须把它算到唯一一个音上，否则 A3 和 A4 会各记一遍。 */
 function firstNoteOfLetter(letter){
@@ -1114,6 +1118,8 @@ const VALUES = {
   dotted:  { id:'dotted',  beats:3, name:'附点二分音符', filled:false, stem:true,  dot:true  },
   whole:   { id:'whole',   beats:4, name:'全音符',     filled:false, stem:false, dot:false }
 };
+const RHYTHM_VALUES = ['quarter','half','dottedQuarter','whole'];
+VALUES.dottedQuarter = {id:'dottedQuarter',beats:1.5,name:'附点四分音符',filled:true,stem:true,dot:true};
 const VALUE_IDS = ['quarter','half','dotted','whole'];
 
 /* ---------------------------------------------------------------------
@@ -1187,7 +1193,10 @@ const SKILLS = [
     needs:['key','pos'], pool:'active', make:makeGrandThree },
   { id:15, key:'flashNotes', name:'闪现记音', title:'看两秒，记住音的位置',
     desc:'先记两个音，再挑战三个音', color:'#946A9D',
-    needs:['pos'], pool:'active', make:makeFlashNotes, count:function(){return 10;} }
+    needs:['pos'], pool:'active', make:makeFlashNotes, count:function(){return 10;} },
+  { id:16, key:'rhythmFill', name:'节奏填空', title:'补全小节',
+    desc:'看拍号，选择缺少的音符，共六小节', color:'#527B8A',
+    needs:[], pool:'none', make:makeRhythmFill, count:function(){return 6;} }
 ];
 
 /* ---------------------------------------------------------------------
@@ -1686,6 +1695,7 @@ function eventSkill(e){
     case 'playThree': return 13;
     case 'grandThree': return 14;
     case 'flashNotes': return 15;
+    case 'rhythmFill': return 16;
   }
   return 0;
 }
@@ -4425,6 +4435,53 @@ function makeGrandThree(ids,n){
     return qPlayThree({...plan,clef:'grand',notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))},asks[i],i===0);
   });
 }
+// Rhythm uses quarter-note beats, including half-beat arithmetic.
+function rhythmGlyph(id,x,y){
+  const v=VALUES[id],rx=id==='whole'?9:7;
+  return '<g transform="translate('+x+' '+y+')" fill="#111" stroke="#111" stroke-linecap="round">'+
+    (v.stem?'<path d="M6 0V-40" fill="none" stroke-width="2"/>':'')+
+    '<ellipse rx="'+rx+'" ry="5" transform="rotate(-18)" fill="'+(v.filled?'#111':'white')+'" stroke-width="2"/>'+
+    (v.dot?'<circle cx="16" cy="-2" r="2.5"/>':'')+'</g>';
+}
+function makeRhythmFill(){
+  // Each session covers all four answers and includes two dotted-quarter complements.
+  const plans=shuffle([
+    {meter:2,values:['quarter','quarter'],missing:0},
+    {meter:3,values:['quarter','half'],missing:1},
+    {meter:3,values:['dottedQuarter','dottedQuarter'],missing:0},
+    {meter:4,values:['whole'],missing:0},
+    {meter:4,values:['quarter','dottedQuarter','dottedQuarter'],missing:2},
+    {meter:4,values:['half','quarter','quarter'],missing:1}
+  ]);
+  return plans.map(function(plan){
+    const correct=plan.values[plan.missing];
+    const q={kind:'rhythmFill',meter:plan.meter,values:plan.values.slice(),missing:plan.missing,valueId:correct,wrong:0,
+      render:function(){
+        setPrompt('看拍号，补上缺少的音符');
+        function draw(filled){
+          let body='<path d="M60 24V112 M550 24V112" stroke="#111" stroke-width="3"/>'+
+            '<text x="27" y="59" text-anchor="middle" font-family="Times New Roman" font-weight="bold" font-size="36">'+plan.meter+'</text>'+
+            '<text x="27" y="96" text-anchor="middle" font-family="Times New Roman" font-weight="bold" font-size="36">4</text>';
+          plan.values.forEach(function(id,i){
+            const x=90+(i+.5)*430/plan.values.length;
+            body+=i===plan.missing&&!filled?'<rect x="'+(x-22)+'" y="40" width="44" height="60" rx="9" fill="white" stroke="#111" stroke-width="2" stroke-dasharray="5 4"/><text x="'+x+'" y="82" text-anchor="middle" font-size="34">?</text>':rhythmGlyph(id,x,89);
+          });
+          stageEl.innerHTML='<div class="paper rhythm-paper"><svg class="rhythm-bar" viewBox="0 0 580 136" xmlns="http://www.w3.org/2000/svg" aria-label="'+plan.meter+'/4 拍节奏小节">'+body+'</svg></div>';
+        }
+        draw(false);
+        answerEl.innerHTML='<div class="opts rhythm-choices">'+shuffle(RHYTHM_VALUES).map(id=>'<button class="opt" data-value="'+id+'" aria-label="'+VALUES[id].name+'"><svg viewBox="0 0 48 65">'+rhythmGlyph(id,18,51)+'</svg><span class="unit">'+VALUES[id].name+'</span></button>').join('')+'</div>';
+        answerEl.querySelectorAll('button').forEach(function(button){button.onclick=function(){
+          if(q.answered)return;
+          const ok=button.dataset.value===correct;q.chosen=button.dataset.value;
+          button.classList.add(ok?'correct':'wrong');if(ok)draw(true);
+          judge(ok,ok?'对，小节的拍数正好！':'再算一算，还缺几拍？');
+        };});
+        q.draw=draw;
+      },reveal:function(){q.draw(true);setPrompt('缺少的是'+VALUES[correct].name,false);}
+    };
+    return q;
+  });
+}
 function makeFlashNotes(ids,n){
   if(ids.length<2)return [];
   const targets=weightedRepeatTo(ids,Math.max(10,n));
@@ -4655,6 +4712,7 @@ function buildQuestions(skillId){
   if(skill.pool==='active' && skillId!==11)n=Math.max(n,ids.length);
   if(([13,14].includes(skillId) && ids.length<3)||(skillId===15 && ids.length<2))return [];
   const qs=skill.make(ids,n);
+  if(skillId===16)return qs;
   const eligible=activeNotes(skill.needs);
   const covered=new Set();
   qs.forEach(function(q){
@@ -5802,7 +5860,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是十五个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是十六个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){

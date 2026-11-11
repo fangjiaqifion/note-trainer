@@ -78,6 +78,11 @@ an installed automatic hook or permission to push/deploy.
 - New-note lessons, single-note review, and pre/post tests have distinct instructional
   purposes; do not apply skill-card randomness indiscriminately.
 
+- Skill 16 is pitch-independent: exactly six rhythm measures, all four duration answers,
+  quarter-note beat unit, and exact measure totals. Dotted-quarter duration is 1.5 beats;
+  the existing dotted-half value remains available to earlier skills.
+- New-note order after A3 is F4, G4, then A4. Skill 15 number badges remain black and white.
+
 ## Runtime delivery requirements
 
 1. Implement, audit, fix, and verify. New regressions must intercept the original defect.
@@ -123,7 +128,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × fifteen skills and daily practice, totaling 73,440 sessions.
+answer histories × three seeds × sixteen skills and daily practice, totaling 78,030 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and

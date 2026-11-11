@@ -110,6 +110,7 @@ async function renderCases(){
     ['threeNotes', d.buildQuestions(12)[0]],
     ['grandThree', d.buildQuestions(14)[0]],
     ['flashNotes', d.buildQuestions(15)[0]],
+    ['rhythmFill', d.buildQuestions(16)[0]],
     ['playThree', d.buildQuestions(13)[0]],
     ['playThreeCompare', d.buildQuestions(13)[0]],
     ['threeNotesMixed', mixed],
@@ -138,7 +139,10 @@ async function renderCases(){
     const s = stage.getBoundingClientRect();
     const a = answer.getBoundingClientRect();
     const p = document.querySelector('.prompt').getBoundingClientRect();
-    const ok = a.bottom <= innerHeight + 0.5 &&
+    const rhythm=stage.querySelector('.rhythm-bar');
+    const rhythmBounds=rhythm&&rhythm.getBoundingClientRect();
+    const rhythmFits=!rhythmBounds||(rhythmBounds.left>=0&&rhythmBounds.right<=innerWidth&&rhythmBounds.top>=p.bottom);
+    const ok = rhythmFits && a.bottom <= innerHeight + 0.5 &&
       s.bottom <= innerHeight + 0.5 &&
       s.top >= p.bottom - 0.6 &&
       s.right <= innerWidth + 0.5 &&
@@ -162,6 +166,15 @@ async function layoutCheck(page){
         document.querySelector('#play').classList.remove('with-kb');d.G.q.render();
       });
       await page.screenshot({path:'/tmp/note-trainer-play-three-'+width+'x'+height+'.png'});
+      for(const skill of [15,16]){
+        await page.evaluate(skill=>{
+          const d=window.__dbg;d.G.q=d.buildQuestions(skill)[0];d.G.q.answered=false;
+          document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';
+          document.querySelector('#play').classList.remove('with-kb');d.G.q.render();
+        },skill);
+        await page.screenshot({path:'/tmp/note-trainer-skill-'+skill+'-'+width+'x'+height+'.png'});
+      }
+
     }
   }
 }
@@ -809,8 +822,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('十五个技能') >= 0, 'report must say fifteen skills');
-  assert.equal(report.headers.length, 17, 'matrix must have date + 15 skills + total');
+  assert.ok(report.text.indexOf('十六个技能') >= 0, 'report must say sixteen skills');
+  assert.equal(report.headers.length, 18, 'matrix must have date + 16 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -934,8 +947,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 15, 'home must show fifteen skill cards');
-    console.log('PASS home: 15 skill cards');
+    assert.equal(cards, 16, 'home must show sixteen skill cards');
+    console.log('PASS home: 16 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -945,7 +958,7 @@ async function main(){
 
     await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 22 question types x 4 viewports');
+    console.log('PASS layout: 23 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -960,6 +973,16 @@ async function main(){
     console.log('PASS selection: every checked set keeps variety in skills 1-9 and daily');
 
     await generationAudit(page);
+    const rhythmResult=await page.evaluate(()=>{
+      const d=window.__dbg,q=d.buildQuestions(16)[0];d.G.q=q;q.answered=false;
+      document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';q.render();
+      const options=[...document.querySelectorAll('.rhythm-choices button')].map(b=>b.dataset.value);
+      document.querySelector('.rhythm-choices [data-value="'+q.valueId+'"]').click();
+      return {options,answered:q.answered,blank:!!document.querySelector('.rhythm-bar rect')};
+    });
+    assert.deepEqual(rhythmResult.options.slice().sort(),['quarter','half','dottedQuarter','whole'].sort());
+    assert.ok(rhythmResult.answered && !rhythmResult.blank,'rhythm answer fills missing note');
+
 
     await ledgerCheck(page);
     console.log('PASS level 8: 6 questions, numbers 1-8');
@@ -974,7 +997,7 @@ async function main(){
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: fifteen-skill matrix');
+    console.log('PASS report: sixteen-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

@@ -11,8 +11,8 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at fifteen cards. The note axis grows through
-B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4. Learned notes can be checked or unchecked.
+The skill axis is fixed at sixteen cards. The note axis grows through
+B3 → C4 → D4 → E4 → A3 → F4 → G4 → A4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
 measures of mastery. Teachers manage profiles/reports; learners and parents share limited
@@ -127,6 +127,7 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
 | 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby, ledger, and familiar bass comparisons | 8 / 8 / 10 |
 | 14 | grandThree | Play and compare three notes on a braced grand staff | checked key + pos | 8 / 8 / 10 |
 | 15 | flashNotes | Two-second numbered-note recall | checked pos; two notes required | 10 |
+| 16 | rhythmFill | Complete a rhythm measure | no pitch prerequisites | 6 |
 
 ### Skill behavior
 
@@ -211,11 +212,16 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     the staff further after removing the keyboard for comparison. Use each selected pitch’s familiar clef. Do not invent unchecked bass
     pitches when the selection contains only treble pitches.
 15. **Flash recall:** show numbered staff cards for 2,000 ms with no answer buttons,
-    then hide the notes and offer matching colorful rounded number badges.
+    then hide the notes and offer matching black-and-white cartoon number badges.
     Enlarge staff cards to use the available width. Questions 1–2 ask which is higher;
     questions 3–5 ask for a selected target letter, including D when selected. From
     question 6, show three notes if available. Otherwise retain two notes. Distinguish
     same-letter octaves in target wording. Switching questions invalidates old timers.
+
+16. **Rhythm completion:** six one-measure questions with a single missing note.
+    Show 2/4, 3/4, or 4/4. Always offer quarter, half, dotted-quarter (1.5 beats),
+    and whole notes. Cover all four answers, including paired dotted quarters;
+    completed durations must sum to the numerator. Do not append pitch review.
 
 ## Note queue
 
@@ -301,7 +307,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → fifteen cards. Wide screens use three columns,
+Home order: My notes → daily button → sixteen cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.
@@ -335,7 +341,7 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
 16. iPad/phone portrait/landscape fit; short landscape is two-column; reports scroll.
 17. Skill 7 covers direction once each, higher/lower alternating asks and sides, both clefs,
     wide tap regions, audio, silent success, hints, and skill-7 stars without E4 migration.
-18. New-note order is E4→A3→A4→F4→G4; chips can start each directly. A3 is left 3/bass
+18. New-note order is E4→A3→F4→G4→A4; chips can start each directly. A3 is left 3/bass
     fifth line/F3–B3; A4 right 5/F4–B4. Completed lessons join eligible named-note skills.
 19. Use the release pipeline for SW versions, file hashes, actual load receipts, and offline
     upgrade. Never manually increment the cache version or erase learner storage.

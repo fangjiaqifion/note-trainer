@@ -14,6 +14,15 @@ export async function generationAudit(page){
     function check(ok, msg){ if(!ok && failures.length < 20) failures.push(msg); }
     function inspect(qs, skill, sel, prefix){
       sessions++;
+      if(skill===16){
+        check(qs.length===6,prefix+' six rhythm measures');
+        check(new Set(qs.map(q=>q.valueId)).size===4,prefix+' four rhythm answers');
+        qs.forEach(q=>{
+          check(q.values.every(id=>['quarter','half','dottedQuarter','whole'].includes(id)),prefix+' allowed durations');
+          check(q.values.reduce((sum,id)=>sum+d.VALUES[id].beats,0)===q.meter,prefix+' exact measure total');
+          check(q.valueId===q.values[q.missing],prefix+' missing answer');
+        });
+      }
       const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count
         ? d.SKILLS[skill - 1].count(d.DIFFS[g.diffKey].count) : d.DIFFS[g.diffKey].count;
       // 易混音只允许已定义的相邻/易混对子；没有合法对子时为空。
@@ -24,7 +33,7 @@ export async function generationAudit(page){
         (q.noteIds||q.choiceIds||(q.noteId?[q.noteId==='C4B'?'C4':q.noteId]:[])).forEach(id=>covered.add(id));
         if(q.kind==='find')sel.filter(id=>d.NOTES[id].letter===q.letter).forEach(id=>covered.add(id));
       });
-      if(skill!=='daily')sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
+      if(skill!=='daily' && skill!==16)sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
       const key = q => skill === 1 ? q.letter : skill === 3 ? d.NOTES[q.noteId].letter
         : skill === 8 ? q.clef + '|' + q.spot : q.noteId;
       const keys = qs.map(key).filter(Boolean);
@@ -112,6 +121,6 @@ export async function generationAudit(page){
     return {failures,sessions,samples};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 16 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 17 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }
