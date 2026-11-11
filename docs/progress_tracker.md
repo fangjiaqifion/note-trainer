@@ -6,6 +6,36 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Single-note keyboards and meter notation correction, 2026-11-11
+
+Local build `b387b90745` simplifies skill 18 to one note and one keyboard per
+question, with direct key answering. Name targets display only A–G and accept any
+matching octave; staff targets retain exact pitches. Eight layouts alternate four
+name and four staff questions while covering all eligible selected pitches.
+Radial black keys now occupy the outside/back edge, with white fronts inward;
+the other layouts retain black keys above white fronts. The standard 3–2–3
+black-key groups and E–F/B–C gaps are preserved.
+
+Skill 17 now says “选择对应的拍号” and omits the initial barline before the first
+measure, including after the correct time signature is inserted. The shared
+renderer applies the same initial-barline correction to skill 16.
+
+The complete required local release suite passed: 54 Node tests, 1,144 scheduling
+cases, 87,210 generation sessions, 32 four-viewport fixtures, focused interactions,
+and all sync/backup/cloud/portal/storage/offline browser suites. A supplementary
+full smoke run with the strengthened barline selector also passed.
+Both local origins matched all release-file hashes; four actual Safari/Chrome
+boot receipts confirmed this build on port 8775. Local status is ready; profiles
+remain intact. Preview: http://127.0.0.1:8775/index.html?build=b387b90745.
+Generation, geometry, and interaction regressions cover the reported defects. See the
+[correction audit](audit_20261111_single_keyboard/audit.md).
+Updated AGENTS, LEVELS, README, development guide, user guide, this tracker, and
+audit. Cloud operations and teacher portal procedures reviewed unchanged because
+schemas, permissions, synchronization, and enrollment are unaffected. Parent/games
+guides and parent README reviewed unchanged: ownership, scope, and release
+boundaries remain applicable. No push or deployment; physical iPad touch remains
+unverified.
+
 ## Rhythm grouping, meter choice, and deformed keyboards, 2026-11-11
 
 Local build `15b2f9779c` corrects skill 16 to quarter, half, dotted-half,

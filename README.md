@@ -36,8 +36,10 @@ Skill 16 provides six rhythm measures per session. Read the 2/4, 3/4, or 4/4
 time signature and choose the missing quarter, half, dotted-half, or whole note.
 It requires no selected pitches. Skill 17 shows two complete measures and asks for
 2/4, 3/4, or 4/4. Both use a shared bank of simple, readable rhythm patterns.
-Skill 18 matches selected-note staff and name cards to eight keyboard shapes,
-including rings and ribbons, with black-key groups and middle C as landmarks.
+Skill 18 shows one selected note with one of eight keyboard shapes, including
+rings and ribbons. Tap the matching key directly. Name targets use only A–G
+and accept any matching octave; staff targets retain exact pitches. Black-key
+groups and middle C provide landmarks.
 The eighteen skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 

@@ -210,7 +210,7 @@ skill automatically once that flag is open.
 | 15 | 闪现记音 · Flash recall | View numbered notes for two seconds, then choose a hidden note’s position. Start with five two-note questions, then three-note questions when available | `pos` |
 | 16 | 节奏填空 · Rhythm completion | Complete six measures using quarter, half, dotted-half, or whole notes; read the time signature | none |
 | 17 | 选择拍号 · Choose the meter | Read two complete measures and choose 2/4, 3/4, or 4/4; six questions | none |
-| 18 | 变形键盘 · Deformed keyboard matching | Select a staff/name card, then find its exact key across eight different keyboard shapes | key + pos |
+| 18 | 变形键盘 · Deformed keyboard matching | Find one displayed note on each of eight keyboard shapes; name targets accept any octave | key + pos |
 
 Every eligible checked pitch appears in each pitch-based skill session. Skills 16–17 are independent of pitch selection. Base question counts may grow.
 Position skills 6–8 and 10 keep their original exercises and add checked-note staff/key
@@ -243,12 +243,16 @@ selected pool permits. A clef with only two eligible pitches uses a pair. Skills
 Comparison prompts say “点出最高的音” or “点出最低的音”. Skill 15 uses matching
 black-and-white cartoon number badges for observation and answer choices.
 
-Skill 18 has eight matching boards, including ring, oval, rainbow, wave, ribbon,
-slopes, and zigzag layouts. Select a card before selecting its key. All cards must
-be matched to finish a board. The middle-C label and low/high endpoints anchor
-the octave; name cards include octave numbers. Every checked eligible pitch is
-practiced with both staff and name cards. The shape changes, but key order and
-black-key groups stay consistent.
+Skill 17 says “选择对应的拍号”. Its two measures have a dividing barline
+and an ending barline, with no barline before the first note.
+
+Skill 18 has eight single-note questions, including ring, oval, rainbow, wave,
+ribbon, slopes, and zigzag keyboards. Each question shows one note and one
+keyboard. Tap the matching key directly. Name targets show only A–G and accept
+the same letter in any octave; staff targets require the displayed pitch.
+The middle-C label anchors staff questions. Key order and complete black-key
+groups stay consistent. Black keys are at the upper/back portion of white keys;
+on radial keyboards that is the outer edge, with white fronts extending inward.
 
 ## New notes: a 14-question first lesson
 

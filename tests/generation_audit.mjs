@@ -38,11 +38,12 @@ export async function generationAudit(page){
       if(skill===18){
         check(qs.length===8,prefix+' eight keyboard rounds');
         check(new Set(qs.map(q=>q.layout)).size===8,prefix+' eight distinct layouts');
-        sel.forEach(id=>check(new Set(qs.flatMap(q=>q.cards).filter(card=>card.id===id).map(card=>card.type)).size===2,prefix+' both matching representations '+id));
+        check(qs.filter(q=>q.cardType==='name').length===4&&qs.filter(q=>q.cardType==='staff').length===4,prefix+' balanced single-note representations');
         qs.forEach(q=>{
-          check(q.cards.length===Math.min(3,sel.length),prefix+' matching card count');
+          check(q.noteIds.length===1,prefix+' one note per keyboard');
           check(new Set(q.noteIds).size===q.noteIds.length,prefix+' unique round pitches');
-          check(q.cards.every(card=>sel.includes(card.id)),prefix+' checked matching targets');
+          check(sel.includes(q.noteId),prefix+' checked single target');
+          check(q.cardType==='name'?q.target===d.NOTES[q.noteId].letter:q.target===d.NOTES[q.noteId].midi,prefix+' name versus staff answer');
         });
       }
       const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count

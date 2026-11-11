@@ -228,14 +228,18 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
 17. **Choose the meter:** show two complete measures without their time signature.
     Offer 2/4, 3/4, and 4/4. Both measures must have the correct total and use
     approved patterns. Six questions cover each meter twice; no pitch review.
-18. **Deformed keyboard matching:** eight rounds, one per distinct layout: ring,
-    oval, arch, wave, ribbon, rising slope, falling slope, and zigzag. Present up
-    to three distinct selected-note cards per round. Select a card, then its exact
-    key; complete every card to finish the round. Every selected eligible pitch
-    appears as both name and staff across the session. Retain the ordered F3–B4
-    keys, complete 3–2–3 black-key groups, and marked middle C in all shapes.
-    Name cards include octave numbers; staff cards use familiar clefs.
-    Black keys remain real distractors. Wrong matches keep the card available.
+    Use “选择对应的拍号” and omit the initial barline before the first note,
+    including after the time signature appears on a correct answer.
+18. **Deformed keyboard matching:** eight questions, one per distinct layout: ring,
+    oval, arch, wave, ribbon, rising slope, falling slope, and zigzag. Show exactly
+    one eligible checked note and one keyboard per question. Answer by selecting
+    a key directly. Alternate four staff and four name targets, covering every
+    eligible checked pitch. Name targets show A–G with no octave and accept any
+    matching octave; staff targets retain exact pitches and familiar clefs.
+    Keep the F3–B4 order, complete 3–2–3 black-key groups, and middle-C landmark.
+    Black keys occupy the back of adjacent white keys, never E–F or B–C.
+    On rings/ovals the back is the outside edge; white fronts extend inward.
+    On open layouts black keys sit above the white fronts.
 
 Skills 16–17 share the [beginning rhythm notation rules](docs/rhythm_notation.md).
 The bank is intentionally limited; total duration alone is not its acceptance rule.

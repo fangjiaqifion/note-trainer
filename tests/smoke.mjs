@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页十五张卡、20 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页十八张卡、32 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -149,6 +149,27 @@ async function renderCases(){
     if(keyboard){
       const bounds=keyboard.getBoundingClientRect();
       keyboardFits=bounds.left>=0 && bounds.right<=innerWidth && bounds.bottom<=innerHeight;
+      const whiteKeys=[...keyboard.querySelectorAll('.white')].map(key=>Number(key.dataset.midi));
+      const blackKeys=[...keyboard.querySelectorAll('.black')].map(key=>Number(key.dataset.midi));
+      keyboardFits=keyboardFits&&whiteKeys.join()==='53,55,57,59,60,62,64,65,67,69,71'
+        &&blackKeys.join()==='54,56,58,61,63,66,68,70';
+      function hitAt(t,depth){
+        const point=d.irregularPoint(q.layout,t,depth),local=keyboard.createSVGPoint();
+        local.x=point[0];local.y=point[1];
+        const screen=local.matrixTransform(keyboard.getScreenCTM());
+        return document.elementFromPoint(screen.x,screen.y);
+      }
+      // Black keys lie on shared boundaries at the back, leaving white tips in front.
+      for(let i=0;i<10;i++){
+        const boundary=(i+1)/11,front=hitAt(boundary,.85),back=hitAt(boundary,.3);
+        keyboardFits=keyboardFits&&front?.classList.contains('white');
+        if([53,55,57,60,62,65,67,69].includes(whiteKeys[i]))
+          keyboardFits=keyboardFits&&back?.dataset.midi===String(whiteKeys[i]+1);
+        else keyboardFits=keyboardFits&&!back?.classList.contains('black');
+      }
+      // At the top of a ring, the black/back edge must be above the white/front edge.
+      const backTop=d.irregularPoint(q.layout,.5,0),frontTop=d.irregularPoint(q.layout,.5,1);
+      keyboardFits=keyboardFits&&backTop[1]<frontTop[1];
       for(const midi of d.IRREGULAR_MIDIS){
         const i=d.IRREGULAR_MIDIS.indexOf(midi);
         const point=d.irregularPoint(q.layout,(i+.5)/11,.85);
@@ -213,37 +234,49 @@ async function rhythmAndIrregularInteractionCheck(page){
       stage.className='stage';answer.className='answer';stage.innerHTML='';answer.innerHTML='';q.render();
     }
     const q=d.buildQuestions(17)[0];mount(q,17);
+    const promptCorrect=document.querySelector('.prompt').textContent.includes('选择对应的拍号');
+    const initialBarlines=stage.querySelectorAll('.rhythm-bar > path').length;
     const options=[...answer.querySelectorAll('[data-meter]')].map(b=>Number(b.dataset.meter)).sort();
     answer.querySelector('[data-meter="'+(q.meter===2?3:2)+'"]').click();
     const meterWrong=q.wrong===1&&!q.answered;
     answer.querySelector('[data-meter="'+q.meter+'"]').click();
     const meterComplete=q.answered&&d.S.events.at(-1).skill===17;
-    const rounds=d.buildQuestions(18).map(function(q){
+    const noInitialBar=initialBarlines===2&&stage.querySelectorAll('.rhythm-bar > path').length===2;
+    const rounds=d.buildQuestions(18).map(function(q,round){
       mount(q,18);
-      answer.querySelector('[data-midi="60"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
-      const needsCard=q.wrong===0&&!q.answered;
-      stage.querySelector('[data-card="0"]').click();
+      const singleCard=stage.querySelectorAll('.irregular-card').length===1&&!stage.querySelector('button,sub');
+      const plainName=q.cardType!=='name'||stage.querySelector('.card-letter').textContent===d.NOTES[q.noteId].letter;
       answer.querySelector('[data-midi="54"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
-      const wrongBlack=q.wrong===1&&!q.answered&&q.matched===0;
-      q.cards.forEach(function(card,i){
-        stage.querySelector('[data-card="'+i+'"]').click();
-        answer.querySelector('[data-midi="'+d.NOTES[card.id].midi+'"]').dispatchEvent(new KeyboardEvent('keydown',{key:i%2?'Enter':' ',bubbles:true}));
-      });
-      const complete=q.answered&&q.matched===q.cards.length&&d.S.events.at(-1).skill===18;
+      const wrongBlack=q.wrong===1&&!q.answered;
+      const midi=q.cardType==='name'?d.IRREGULAR_MIDIS.find(m=>m%12===d.NOTES[q.noteId].midi%12):d.NOTES[q.noteId].midi;
+      answer.querySelector('[data-midi="'+midi+'"]').dispatchEvent(new KeyboardEvent('keydown',{key:round%2?'Enter':' ',bubbles:true}));
+      const complete=q.answered&&d.S.events.at(-1).skill===18;
       const before=d.S.events.length;
       answer.querySelector('[data-midi="60"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
-      return {layout:q.layout,needsCard,wrongBlack,complete,noDuplicate:d.S.events.length===before};
+      return {layout:q.layout,singleCard,plainName,wrongBlack,complete,noDuplicate:d.S.events.length===before};
     });
+    // A name-only A accepts A3 and A4; the staff form must still identify its exact pitch.
+    const original=d.S.selected,progress=d.S.progress;d.S.selected=['A3'];d.S.progress={...progress,A3:{key:1,pos:1,fin:1}};
+    const nameQ=d.buildQuestions(18).find(q=>q.cardType==='name');
+    mount(nameQ,18);answer.querySelector('[data-midi="69"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    const nameAnyOctave=nameQ.answered;
+    const staffQ=d.buildQuestions(18).find(q=>q.cardType==='staff');
+    mount(staffQ,18);answer.querySelector('[data-midi="69"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    const staffExact=!staffQ.answered&&staffQ.wrong===1;
+    answer.querySelector('[data-midi="57"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    const staffComplete=staffQ.answered;d.S.selected=original;d.S.progress=progress;
     g.session++;g.busy=false;Object.assign(g,saved);
-    return {options,meterWrong,meterComplete,rounds};
+    return {options,meterWrong,meterComplete,noInitialBar,promptCorrect,rounds,nameAnyOctave,staffExact,staffComplete};
   });
   assert.deepEqual(results.options,[2,3,4]);
   assert.ok(results.meterWrong&&results.meterComplete,'meter choice rejects wrong answers and records completion');
+  assert.ok(results.noInitialBar&&results.promptCorrect,'meter prompt and two barlines after completion');
+  assert.ok(results.nameAnyOctave&&results.staffExact&&results.staffComplete,'letter-only names accept octaves; staff answers remain exact');
   assert.equal(results.rounds.length,8);
   for(const round of results.rounds){
-    assert.ok(round.needsCard&&round.wrongBlack&&round.complete&&round.noDuplicate,JSON.stringify(round));
+    assert.ok(round.singleCard&&round.plainName&&round.wrongBlack&&round.complete&&round.noDuplicate,JSON.stringify(round));
   }
-  console.log('PASS skills 17–18: meter answers; eight keyboard matching rounds, black-key errors, keyboard access and records');
+  console.log('PASS skills 17–18: meter answers; eight single-note keyboards, letter-only names, octave rules, black-key errors and records');
 }
 
 async function homeNavigationCheck(page){
