@@ -210,7 +210,7 @@ skill automatically once that flag is open.
 | 15 | 闪现记音 · Flash recall | View numbered notes for two seconds, then choose a hidden note’s position. Start with five two-note questions, then three-note questions when available | `pos` |
 | 16 | 节奏填空 · Rhythm completion | Complete six measures using quarter, half, dotted-half, or whole notes; read the time signature | none |
 | 17 | 选择拍号 · Choose the meter | Read two complete measures and choose 2/4, 3/4, or 4/4; six questions | none |
-| 18 | 变形键盘 · Deformed keyboard matching | Find one displayed note on each of eight keyboard shapes; name targets accept any octave | key + pos |
+| 18 | 变形键盘 · Deformed keyboard matching | Eight random keyboard shapes per session; find every matching key for name targets | key + pos |
 
 Every eligible checked pitch appears in each pitch-based skill session. Skills 16–17 are independent of pitch selection. Base question counts may grow.
 Position skills 6–8 and 10 keep their original exercises and add checked-note staff/key
@@ -246,13 +246,14 @@ black-and-white cartoon number badges for observation and answer choices.
 Skill 17 says “选择对应的拍号”. Its two measures have a dividing barline
 and an ending barline, with no barline before the first note.
 
-Skill 18 has eight single-note questions, including ring, oval, rainbow, wave,
-ribbon, slopes, and zigzag keyboards. Each question shows one note and one
-keyboard. Tap the matching key directly. Name targets show only A–G and accept
-the same letter in any octave; staff targets require the displayed pitch.
-The middle-C label anchors staff questions. Key order and complete black-key
-groups stay consistent. Black keys are at the upper/back portion of white keys;
-on radial keyboards that is the outer edge, with white fronts extending inward.
+Skill 18 has eight single-note questions, randomly drawing different shapes from
+sixteen keyboards. Shapes include rings, ribbons, stairs, origami folds, fans, and
+bow ties. Each question shows one note and one keyboard. Name targets say
+“找出所有的 C” (or another letter A–G). Tap both matching white keys across the
+two octaves. Found keys stay green and the found/total counter advances; tapping
+a found key again does not count twice. Finish only after all matches are found.
+Staff targets still require just the displayed pitch. Middle C anchors the staff
+questions. Key order, complete black-key groups, and E–F/B–C gaps stay consistent.
 
 ## New notes: a 14-question first lesson
 

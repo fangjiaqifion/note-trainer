@@ -6,6 +6,31 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Random keyboard variants and find-all targets, 2026-11-11
+
+Local build `4b74ebb1b2` expands skill 18 to sixteen keyboard shapes and
+randomly samples eight distinct layouts per session. Additions include stairs,
+origami, accordion folds, roof, valley, fan, and bow tie. One note and one keyboard
+remain visible per question. Name targets now ask for every matching letter key
+across C3–B4, with two matches per letter, marked progress, and ignored repeated
+taps. Only the final match completes the question. Staff targets remain exact.
+The two full octaves retain 2–3–2–3 black-key groups and the corrected back/front
+direction.
+
+The complete required local suite passed: 54 Node tests, 1,144 scheduling cases,
+87,210 generation sessions, 40 four-viewport fixtures, focused partial/repeated/
+completion interactions, and all sync/backup/cloud/portal/storage/offline suites.
+Both local origins matched all release-file hashes; four actual Safari/Chrome
+boot receipts confirmed the build on port 8775. Local status is ready.
+Preview: http://127.0.0.1:8775/index.html?build=4b74ebb1b2.
+See the [acceptance audit](audit_20261111_keyboard_variants/audit.md).
+Updated AGENTS, LEVELS, README, development guide, user guide, this tracker, and
+audit. Cloud operations and teacher portal docs reviewed unchanged: schemas,
+permissions, enrollment, and sync are unaffected. Parent/games guides and parent
+README reviewed unchanged because ownership, scope, and release boundaries remain
+applicable. Existing profiles are preserved. No push/deployment; physical iPad
+interaction remains unverified.
+
 ## Single-note keyboards and meter notation correction, 2026-11-11
 
 Local build `b387b90745` simplifies skill 18 to one note and one keyboard per

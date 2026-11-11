@@ -230,16 +230,19 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     approved patterns. Six questions cover each meter twice; no pitch review.
     Use “选择对应的拍号” and omit the initial barline before the first note,
     including after the time signature appears on a correct answer.
-18. **Deformed keyboard matching:** eight questions, one per distinct layout: ring,
-    oval, arch, wave, ribbon, rising slope, falling slope, and zigzag. Show exactly
-    one eligible checked note and one keyboard per question. Answer by selecting
-    a key directly. Alternate four staff and four name targets, covering every
-    eligible checked pitch. Name targets show A–G with no octave and accept any
-    matching octave; staff targets retain exact pitches and familiar clefs.
-    Keep the F3–B4 order, complete 3–2–3 black-key groups, and middle-C landmark.
+18. **Deformed keyboard matching:** randomly select eight distinct layouts from a
+    sixteen-shape bank. The bank includes ring, oval, arch, wave, ribbon, slopes,
+    zigzag, ascending/descending stairs, origami, accordion folds, roof, valley,
+    fan, and bow tie. Show one eligible checked note and one keyboard per question.
+    Alternate four staff and four name targets and cover every eligible selected
+    pitch. Name targets say “找出所有的 X”, show only A–G, and require both
+    matching white keys in C3–B4. Mark each found key and show found/total progress;
+    repeated taps on found keys do not count twice. Complete the question only
+    after all matches are found. Staff targets retain one exact pitch.
+    Keep complete 2–3–2–3 black-key groups and the middle-C landmark.
     Black keys occupy the back of adjacent white keys, never E–F or B–C.
     On rings/ovals the back is the outside edge; white fronts extend inward.
-    On open layouts black keys sit above the white fronts.
+    Folded layouts may shade white facets but must preserve the same key topology.
 
 Skills 16–17 share the [beginning rhythm notation rules](docs/rhythm_notation.md).
 The bank is intentionally limited; total duration alone is not its acceptance rule.

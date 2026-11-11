@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页十八张卡、32 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页十八张卡、40 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -112,7 +112,7 @@ async function renderCases(){
     ['flashNotes', d.buildQuestions(15)[0]],
     ['rhythmFill', d.buildQuestions(16)[0]],
     ['meterChoice', d.buildQuestions(17)[0]],
-    ...d.buildQuestions(18).map(q=>['irregular-'+q.layout,q]),
+    ...d.IRREGULAR_LAYOUTS.map(layout=>['irregular-'+layout.id,d.qIrregularMatch('C4','name',layout)]),
     ['playThree', d.buildQuestions(13)[0]],
     ['playThreeCompare', d.buildQuestions(13)[0]],
     ['threeNotesMixed', mixed],
@@ -151,8 +151,8 @@ async function renderCases(){
       keyboardFits=bounds.left>=0 && bounds.right<=innerWidth && bounds.bottom<=innerHeight;
       const whiteKeys=[...keyboard.querySelectorAll('.white')].map(key=>Number(key.dataset.midi));
       const blackKeys=[...keyboard.querySelectorAll('.black')].map(key=>Number(key.dataset.midi));
-      keyboardFits=keyboardFits&&whiteKeys.join()==='53,55,57,59,60,62,64,65,67,69,71'
-        &&blackKeys.join()==='54,56,58,61,63,66,68,70';
+      keyboardFits=keyboardFits&&whiteKeys.join()==='48,50,52,53,55,57,59,60,62,64,65,67,69,71'
+        &&blackKeys.join()==='49,51,54,56,58,61,63,66,68,70';
       function hitAt(t,depth){
         const point=d.irregularPoint(q.layout,t,depth),local=keyboard.createSVGPoint();
         local.x=point[0];local.y=point[1];
@@ -160,10 +160,10 @@ async function renderCases(){
         return document.elementFromPoint(screen.x,screen.y);
       }
       // Black keys lie on shared boundaries at the back, leaving white tips in front.
-      for(let i=0;i<10;i++){
-        const boundary=(i+1)/11,front=hitAt(boundary,.85),back=hitAt(boundary,.3);
+      for(let i=0;i<whiteKeys.length-1;i++){
+        const boundary=(i+1)/whiteKeys.length,front=hitAt(boundary,.85),back=hitAt(boundary,.3);
         keyboardFits=keyboardFits&&front?.classList.contains('white');
-        if([53,55,57,60,62,65,67,69].includes(whiteKeys[i]))
+        if([48,50,53,55,57,60,62,65,67,69].includes(whiteKeys[i]))
           keyboardFits=keyboardFits&&back?.dataset.midi===String(whiteKeys[i]+1);
         else keyboardFits=keyboardFits&&!back?.classList.contains('black');
       }
@@ -172,7 +172,7 @@ async function renderCases(){
       keyboardFits=keyboardFits&&backTop[1]<frontTop[1];
       for(const midi of d.IRREGULAR_MIDIS){
         const i=d.IRREGULAR_MIDIS.indexOf(midi);
-        const point=d.irregularPoint(q.layout,(i+.5)/11,.85);
+        const point=d.irregularPoint(q.layout,(i+.5)/d.IRREGULAR_MIDIS.length,.85);
         const local=keyboard.createSVGPoint();local.x=point[0];local.y=point[1];
         const screen=local.matrixTransform(keyboard.getScreenCTM());
         const hit=document.elementFromPoint(screen.x,screen.y);
@@ -212,9 +212,9 @@ async function layoutCheck(page){
         await page.screenshot({path:'/tmp/note-trainer-skill-'+skill+'-'+width+'x'+height+'.png'});
       }
 
-      for(const layout of ['ring','oval','arch','wave','ribbon','rising','falling','zigzag']){
+      for(const layout of await page.evaluate(()=>window.__dbg.IRREGULAR_LAYOUTS.map(layout=>layout.id))){
         await page.evaluate(layout=>{
-          const d=window.__dbg;d.G.q=d.buildQuestions(18).find(q=>q.layout===layout);d.G.q.answered=false;
+          const d=window.__dbg;d.G.q=d.qIrregularMatch('C4','name',d.IRREGULAR_LAYOUTS.find(l=>l.id===layout));d.G.q.answered=false;
           document.querySelector('#stage').className='stage';document.querySelector('#answer').className='answer';
           document.querySelector('#stage').innerHTML='';document.querySelector('#answer').innerHTML='';d.G.q.render();
         },layout);
@@ -248,33 +248,42 @@ async function rhythmAndIrregularInteractionCheck(page){
       const plainName=q.cardType!=='name'||stage.querySelector('.card-letter').textContent===d.NOTES[q.noteId].letter;
       answer.querySelector('[data-midi="54"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
       const wrongBlack=q.wrong===1&&!q.answered;
-      const midi=q.cardType==='name'?d.IRREGULAR_MIDIS.find(m=>m%12===d.NOTES[q.noteId].midi%12):d.NOTES[q.noteId].midi;
-      answer.querySelector('[data-midi="'+midi+'"]').dispatchEvent(new KeyboardEvent('keydown',{key:round%2?'Enter':' ',bubbles:true}));
+      let partial=true,repeatIgnored=true;
+      q.requiredMidis.forEach(function(midi,i){
+        answer.querySelector('[data-midi="'+midi+'"]').dispatchEvent(new KeyboardEvent('keydown',{key:round%2?'Enter':' ',bubbles:true}));
+        if(i<q.requiredMidis.length-1){
+          partial=partial&&!q.answered&&q.foundMidis.length===i+1;
+          answer.querySelector('[data-midi="'+midi+'"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+          repeatIgnored=repeatIgnored&&q.foundMidis.length===i+1&&!q.answered;
+        }
+      });
       const complete=q.answered&&d.S.events.at(-1).skill===18;
       const before=d.S.events.length;
       answer.querySelector('[data-midi="60"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
-      return {layout:q.layout,singleCard,plainName,wrongBlack,complete,noDuplicate:d.S.events.length===before};
+      return {layout:q.layout,singleCard,plainName,wrongBlack,partial,repeatIgnored,complete,noDuplicate:d.S.events.length===before};
     });
     // A name-only A accepts A3 and A4; the staff form must still identify its exact pitch.
     const original=d.S.selected,progress=d.S.progress;d.S.selected=['A3'];d.S.progress={...progress,A3:{key:1,pos:1,fin:1}};
     const nameQ=d.buildQuestions(18).find(q=>q.cardType==='name');
     mount(nameQ,18);answer.querySelector('[data-midi="69"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
-    const nameAnyOctave=nameQ.answered;
+    const nameAnyOctave=!nameQ.answered&&nameQ.foundMidis.includes(69);
+    answer.querySelector('[data-midi="57"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    const nameAllComplete=nameQ.answered;
     const staffQ=d.buildQuestions(18).find(q=>q.cardType==='staff');
     mount(staffQ,18);answer.querySelector('[data-midi="69"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
     const staffExact=!staffQ.answered&&staffQ.wrong===1;
     answer.querySelector('[data-midi="57"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));
     const staffComplete=staffQ.answered;d.S.selected=original;d.S.progress=progress;
     g.session++;g.busy=false;Object.assign(g,saved);
-    return {options,meterWrong,meterComplete,noInitialBar,promptCorrect,rounds,nameAnyOctave,staffExact,staffComplete};
+    return {options,meterWrong,meterComplete,noInitialBar,promptCorrect,rounds,nameAnyOctave,nameAllComplete,staffExact,staffComplete};
   });
   assert.deepEqual(results.options,[2,3,4]);
   assert.ok(results.meterWrong&&results.meterComplete,'meter choice rejects wrong answers and records completion');
   assert.ok(results.noInitialBar&&results.promptCorrect,'meter prompt and two barlines after completion');
-  assert.ok(results.nameAnyOctave&&results.staffExact&&results.staffComplete,'letter-only names accept octaves; staff answers remain exact');
+  assert.ok(results.nameAnyOctave&&results.nameAllComplete&&results.staffExact&&results.staffComplete,'letter-only names accept octaves; staff answers remain exact');
   assert.equal(results.rounds.length,8);
   for(const round of results.rounds){
-    assert.ok(round.singleCard&&round.plainName&&round.wrongBlack&&round.complete&&round.noDuplicate,JSON.stringify(round));
+    assert.ok(round.singleCard&&round.plainName&&round.wrongBlack&&round.partial&&round.repeatIgnored&&round.complete&&round.noDuplicate,JSON.stringify(round));
   }
   console.log('PASS skills 17–18: meter answers; eight single-note keyboards, letter-only names, octave rules, black-key errors and records');
 }
@@ -1058,7 +1067,7 @@ async function main(){
 
     await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 32 question types x 4 viewports');
+    console.log('PASS layout: 40 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');

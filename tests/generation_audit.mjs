@@ -37,12 +37,16 @@ export async function generationAudit(page){
       }
       if(skill===18){
         check(qs.length===8,prefix+' eight keyboard rounds');
+        check(qs.every(q=>d.IRREGULAR_LAYOUTS.some(l=>l.id===q.layout)),prefix+' known layouts');
         check(new Set(qs.map(q=>q.layout)).size===8,prefix+' eight distinct layouts');
         check(qs.filter(q=>q.cardType==='name').length===4&&qs.filter(q=>q.cardType==='staff').length===4,prefix+' balanced single-note representations');
         qs.forEach(q=>{
           check(q.noteIds.length===1,prefix+' one note per keyboard');
           check(new Set(q.noteIds).size===q.noteIds.length,prefix+' unique round pitches');
           check(sel.includes(q.noteId),prefix+' checked single target');
+          const expected=q.cardType==='name'?d.IRREGULAR_MIDIS.filter(m=>m%12===d.NOTES[q.noteId].midi%12):[d.NOTES[q.noteId].midi];
+          check(q.requiredMidis.join()===expected.join(),prefix+' all matching keys');
+          check(q.requiredMidis.length===(q.cardType==='name'?2:1),prefix+' distinct octave count');
           check(q.cardType==='name'?q.target===d.NOTES[q.noteId].letter:q.target===d.NOTES[q.noteId].midi,prefix+' name versus staff answer');
         });
       }

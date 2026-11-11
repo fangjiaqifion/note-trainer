@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="b387b90745">
+<meta name="app-build" content="4b74ebb1b2">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -336,7 +336,7 @@
   .irregular-heading span{font-size:12px;font-weight:500;margin-left:10px}
   .irregular-keyboard{width:100%;height:auto;max-height:48vh;display:block;margin:8px auto;touch-action:manipulation}
   .irregular-key{stroke:#554E47;stroke-width:2;stroke-linejoin:round;cursor:pointer}
-  .irregular-key.white{fill:#fff}
+  .irregular-key.white:not([fill]){fill:#fff}
   .irregular-key.black{fill:#27242A}
   .irregular-key.wrong{fill:#F1B8B1}
   .irregular-key.matched{fill:#A9DCC0}
@@ -1232,7 +1232,7 @@ const SKILLS = [
     desc:'读两个完整小节，选出正确的拍号', color:'#947447',
     needs:[], pool:'none', make:makeMeterChoice, count:function(){return 6;} },
   { id:18, key:'irregularMatch', name:'变形键盘', title:'卡片与变形键盘配对',
-    desc:'环形、丝带等八种键盘上找音', color:'#6E739F',
+    desc:'随机变形键盘，找齐所有同名音', color:'#6E739F',
     needs:['key','pos'], pool:'active', make:makeIrregularMatch, count:function(){return 8;} }
 ];
 
@@ -4555,10 +4555,10 @@ function makeMeterChoice(){
   });
 }
 
-// Ordered white keys plus complete 3–2–3 black-key groups, F3 through B4.
+// Two complete octaves, C3–B4, retain 2–3–2–3 black-key groups.
 // d=0 is the back edge (black keys); d=1 is the front edge (white key tips).
 // Rings put the back on the outer edge, so the upper arc reads like a piano.
-const IRREGULAR_MIDIS=[53,55,57,59,60,62,64,65,67,69,71];
+const IRREGULAR_MIDIS=[48,50,52,53,55,57,59,60,62,64,65,67,69,71];
 const IRREGULAR_LAYOUTS=[
   {id:'ring',name:'环形',viewBox:'210 0 420 430'},
   {id:'oval',name:'椭圆',viewBox:'70 25 700 370'},
@@ -4567,7 +4567,15 @@ const IRREGULAR_LAYOUTS=[
   {id:'ribbon',name:'丝带',viewBox:'0 0 840 310'},
   {id:'rising',name:'上坡',viewBox:'0 0 840 310'},
   {id:'falling',name:'下坡',viewBox:'0 0 840 310'},
-  {id:'zigzag',name:'折线',viewBox:'0 0 840 310'}
+  {id:'zigzag',name:'折线',viewBox:'0 0 840 310'},
+  {id:'stairs',name:'上楼梯',viewBox:'0 0 840 310'},
+  {id:'stepsDown',name:'下楼梯',viewBox:'0 0 840 310'},
+  {id:'origami',name:'折纸',viewBox:'0 0 840 310'},
+  {id:'accordion',name:'手风琴折',viewBox:'0 0 840 310'},
+  {id:'roof',name:'屋顶',viewBox:'0 0 840 310'},
+  {id:'valley',name:'山谷',viewBox:'0 0 840 310'},
+  {id:'fan',name:'扇面',viewBox:'0 0 840 310'},
+  {id:'butterfly',name:'蝴蝶结',viewBox:'0 0 840 310'}
 ];
 function irregularPoint(layout,t,d){
   if(['ring','oval'].includes(layout)){
@@ -4583,6 +4591,16 @@ function irregularPoint(layout,t,d){
   if(layout==='rising')top=130-105*t;
   if(layout==='falling')top=25+105*t;
   if(layout==='zigzag')top=30+85*Math.abs(2*t-1);
+  const triangle=x=>1-Math.abs((x%1)*2-1);
+  const stair=x=>{const step=x*6;return Math.floor(step)+Math.max(0,(step%1-.8)/.2);};
+  if(layout==='stairs')top=130-15*stair(t);
+  if(layout==='stepsDown')top=30+15*stair(t);
+  if(layout==='origami')top=25+70*triangle(t*2);
+  if(layout==='accordion')top=25+55*triangle(t*4);
+  if(layout==='roof')top=115-90*(1-Math.abs(2*t-1));
+  if(layout==='valley')top=25+90*(1-Math.abs(2*t-1));
+  if(layout==='fan')return [420+(t-.5)*(640+140*d),35+145*d];
+  if(layout==='butterfly')return [30+780*t,35+40*Math.sin(Math.PI*t)+(100+60*Math.abs(2*t-1))*d];
   return [30+780*t,top+130*d];
 }
 function irregularKeyPath(layout,start,end,depth){
@@ -4594,48 +4612,60 @@ function irregularKeyPath(layout,start,end,depth){
 function irregularKeyboardMarkup(layout){
   let white='',black='';
   IRREGULAR_MIDIS.forEach(function(midi,i){
-    const start=i/11,end=(i+1)/11;
-    white+='<path class="irregular-key white" role="button" tabindex="0" aria-label="第'+(i+1)+'个白键" data-midi="'+midi+'" d="'+irregularKeyPath(layout.id,start,end,1)+'"/>';
-    if(i<10&&IRREGULAR_MIDIS[i+1]-midi===2){
-      const boundary=(i+1)/11,half=.26/11;
+    const count=IRREGULAR_MIDIS.length,start=i/count,end=(i+1)/count;
+    white+='<path class="irregular-key white" fill="'+( ['origami','accordion'].includes(layout.id)&&Math.floor(i/2)%2?'#E9EDF2':'#fff')+'" role="button" tabindex="0" aria-label="第'+(i+1)+'个白键" data-midi="'+midi+'" d="'+irregularKeyPath(layout.id,start,end,1)+'"/>';
+    if(i<IRREGULAR_MIDIS.length-1&&IRREGULAR_MIDIS[i+1]-midi===2){
+      const boundary=(i+1)/count,half=.26/count;
       black+='<path class="irregular-key black" role="button" tabindex="0" aria-label="第'+(i+1)+'个白键后的黑键" data-midi="'+(midi+1)+'" d="'+irregularKeyPath(layout.id,boundary-half,boundary+half,.6)+'"/>';
     }
   });
-  const anchor=irregularPoint(layout.id,4.5/11,.82);
+  const anchor=irregularPoint(layout.id,7.5/IRREGULAR_MIDIS.length,.82);
   const low=irregularPoint(layout.id,.015,1.16),high=irregularPoint(layout.id,.985,1.16);
   const labels='<g class="irregular-labels" text-anchor="middle" font-family="Songti SC,serif" font-size="'+(['ring','oval'].includes(layout.id)?20:26)+'" fill="#6B6156"><text x="'+anchor[0]+'" y="'+anchor[1]+'">中央C</text><text x="'+low[0]+'" y="'+low[1]+'">低</text><text x="'+high[0]+'" y="'+high[1]+'">高</text></g>';
   return '<svg class="irregular-keyboard" data-layout="'+layout.id+'" viewBox="'+layout.viewBox+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+layout.name+'键盘，从低到高，中央C已标记">'+white+black+labels+'</svg>';
 }
 function makeIrregularMatch(ids){
   if(!ids.length)return [];
-  const targets=weightedRepeatTo(ids,8),layouts=shuffle(IRREGULAR_LAYOUTS),firstType=pick([0,1]);
-  return layouts.map(function(layout,round){
-    const id=targets[round],type=(round+firstType)%2?'staff':'name',note=NOTES[id];
-    const q={kind:'irregularMatch',layout:layout.id,noteId:id,noteIds:[id],cardType:type,
-      letter:type==='name'?note.letter:'',target:type==='name'?note.letter:note.midi,
-      wrong:0,pair:layout.id,
-      render:function(){
-        setPrompt('在变形键盘上找到这个音');
-        stageEl.classList.add('irregular-stage');
-        stageEl.innerHTML='<div class="irregular-cards"><div class="irregular-card" data-type="'+type+'" aria-label="'+(type==='staff'?'五线谱音符':'音名 '+note.letter)+'">'+(type==='staff'?staffSVG({noteId:id,value:'whole',compact:true}):'<span class="card-letter">'+note.letter+'</span>')+'</div></div>';
-        answerEl.innerHTML='<div class="irregular-board"><div class="irregular-heading">'+layout.name+'键盘 <span>找到黑键的两枚、三枚分组</span></div>'+irregularKeyboardMarkup(layout)+'</div>';
-        function choose(key){
-          if(q.answered)return;
-          const midi=Number(key.dataset.midi),white=key.classList.contains('white');
-          const ok=white&&(type==='name'?letterOf(midi)===note.letter:midi===note.midi);
-          q.chosen=String(midi);if(!ok&&!q.wrongChoice)q.wrongChoice=String(midi);
-          key.classList.add(ok?'matched':'wrong');
-          if(ok){playMidi(midi,.6);stageEl.querySelector('.irregular-card').classList.add('matched');}
-          judge(ok,ok?'对，找到了！':'再看看黑键分组和音的位置');
+  const targets=weightedRepeatTo(ids,8),layouts=shuffle(IRREGULAR_LAYOUTS).slice(0,8),firstType=pick([0,1]);
+  return layouts.map((layout,round)=>qIrregularMatch(targets[round],(round+firstType)%2?'staff':'name',layout));
+}
+function qIrregularMatch(id,type,layout){
+  const note=NOTES[id],matches=IRREGULAR_MIDIS.filter(midi=>type==='name'?letterOf(midi)===note.letter:midi===note.midi);
+  let found=new Set();
+  const q={kind:'irregularMatch',layout:layout.id,noteId:id,noteIds:[id],cardType:type,
+    letter:type==='name'?note.letter:'',target:type==='name'?note.letter:note.midi,
+    requiredMidis:matches.slice(),foundMidis:[],wrong:0,pair:layout.id,
+    render:function(){
+      found=new Set();q.foundMidis=[];
+      setPrompt(type==='name'?'找出所有的 '+note.letter:'在变形键盘上找到这个音');
+      stageEl.classList.add('irregular-stage');
+      stageEl.innerHTML='<div class="irregular-cards"><div class="irregular-card" data-type="'+type+'" aria-label="'+(type==='staff'?'五线谱音符':'音名 '+note.letter)+'">'+(type==='staff'?staffSVG({noteId:id,value:'whole',compact:true}):'<span class="card-letter">'+note.letter+'</span>')+'</div></div>';
+      answerEl.innerHTML='<div class="irregular-board"><div class="irregular-heading">'+layout.name+'键盘 <span>找到黑键的两枚、三枚分组</span></div>'+irregularKeyboardMarkup(layout)+(type==='name'?'<div class="irregular-progress" aria-live="polite">已找到 0 / '+matches.length+'</div>':'')+'</div>';
+      function choose(key){
+        if(q.answered||G.busy)return;
+        const midi=Number(key.dataset.midi);
+        if(found.has(midi))return;
+        const ok=key.classList.contains('white')&&matches.includes(midi);
+        q.chosen=String(midi);
+        if(!ok){
+          if(!q.wrongChoice)q.wrongChoice=String(midi);
+          key.classList.add('wrong');judge(false,'再看看黑键分组和音的位置');return;
         }
-        answerEl.querySelectorAll('.irregular-key').forEach(function(key){
-          key.addEventListener('click',()=>choose(key));
-          key.addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(key);}});
-        });
-      },reveal:function(){setPrompt(type==='name'?'看黑键分组，找出 '+note.letter+' 音':'先找中央 C，再看谱面上的音',false);}
-    };
-    return q;
-  });
+        found.add(midi);q.foundMidis=Array.from(found);
+        key.classList.remove('wrong');key.classList.add('matched');playMidi(midi,.6);
+        const progress=answerEl.querySelector('.irregular-progress');
+        if(progress)progress.textContent='已找到 '+found.size+' / '+matches.length;
+        if(found.size===matches.length){
+          stageEl.querySelector('.irregular-card').classList.add('matched');judge(true,'对，都找到了！');
+        }
+      }
+      answerEl.querySelectorAll('.irregular-key').forEach(function(key){
+        key.addEventListener('click',()=>choose(key));
+        key.addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(key);}});
+      });
+    },reveal:function(){setPrompt(type==='name'?'找齐所有的 '+note.letter+'，已经找到的不用再点':'先找中央 C，再看谱面上的音',false);}
+  };
+  return q;
 }
 function makeFlashNotes(ids,n){
   if(ids.length<2)return [];
@@ -6696,7 +6726,7 @@ window.__dbg = {
   get ACCOUNTS(){ return ACCOUNTS; },
   NOTES: NOTES, VALUES: VALUES, SKILLS: SKILLS,
   NOTE_ORDER: NOTE_ORDER, DIFFS: DIFFS,
-  RHYTHM_PATTERNS, IRREGULAR_LAYOUTS, IRREGULAR_MIDIS, irregularPoint,
+  RHYTHM_PATTERNS, IRREGULAR_LAYOUTS, IRREGULAR_MIDIS, irregularPoint, qIrregularMatch,
   activeNotes: activeNotes,
   selectedNotes: selectedNotes,
   toggleSelectedNote: toggleSelectedNote,

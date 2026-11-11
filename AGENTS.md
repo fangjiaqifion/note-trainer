@@ -85,12 +85,14 @@ an installed automatic hook or permission to push/deploy.
 - Skill 17 shows two complete measures of one meter and offers 2/4, 3/4, and 4/4.
   Its prompt is “选择对应的拍号”. Do not draw a barline before the first note,
   either before answering or after inserting the selected time signature.
-- Skill 18 has eight distinct keyboard layouts per session. Preserve chromatic order,
-  complete 3–2–3 black-key groups (F3–B4), and a middle-C anchor. Match only eligible
+- Skill 18 randomly draws eight distinct layouts from a sixteen-shape bank per session.
+  Preserve chromatic order, complete 2–3–2–3 black-key groups (C3–B4), and a middle-C anchor. Match only eligible
   checked pitches. Show one note and one keyboard per question, with immediate key
   answering. Eight questions alternate four staff and four name targets; cover every
   eligible checked pitch, without requiring both representations of every pitch.
-  Name cards show only A–G and accept any matching octave. Staff cards require their
+  Name cards show only A–G and require every matching white key, across both octaves.
+  Keep found keys marked, ignore repeated taps, and record completion only when all
+  matches are found. Staff cards require their
   exact MIDI pitch. Radial keyboards put black keys at the outer back edge and white
   fronts toward the center; open keyboards put black keys above the white fronts.
   Check both key layers and the E–F/B–C gaps before accepting generated layouts.

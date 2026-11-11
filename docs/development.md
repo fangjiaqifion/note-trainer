@@ -113,8 +113,8 @@ added only when the interface has room for them.
 ## Deformed keyboard geometry
 
 Skill 18 uses the same semitone relationships as the standard piano keyboard:
-F3–B4 white keys, with black keys only between F–G, G–A, A–B, C–D, and D–E.
-The result has complete 3–2–3 black-key groups and no black key at E–F or B–C.
+C3–B4 white keys, with black keys only between F–G, G–A, A–B, C–D, and D–E.
+The result has complete 2–3–2–3 black-key groups and no black key at E–F or B–C.
 The normalized depth parameter is always 0 at the back and 1 at the white front.
 Black keys occupy depth 0–0.6; the remaining front must be exposed white.
 For rings and ovals, radius decreases with depth, placing black keys outside.
@@ -124,7 +124,11 @@ Before accepting a layout, run the four-viewport hit tests for white-key centers
 black-key centers, exposed white fronts at shared boundaries, and unraised
 E–F/B–C boundaries. The independent orientation check requires the top arc's
 back to be above its front; hit testing alone did not catch the previous reversal.
-Inspect the screenshots, including a name and a staff target. Exactly one target
+Inspect all sixteen shapes, including stair risers and shaded paper folds. Sessions
+draw only eight random shapes; the layout fixtures must instantiate the entire bank
+independently of that sample. Name questions require both matching white keys;
+check partial progress, repeated taps, and a single completion record.
+Inspect screenshots of both name and staff questions. Exactly one target
 must be visible; no preliminary card selection is required.
 
 ## Project structure
@@ -224,7 +228,7 @@ npm test
 ```
 
 It uses `playwright-core` with the system Google Chrome, starts a temporary static server,
-seeds a test profile in `localStorage`, and checks: eighteen home cards; 32 question types at four
+seeds a test profile in `localStorage`, and checks: eighteen home cards; 40 question types at four
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
 flags; the report has eighteen skill columns; the console stays clean; selected-note coverage in pitch-based skills and every checked-note subset
