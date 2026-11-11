@@ -61,3 +61,27 @@ An earlier sandbox run could not bind local test ports. An intermediate run reac
 cache verification while runtime edits were still being finalized and timed out;
 the stable rebuild and complete rerun above passed. No result from those attempts
 is used as release acceptance.
+
+## Authorized publication and final acceptance
+
+- Feature/fix commit: `6f2c2c6`; audit commit: `b0067a5`. Both include detailed bodies.
+  The push also published the nine previously local instructional commits.
+- `npm run release -- --push --no-open --port 8775 --timeout 300` reran the complete
+  required suite successfully, verified the active GitHub account `fangjiaqifion`,
+  and pushed the existing `origin/main`. No remote or hosting configuration was changed.
+- GitHub Pages initially returned the older build, then converged to `75f7d37c63`.
+  All runtime-file hashes matched on Pages, `127.0.0.1:8775`, and `localhost:8775`.
+- Six distinct Safari/Chrome reset-and-boot URLs were opened through CUA. The loopback
+  receipt service returned `ready` and this build for all six targets. A final readback
+  rechecked every receipt and all three origins' hashes before recording `ready` in
+  ignored runtime status. Browser UI also showed the actual game entry on localhost.
+- The independent `node tests/notation_refinement.mjs` check passed for the closing
+  grand-staff barline, upright number badges, and three-second observation window.
+- Final documentation validation covered 41 parent/game Markdown files and 121 local
+  file links with no missing destinations; whitespace checks passed.
+- No migrations, real student mutations, live pressure tests, or data clearing were
+  performed. Reset pages preserve learner localStorage. Audible acceptance and physical
+  iPad touch remain unverified; successful Mac browser boot does not establish them.
+
+Published test URL: https://fangjiaqifion.github.io/note-trainer/index.html?build=75f7d37c63.
+The final documentation/evidence commit is pushed separately without changing runtime bytes.

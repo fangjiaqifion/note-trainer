@@ -15,8 +15,14 @@ The full local release suite passed: 54 Node tests, 1,144 scheduling cases, 100,
 generated sessions, 43 four-viewport fixtures, new lifecycle/error regressions, and all
 sync/backup/cloud/portal/storage/offline suites. The local release was prepared with
 `--no-open`; file checks passed for both local origins, but this preparation alone
-is not browser acceptance. Authorized deployment evidence follows in the
-[code quality audit](audit_20261111_code_quality/audit.md).
+is not browser acceptance. The authorized push published feature commit `6f2c2c6`, audit commit `b0067a5`, and
+nine earlier local commits. The full push release suite passed again. Pages and both
+local origins matched every runtime hash; six actual Safari/Chrome boot receipts
+confirmed build `75f7d37c63`. Final receipt readback recorded `ready`; the independent
+notation refinement regression also passed. Published preview:
+https://fangjiaqifion.github.io/note-trainer/index.html?build=75f7d37c63.
+See the [code quality audit](audit_20261111_code_quality/audit.md) for evidence and
+limits. Physical iPad touch and audible listening acceptance remain unverified.
 
 Updated AGENTS, README, development guide, user guide, this tracker, and audit.
 LEVELS, cloud operations, and portal docs reviewed unchanged because instructional
