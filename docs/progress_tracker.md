@@ -6,6 +6,35 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Grand staff and flash recall, 2026-11-11
+
+Local build `b2c556dd20` shortens skill 12 speech while retaining the complete written
+question, restores familiar bass-clef cards in skill 13 mixed groups, adds skill 14
+play-and-compare on a braced grand staff, and adds skill 15 two-second numbered-note
+recall. Five two-note questions progress from higher-pitch comparison to named-note
+location, followed by three-note recall when three selected pitches are available.
+Skill 15 requires two eligible pitches; skills 13–14 require three. The fifteen-card
+menu uses fixed scrollable rows on short landscape screens to prevent hit overlap.
+
+The final complete local release suite passed: 54 Node tests, 1,144 scheduling
+boundaries, 73,440 generated sessions, 22 rendering cases at four viewports, targeted
+grand-staff/flash/bass interaction checks, menu hit tests, and all sync/backup/cloud/
+portal/storage/offline browser suites. Both local origins passed all release-file
+hash checks. Four actual Safari/Chrome boot receipts on 127.0.0.1:8775 and
+localhost:8775 acknowledge this exact build; local status is ready. Screenshots of
+the new notation were visually inspected. Preview:
+`http://127.0.0.1:8775/index.html?build=b2c556dd20`.
+Port 8775 is a separate browser storage origin from the earlier port 8774; previous
+origin profiles remain intact. No push or deployment was performed. Physical iPad
+touch and pronunciation remain unverified. See the
+[acceptance audit](audit_20261111_grand_flash/audit.md).
+
+Documentation updated: AGENTS, LEVELS, README, development guide, user guide, this
+tracker, and audit. Cloud operations and teacher portal procedures reviewed unchanged
+because schemas, authentication, permissions, and synchronization are unaffected.
+Parent/games guides and parent README remain applicable unchanged; the parent tracker
+and local submodule pointer record delivery. Historical audits remain unchanged.
+
 ## Full selected-note coverage and play-three practice, 2026-11-11
 
 Skill 9 now alternates available familiar clefs, randomizes the first clef and targets,

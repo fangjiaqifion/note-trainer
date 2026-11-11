@@ -94,12 +94,12 @@ uses CONTRAST_POS and CONTRAST_PARTNERS for learned-note comparisons.
 Add one entry to `SKILLS` and one `make` function:
 
 ```js
-{ id:14, key:'interval', name:'音程', title:'音程',
+{ id:16, key:'interval', name:'音程', title:'音程',
   desc:'两个音之间隔几步', color:'#5C6B3F',
   needs:['key','pos'], pool:'active', make:makeInterval }
 ```
 
-This is a hypothetical fourteenth skill, not an implemented feature.
+This is a hypothetical sixteenth skill, not an implemented feature.
 `needs` says which note flags the skill requires; `pool` is `'active'` (eligible checked notes),
 `'fixed'` (the `ids` list) or `'none'` (no notes). `make(ids, n)` returns an array of question
 objects with the same `{ kind, render(), reveal() }` interface as the existing factories.
@@ -107,7 +107,7 @@ objects with the same `{ kind, render(), reveal() }` interface as the existing f
 not touch the note data or the other skills. `id` is also the display number and the star key;
 it must stay unique, and adding another card changes the home grid.
 
-`SKILLS` also drives the home screen. The menu currently has thirteen cards; new skills are
+`SKILLS` also drives the home screen. The menu currently has fifteen cards; new skills are
 added only when the interface has room for them.
 
 ## Project structure
@@ -207,11 +207,11 @@ npm test
 ```
 
 It uses `playwright-core` with the system Google Chrome, starts a temporary static server,
-seeds a test profile in `localStorage`, and checks: thirteen home cards; 20 question types at four
+seeds a test profile in `localStorage`, and checks: fifteen home cards; 22 question types at four
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
-flags; the report has thirteen skill columns; the console stays clean; selected-note coverage in every skill and every checked-note subset
-is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (64,260 sessions across thirteen skills and daily practice); and `clear-cache.html` removes only this
+flags; the report has fifteen skill columns; the console stays clean; selected-note coverage in every skill and every checked-note subset
+is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (73,440 sessions across fifteen skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
 runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts.
 

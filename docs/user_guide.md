@@ -98,7 +98,7 @@ half needs at least three questions, otherwise it says the sample is too small.
 
 Then:
 
-- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the thirteen skills plus a
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the fifteen skills plus a
   total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
   above, orange from 60% to 79%, red below 60%.
 - **每关** (per skill): questions, total time, average time per question, first-try accuracy,
@@ -183,12 +183,12 @@ second keyboard step and no key has been found yet, the prompt names the exact o
 so the target is unambiguous.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-thirteen fixed skill cards below that. The chips are the only part that grows with the note set.
+fifteen fixed skill cards below that. The chips are the only part that grows with the note set.
 Wide screens use three card columns, tablet portrait two, and phones one.
 
-## The thirteen skills
+## The fifteen skills
 
-The thirteen cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The fifteen cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -206,6 +206,8 @@ skill automatically once that flag is open.
 | 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in at least four rounds, adding rounds for coverage; each representation stays in its own left/right column | `key` + `pos` |
 | 12 | 三音辨认 · Three-note recognition | Three shuffled checked notes, preferring nearby pitches; tap the requested letter. Mixed-clef pitches use separate familiar staff images | `pos` |
 | 13 | 三音弹比 · Play and compare | Play three checked pitches on the screen keyboard from left to right, then tap the highest or lowest note. Similar adjacent and ledger pitches receive priority; requires three eligible pitches | `key` + `pos` |
+| 14 | 大谱表弹比 · Grand staff | Play three selected notes from left to right on a braced treble/bass staff, then choose the highest or lowest | `key` + `pos` |
+| 15 | 闪现记音 · Flash recall | View numbered notes for two seconds, then choose a hidden note’s position. Start with five two-note questions, then three-note questions when available | `pos` |
 
 Every eligible checked pitch appears in each skill session. Base question counts may grow.
 Position skills 6–8 and 10 keep their original exercises and add checked-note staff/key

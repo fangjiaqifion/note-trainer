@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="f96c43f1e8">
+<meta name="app-build" content="b2c556dd20">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。九项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -134,9 +134,9 @@
   /* 技能卡排成两列。星星按技能存，和新音无关。
      行高 136，加上 chips、今日练习、页脚，iPad 竖屏一屏放得下；
      七张卡比六张多一行，矮屏上允许从卡片区滚动。 */
-  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:safe center;grid-auto-rows:136px;min-height:0;overflow-y:auto}
+  .levels{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 20px 6px;align-content:start;grid-auto-rows:136px;min-height:0;overflow-y:auto}
   .level-card{
-    display:flex;flex-direction:column;gap:6px;text-align:left;
+    display:flex;flex-direction:column;gap:6px;text-align:left;min-height:0;overflow:hidden;
     background:var(--card);border:2px solid var(--line);border-radius:22px;padding:13px 16px;
     box-shadow:var(--shadow);transition:transform .1s;
   }
@@ -510,7 +510,7 @@
   }
   /* 宽屏用三列：九张卡排三行，iPad 横屏和桌面上不用滚动。 */
   @media (min-width:900px){
-    .levels{grid-template-columns:repeat(3,1fr);align-content:safe center}
+    .levels{grid-template-columns:repeat(3,1fr);align-content:start}
     .levels .level-card:last-child:nth-child(odd){grid-column:auto;justify-self:stretch;width:auto}
   }
   /* iPad 竖屏（521–899px）：九张卡是五行，行高压到 120，
@@ -561,7 +561,7 @@
   @media (orientation:landscape) and (max-height:560px){
     .home-head{padding-top:8px}
     .home-head .sub{display:none}
-    .levels{gap:8px;grid-auto-rows:minmax(0,102px);align-content:start}
+    .levels{gap:8px;grid-auto-rows:102px;align-content:start}
     .lv-desc{display:none}
     .lv-num{width:32px;height:32px;font-size:16px}
     .daily-card{margin-top:4px;padding:8px 16px}
@@ -1163,7 +1163,13 @@ const SKILLS = [
     needs:['pos'], pool:'active', make:makeThreeNotes },
   { id:13, key:'playThree', name:'三音弹比', title:'弹三个音，再比高低',
     desc:'先在键盘上弹出三个音，再找最高或最低音', color:'#596FA4',
-    needs:['key','pos'], pool:'active', make:makePlayThree }
+    needs:['key','pos'], pool:'active', make:makePlayThree },
+  { id:14, key:'grandThree', name:'大谱表弹比', title:'大谱表上的三个音',
+    desc:'在大谱表上弹三个音，再找最高或最低音', color:'#557E79',
+    needs:['key','pos'], pool:'active', make:makeGrandThree },
+  { id:15, key:'flashNotes', name:'闪现记音', title:'看两秒，记住音的位置',
+    desc:'先记两个音，再挑战三个音', color:'#946A9D',
+    needs:['pos'], pool:'active', make:makeFlashNotes, count:function(){return 10;} }
 ];
 
 /* ---------------------------------------------------------------------
@@ -1660,6 +1666,8 @@ function eventSkill(e){
     case 'matching': return 11;
     case 'threeNotes': return 12;
     case 'playThree': return 13;
+    case 'grandThree': return 14;
+    case 'flashNotes': return 15;
   }
   return 0;
 }
@@ -4233,7 +4241,7 @@ function qContrast(pair, targetId){
     wrong: 0, chosen: '',
     render: function(){
       const prompt=notes.length===3?'请问这三个音中哪个是 ' + targetLabel + '？':'点出 ' + targetLabel;
-      setPrompt(prompt, prompt);
+      setPrompt(prompt, '找出 '+targetLabel+' 音');
       stageEl.innerHTML = comparisonMarkup(order.map(function(i){return notes[i];}),pair.clef,true);
       svg = pair.clef ? stageEl.querySelector('svg') : stageEl.firstElementChild;
       answerEl.innerHTML = '<div class="spot-cap">点一下那个音</div>';
@@ -4347,6 +4355,7 @@ function makeThreeNotes(ids,n){
 }
 
 function comparisonMarkup(notes,clef,hits){
+  if(clef==='grand')return grandStaffMarkup(notes,hits);
   if(clef)return staffPairBlock({ys:notes.map(note=>note.y),xs:notes.length===3?[5.3,9,12.7]:undefined,clef:clef,hits:hits});
   return '<div class="opts">'+notes.map(function(note,i){
     return '<button type="button" class="opt" data-i="'+i+'" aria-label="第 '+(i+1)+' 个音">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'</button>';
@@ -4355,14 +4364,79 @@ function comparisonMarkup(notes,clef,hits){
 
 function makePlayThree(ids,n){
   const asks=alternateAsks(n);
-  return triplePlans(ids,n,true).map(function(plan,i){return qPlayThree(plan,asks[i]);});
+  return triplePlans(ids,n,true).map(function(plan,i){
+    if(i%2===1 && plan.notes.some(note=>NOTES[note.id].clef==='bass')){
+      plan={...plan,clef:null,notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))};
+    }
+    return qPlayThree(plan,asks[i]);
+  });
+}
+function grandStaffMarkup(notes,hits){
+  const xs=[5.3,9,12.7];
+  let body='<text x="0" y="0" font-family="Times New Roman" font-size="12" transform="translate(-0.9 10.3) scale(0.22 1.15)">{</text>';
+  ['treble','bass'].forEach(function(clef,row){
+    body+='<g transform="translate(1 '+(row*8)+')">'+staffLinesMarkup(14.6)+clefMarkup(clef);
+    notes.forEach(function(note,i){
+      if(note.clef!==clef)return;
+      const x=xs[i],y=note.y;
+      body+=pairLedger(y,x)+'<g class="note" data-i="'+i+'"><ellipse cx="'+x+'" cy="'+y+'" rx="0.7" ry="0.4" transform="rotate(-18 '+x+' '+y+')" fill="none" stroke="'+INK+'" stroke-width="0.16"/></g>';
+      if(hits)body+='<rect class="note-hit" data-i="'+i+'" x="'+(x-1.6)+'" y="'+(y-1.3)+'" width="3.2" height="2.6"/>';
+    });
+    body+='</g>';
+  });
+  body+='<path d="M1 0V12" stroke="'+INK+'" stroke-width=".12"/>';
+  return '<div class="paper pair"><svg class="staff pair" viewBox="-1.5 -2 18 17" xmlns="http://www.w3.org/2000/svg">'+body+'</svg></div>';
+}
+function makeGrandThree(ids,n){
+  const asks=alternateAsks(n);
+  return triplePlans(ids,n,false).map(function(plan,i){
+    return qPlayThree({...plan,clef:'grand',notes:plan.notes.map(note=>({...note,clef:NOTES[note.id].clef,y:NOTES[note.id].y}))},asks[i]);
+  });
+}
+function makeFlashNotes(ids,n){
+  if(ids.length<2)return [];
+  const targets=weightedRepeatTo(ids,Math.max(10,n));
+  return targets.map(function(id,i){
+    const count=i<5?2:Math.min(3,ids.length);
+    const notes=shuffle([id,...shuffle(ids.filter(other=>other!==id)).slice(0,count-1)]).map(id=>({...NOTES[id]}));
+    return qFlashNotes(notes,i<2?'higher':'name',id);
+  });
+}
+function qFlashNotes(notes,ask,id){
+  const target=ask==='higher'?notes.findIndex(note=>note.midi===Math.max(...notes.map(note=>note.midi))):notes.findIndex(note=>note.id===id);
+  const chosen=notes[target];
+  const sameLetter=notes.filter(note=>note.letter===chosen.letter).length>1;
+  const label=chosen.letter+(sameLetter?(chosen.midi<60?'（比中央 C 低）':'（比中央 C 高）'):'');
+  let timer;
+  const q={kind:'flashNotes',noteId:chosen.id,noteIds:notes.map(note=>note.id),choiceIds:notes.map(note=>note.id),target:target,ask:ask,wrong:0,phase:'observe',
+    render:function(){
+      clearTimeout(timer);q.phase='observe';
+      setPrompt('记住这'+(notes.length===2?'两':'三')+'个音的位置','看一看，记住位置');
+      stageEl.innerHTML='<div class="opts">'+notes.map((note,i)=>'<div class="opt">'+staffSVG({noteId:note.id,value:'whole',compact:true})+'<div>'+(i+1)+'</div></div>').join('')+'</div>';
+      answerEl.innerHTML='';
+      timer=setTimeout(function(){
+        if(G.q!==q||q.answered)return;
+        q.phase='answer';stageEl.innerHTML='<div class="spot-cap">音符藏起来了</div>';
+        setPrompt(ask==='higher'?'哪个音更高？':'找出 '+label+' 音的位置');
+        answerEl.innerHTML='<div class="opts">'+notes.map((note,i)=>'<button class="opt" data-i="'+i+'">'+(i+1)+'</button>').join('')+'</div>';
+        answerEl.querySelectorAll('button').forEach(function(button){button.onclick=function(){
+          if(G.q!==q||q.answered)return;
+          const i=Number(button.dataset.i);q.chosen=notes[i].id;
+          if(i!==target&&!q.wrongChoice)q.wrongChoice=notes[i].id;
+          judge(i===target,i===target?'对！':'再想想刚才的位置');
+        };});
+      },2000);
+    },reveal:function(){
+      if(q.phase==='answer')setPrompt('答案是第 '+(target+1)+' 个音',false);
+    }};
+  return q;
 }
 function qPlayThree(plan,ask){
   const notes=shuffle(plan.notes),highest=ask==='higher';
   const pitch=Math[highest?'max':'min'](...notes.map(note=>note.midi));
   const target=notes.findIndex(note=>note.midi===pitch);
   let step=0,ready=false;
-  const q={kind:'playThree',noteId:notes[target].id,noteIds:notes.map(note=>note.id),choiceIds:notes.map(note=>note.id),
+  const q={kind:plan.clef==='grand'?'grandThree':'playThree',noteId:notes[target].id,noteIds:notes.map(note=>note.id),choiceIds:notes.map(note=>note.id),
     clef:plan.clef,pair:plan.key,ask:ask,target:target,wrong:0,played:0,phase:'play',
     render:function(){
       step=0;ready=false;q.played=0;q.phase='play';
@@ -4544,7 +4618,7 @@ function buildQuestions(skillId){
             : (skill.pool === 'fixed') ? skill.ids.slice()
             : [];
   if(skill.pool==='active' && skillId!==11)n=Math.max(n,ids.length);
-  if(skillId===13 && ids.length<3)return [];
+  if(([13,14].includes(skillId) && ids.length<3)||(skillId===15 && ids.length<2))return [];
   const qs=skill.make(ids,n);
   const eligible=activeNotes(skill.needs);
   const covered=new Set();
@@ -4642,7 +4716,8 @@ function startLevel(id){
     toast('勾选的音还没学过这一项', 'bad');
     return;
   }
-  if(id===13 && activeNotes(skill.needs).length<3){toast('先勾选至少三个学过键位和谱位的音','bad');return;}
+  if([13,14].includes(id) && activeNotes(skill.needs).length<3){toast('先勾选至少三个学过键位和谱位的音','bad');return;}
+  if(id===15 && activeNotes(skill.needs).length<2){toast('先勾选至少两个学过谱位的音','bad');return;}
   G.mode = 'skill';
   G.level = id;
   G.spotNote = null; G.spotFrom = 0; G.spotCount = 0;
@@ -5692,7 +5767,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是十三个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是十五个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){

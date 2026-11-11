@@ -11,7 +11,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at thirteen cards. The note axis grows through
+The skill axis is fixed at fifteen cards. The note axis grows through
 B3 → C4 → D4 → E4 → A3 → A4 → F4 → G4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
@@ -124,7 +124,9 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
 | 10 | ledgerMove | Place one staff note, then five ledger notes | abstract positions | 6 / 6 / 6 |
 | 11 | matching | Match face-up representations and durations | checked key + pos | 4 rounds minimum, extra rounds for full coverage |
 | 12 | threeNotes | Tap the named note among three adjacent notes | checked triples, familiar staff images | 8 / 8 / 10 |
-| 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby and ledger comparisons | 8 / 8 / 10 |
+| 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby, ledger, and familiar bass comparisons | 8 / 8 / 10 |
+| 14 | grandThree | Play and compare three notes on a braced grand staff | checked key + pos | 8 / 8 / 10 |
+| 15 | flashNotes | Two-second numbered-note recall | checked pos; two notes required | 10 |
 
 ### Skill behavior
 
@@ -187,16 +189,28 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
 12. **Three-note recognition:** draw three distinct checked notes, favor nearby pitches
     and similar line positions while ensuring all selected pitches appear in the session.
     Randomize horizontal order and ask “请问这三个音中哪个是 E？” (substitute target).
+    Speak only “找出 E 音” while retaining the complete written prompt.
     Use one staff for familiar common-clef triples; otherwise show three familiar staff
     cards. With fewer than three selected notes, use staff/key review of those notes.
 13. **Play and compare three notes:** favor nearby pitches and similar line positions,
-    including treble A3/C4/E4. Every selected pitch appears in a trio during the session.
+    including treble A3/C4/E4. Alternate mixed groups with familiar separate
+    bass/treble cards so selected bass pitches retain bass-clef practice. Every selected pitch appears in a trio during the session.
     First play the exact three pitches on the on-screen keyboard from left to right.
     Wrong keys do not advance the sequence; selecting an extreme is unavailable until
     all three are correct. Then alternate highest/lowest requests and tap a displayed
     note. Count one completed question, retaining mistakes from both phases. A hint
     identifies the next required key or the requested extreme. Require three distinct
     eligible notes; do not manufacture unchecked pitches for smaller pools.
+
+14. **Grand-staff play and comparison:** use the skill 13 play-then-compare sequence,
+    displaying both clefs, a brace, and three notes ordered horizontally across the
+    two staves. Use each selected pitch’s familiar clef. Do not invent unchecked bass
+    pitches when the selection contains only treble pitches.
+15. **Flash recall:** show numbered staff cards for 2,000 ms with no answer buttons,
+    then hide the notes and offer numbered choices. Questions 1–2 ask which is higher;
+    questions 3–5 ask for a selected target letter, including D when selected. From
+    question 6, show three notes if available. Otherwise retain two notes. Distinguish
+    same-letter octaves in target wording. Switching questions invalidates old timers.
 
 ## Note queue
 
@@ -282,7 +296,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → thirteen cards. Wide screens use three columns,
+Home order: My notes → daily button → fifteen cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.

@@ -60,6 +60,11 @@ an installed automatic hook or permission to push/deploy.
   notes, provide selected-note review. Skill 13 requires three distinct selected pitches,
   exact left-to-right keyboard playing, then a highest/lowest selection. It explicitly
   permits selected A3/B3 below treble for ledger comparisons such as A3/C4/E4.
+- Skill 13 alternates mixed groups with familiar bass/treble cards. Skill 14 uses
+  the same exact-key sequence and extreme selection on a braced grand staff. Skill 15
+  shows numbered notes for two seconds, hides them before numbered choices, and
+  progresses from five two-note questions to three notes when the selection permits.
+  Skills 13–14 require three pitches; skill 15 requires two.
 - Skill 11 rotates selected notes across small face-up rounds, adding a matching round
   when needed before duration/beat matching. Skill 10 retains one staff placement and
   five ledger placements in every tier, followed by selected-note review.
@@ -115,7 +120,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × thirteen skills and daily practice, totaling 64,260 sessions.
+answer histories × three seeds × fifteen skills and daily practice, totaling 73,440 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and

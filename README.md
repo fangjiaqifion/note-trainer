@@ -8,7 +8,7 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same thirteen skills.
+14-question first lesson, then folded into the same fifteen skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
@@ -26,8 +26,12 @@ pairs, and covers all selected pitches. Skill 12 shows three selected notes toge
 mixed-clef notes use separate familiar staff images. Skill 13 asks the child to play
 three selected notes from left to right, then choose the highest or lowest. Nearby
 pitches and similar line positions receive priority, including treble A3/C4/E4 ledger
-comparisons. Three distinct eligible notes are required for skill 13.
-The thirteen skill cards remain stable as new lesson notes join the selected pool.
+comparisons. Mixed groups also use familiar bass-clef cards. Skill 14 places the three
+notes on a braced grand staff. Skill 15 briefly shows numbered notes for two seconds,
+then hides them for higher-pitch and target-note recall, progressing from two notes
+to three after five questions. Three distinct eligible notes are required for skills
+13–14; skill 15 requires two.
+The fifteen skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked

@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页十三张卡、20 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页十五张卡、20 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -108,6 +108,8 @@ async function renderCases(){
     ['staffPlacement', d.buildQuestions(10).filter(q=>!q.coverage)[0]],
     ['matching', d.buildQuestions(11)[0]],
     ['threeNotes', d.buildQuestions(12)[0]],
+    ['grandThree', d.buildQuestions(14)[0]],
+    ['flashNotes', d.buildQuestions(15)[0]],
     ['playThree', d.buildQuestions(13)[0]],
     ['playThreeCompare', d.buildQuestions(13)[0]],
     ['threeNotesMixed', mixed],
@@ -525,7 +527,7 @@ async function comparisonSelectionCheck(page){
       d.S.selected=['C4','D4','E4'];
       const q=d.buildQuestions(12)[0];d.G.q=q;q.answered=false;q.render();
       if(document.querySelectorAll('#stage .note-hit').length!==3)errors.push('missing hit regions');
-      document.querySelector('#stage .note-hit[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+      document.querySelector('#stage :is(.note-hit,button)[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
       if(!q.answered)errors.push('correct tap not accepted');
       d.S.selected=['E4'];
       for(const skill of [9,12])if(!d.buildQuestions(skill).some(q=>q.noteId==='E4'))errors.push('single selection missing');
@@ -533,6 +535,35 @@ async function comparisonSelectionCheck(page){
     return errors.slice(0,10);
   });
   assert.deepEqual(result,[],'selected-note and alternating-clef comparison regression');
+}
+
+async function flashCheck(page){
+  await page.evaluate(function(){
+    const d=window.__dbg;
+    d.G.session++;const qs=d.buildQuestions(15);
+    if(qs.length<10||qs.slice(0,5).some(q=>q.choiceIds.length!==2)||qs.slice(5).some(q=>q.choiceIds.length!==3))throw Error('flash progression');
+    if(qs[0].ask!=='higher'||qs[2].ask!=='name')throw Error('flash task progression');
+    d.G.q=qs[2];d.G.q.answered=false;d.G.busy=false;d.G.q.render();
+    if(document.querySelector('#answer button'))throw Error('flash answers visible early');
+  });
+  await page.waitForTimeout(1000);
+  assert.equal(await page.locator('#stage svg').count(),2,'notes remain during observation');
+  await page.waitForFunction(()=>window.__dbg.G.q.phase==='answer');
+  assert.equal(await page.locator('#stage svg').count(),0,'flash notes hidden');
+  assert.equal(await page.locator('#answer button').count(),2,'numbered answers');
+  await page.evaluate(function(){
+    const q=window.__dbg.G.q;
+    document.querySelector('#answer button[data-i="'+((q.target+1)%2)+'"]').click();
+    if(q.answered)throw Error('wrong memory answer accepted');
+    document.querySelector('#answer button[data-i="'+q.target+'"]').click();
+    if(!q.answered)throw Error('correct memory answer rejected');
+    const d=window.__dbg;d.G.session++;d.G.busy=false;const grand=d.buildQuestions(14)[0];d.G.q=grand;grand.answered=false;grand.render();
+    if(document.querySelectorAll('#stage svg > g').length!==2)throw Error('grand staff missing');
+    grand.choiceIds.forEach(id=>document.querySelector('#answer [data-midi="'+d.NOTES[id].midi+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})));
+    if(grand.phase!=='compare')throw Error('grand playing sequence');
+    document.querySelector('#stage .note-hit[data-i="'+grand.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+    if(!grand.answered)throw Error('grand extreme rejected');
+  });
 }
 
 async function playThreeCheck(page){
@@ -546,7 +577,8 @@ async function playThreeCheck(page){
       if(new Set(qs.map(q=>q.ask)).size!==2)errors.push('missing higher/lower');
       for(const q of qs.slice(0,2)){
         d.G.busy=false;d.G.q=q;q.answered=false;q.render();
-        if(q.clef!=='treble')errors.push('CA ledger comparison missing');
+        if(qs.indexOf(q)===0&&q.clef!=='treble')errors.push('CA ledger comparison missing');
+        if(qs.indexOf(q)===1&&q.clef!==null)errors.push('bass comparison missing');
         if(document.querySelectorAll('#stage .note-hit').length)errors.push('comparison enabled early');
         const press=m=>document.querySelector('#answer [data-midi="'+m+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
         const midis=q.choiceIds.map(id=>d.NOTES[id].midi);
@@ -554,9 +586,9 @@ async function playThreeCheck(page){
         midis.forEach((m,i)=>{press(m);if(q.played!==i+1)errors.push('wrong play step');});
         if(q.phase!=='compare'||q.answered)errors.push('missing comparison phase');
         const wrong=(q.target+1)%3;
-        document.querySelector('#stage .note-hit[data-i="'+wrong+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+        document.querySelector('#stage :is(.note-hit,button)[data-i="'+wrong+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
         if(q.answered)errors.push('wrong extreme accepted');
-        document.querySelector('#stage .note-hit[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+        document.querySelector('#stage :is(.note-hit,button)[data-i="'+q.target+'"]').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
         if(!q.answered)errors.push('correct extreme rejected');
       }
       d.S.selected=['C4','E4'];if(d.buildQuestions(13).length)errors.push('ambiguous under-three pool');
@@ -754,8 +786,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('十三个技能') >= 0, 'report must say thirteen skills');
-  assert.equal(report.headers.length, 15, 'matrix must have date + 13 skills + total');
+  assert.ok(report.text.indexOf('十五个技能') >= 0, 'report must say fifteen skills');
+  assert.equal(report.headers.length, 17, 'matrix must have date + 15 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -879,8 +911,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 13, 'home must show thirteen skill cards');
-    console.log('PASS home: 13 skill cards');
+    assert.equal(cards, 15, 'home must show fifteen skill cards');
+    console.log('PASS home: 15 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -890,7 +922,7 @@ async function main(){
 
     await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 20 question types x 4 viewports');
+    console.log('PASS layout: 22 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -912,12 +944,13 @@ async function main(){
     await newSkillsCheck(page);
     await comparisonSelectionCheck(page);
     await playThreeCheck(page);
+    await flashCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: thirteen-skill matrix');
+    console.log('PASS report: fifteen-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');

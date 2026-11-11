@@ -17,7 +17,7 @@ export async function generationAudit(page){
       const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count
         ? d.SKILLS[skill - 1].count(d.DIFFS[g.diffKey].count) : d.DIFFS[g.diffKey].count;
       // 易混音只允许已定义的相邻/易混对子；没有合法对子时为空。
-      if(skill===13 && sel.length<3){check(qs.length===0,prefix+' under-three pool');return;}
+      if(([13,14].includes(skill) && sel.length<3)||(skill===15 && sel.length<2)){check(qs.length===0,prefix+' under-three pool');return;}
       check(qs.length >= ([9,12].includes(skill)&&qs.every(q=>q.coverage)?sel.length:skill===5?Math.max(n,sel.length):n), prefix + ' count ' + qs.length + '/' + n);
       const covered=new Set();
       qs.forEach(q=>{
@@ -39,9 +39,9 @@ export async function generationAudit(page){
           if(q.kind === 'find') check(sel.some(id => d.NOTES[id].letter === q.letter), prefix + ' unselected letter ' + q.letter);
         });
       }
-      if([9,12,13].includes(skill)) qs.filter(q=>!q.coverage).forEach(q=>{
+      if([9,12,13,14,15].includes(skill)) qs.filter(q=>!q.coverage).forEach(q=>{
         check(q.choiceIds.every(id=>sel.includes(id)),prefix+' unselected comparison choice');
-        check(q.choiceIds.length===(skill===9?2:3),prefix+' choice count');
+        check((skill===15?[2,3].includes(q.choiceIds.length):q.choiceIds.length===(skill===9?2:3)),prefix+' choice count');
         if(skill===12 && q.choiceIds.filter(id=>d.NOTES[id].letter===q.letter).length>1)
           check(q.targetLabel.includes('中央 C'),prefix+' ambiguous octave target');
       });
@@ -111,6 +111,6 @@ export async function generationAudit(page){
     return {failures,sessions,samples};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 14 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 16 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }
