@@ -6,6 +6,21 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Code quality audit and publication, 2026-11-12
+
+Focused audit of today's six instructional commits found and fixed stale hidden
+selections after skill 23 redraw and missing first-error recording. Empty first
+submissions now survive the shared answer logger. The regression checks redraw,
+extra distractors, correction, and the saved event. Local build `3f32ad216a` passed the complete required release suite: 54 Node
+tests, 1,144 scheduling cases, 220,752 generated sessions, 45 fixtures at four
+viewports, and all sync/backup/cloud/portal/storage/offline checks. Both local
+origins match all runtime hashes; browser receipts remain prepared pending
+publication verification. See the [audit](audit_20261112_code_quality/audit.md).
+
+Updated this tracker and audit. AGENTS, LEVELS, README, development/user guides,
+cloud operations, and teacher portal docs reviewed unchanged because instructional
+rules, permissions, configuration, and release procedures remain accurate.
+
 ## Three distinct heights in skill 22, 2026-11-12
 
 Skill 22 now uses all six permutations of C4/E4/G4. Every question contains

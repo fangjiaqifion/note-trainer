@@ -692,11 +692,17 @@ async function addedSkillsCheck(page){
     function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=skill===22?d.qPitchPlace([67,60,64]):d.buildQuestions(skill)[0];document.querySelector('#stage').className='stage';d.G.q.render();return d.G.q;}
     const q=render(23),cards=[...document.querySelectorAll('[data-card]')];
     if(cards.length!==16||q.cards.filter(card=>!card.right).length!==12)throw Error('expanded information cards missing');
+    cards[0].click();q.render();
+    if(document.querySelectorAll('[data-card].selected').length)throw Error('redraw retained visible selections');
     document.querySelector('#answer button').click();if(q.answered)throw Error('empty selection accepted');
+    if(q.chosen!==''||q.wrongChoice!=='')throw Error('redraw retained hidden selections or lost first error');
+    cards.splice(0,cards.length,...document.querySelectorAll('[data-card]'));
     q.cards.forEach((card,i)=>{if(card.right)cards[i].click();});
     const distractor=q.cards.findIndex(card=>!card.right);cards[distractor].click();document.querySelector('#answer button').click();
     if(q.answered)throw Error('extra distractor accepted');
+    if(q.wrongChoice!=='')throw Error('first information error overwritten');
     cards[distractor].click();document.querySelector('#answer button').click();if(!q.answered)throw Error('correct information combination rejected');
+    if(d.S.events.at(-1).chosen!=='')throw Error('answer log replaced empty first error with corrected answer');
     const levels=Array.from({length:27},(_,k)=>[Math.floor(k/9),Math.floor(k/3)%3,k%3]);
     for(const heard of levels)for(const placed of levels){
       const expected=heard.every((a,i)=>heard.every((b,j)=>(a===b)===(placed[i]===placed[j])&&(a>b)===(placed[i]>placed[j])));

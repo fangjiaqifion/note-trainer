@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="a16fb117cc">
+<meta name="app-build" content="3f32ad216a">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十三项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -2727,7 +2727,7 @@ function recordAnswer(q){
     /* 第 9 关的对比对和孩子的选择。pair 按字母排序，A→B 与 B→A
        会落进同一个 key，报告才能把两个方向合成一张混淆表。 */
     pair: q.pair || '',
-    chosen: q.wrongChoice || q.chosen || '',
+    chosen: q.wrongChoice ?? q.chosen ?? '',
     diff: G.diffKey || currentDiffKey(),
     first: q.wrong ? 0 : 1,
     wrong: q.wrong || 0,
@@ -4830,7 +4830,7 @@ function makeNoteLinks(ids,n){
     const selected=new Set();
     const q={kind:'noteLinks',noteId:id,target:id,cards:cards,wrong:0,
       render:function(){
-        stageEl.classList.add('links-stage');setPrompt('找齐所有与 '+note.letter+' 音有关的信息');
+        selected.clear();stageEl.classList.add('links-stage');setPrompt('找齐所有与 '+note.letter+' 音有关的信息');
         stageEl.innerHTML='<div class="note-links"></div>';
         answerEl.innerHTML='<p class="spot-cap">选出音名、唱名、谱面和键盘，共四张</p><button class="primary-btn">选好了</button>';
         const board=stageEl.firstChild;
@@ -4845,7 +4845,7 @@ function makeNoteLinks(ids,n){
           }
           b.onclick=function(){if(q.answered)return;if(selected.has(i))selected.delete(i);else selected.add(i);b.classList.toggle('selected',selected.has(i));b.setAttribute('aria-pressed',String(selected.has(i)));};board.appendChild(b);
         });
-        answerEl.querySelector('button').onclick=function(){if(q.answered)return;q.chosen=[...selected].sort().join(',');const ok=cards.every((card,i)=>card.right===selected.has(i));judge(ok,ok?'对！这些都表示 '+note.letter:'再看看，要找齐四种信息');};
+        answerEl.querySelector('button').onclick=function(){if(q.answered)return;q.chosen=[...selected].sort().join(',');const ok=cards.every((card,i)=>card.right===selected.has(i));if(!ok&&q.wrongChoice==null)q.wrongChoice=q.chosen;judge(ok,ok?'对！这些都表示 '+note.letter:'再看看，要找齐四种信息');};
       },reveal:function(){setPrompt(note.letter+' 的唱名是 '+solfege[note.letter]+'，再找对应的谱面和琴键',false);}
     };return q;
   });
