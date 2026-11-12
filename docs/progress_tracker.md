@@ -13,9 +13,11 @@ selections after skill 23 redraw and missing first-error recording. Empty first
 submissions now survive the shared answer logger. The regression checks redraw,
 extra distractors, correction, and the saved event. Local build `3f32ad216a` passed the complete required release suite: 54 Node
 tests, 1,144 scheduling cases, 220,752 generated sessions, 45 fixtures at four
-viewports, and all sync/backup/cloud/portal/storage/offline checks. Both local
-origins match all runtime hashes; browser receipts remain prepared pending
-publication verification. See the [audit](audit_20261112_code_quality/audit.md).
+viewports, and all sync/backup/cloud/portal/storage/offline checks. Pages and both local origins match all runtime hashes. Six actual Safari/Chrome
+boot receipts acknowledge `3f32ad216a`; release status is `ready`. Fix commit
+`2694676` and the six earlier instructional commits were pushed to origin/main.
+The complete push release suite passed again. Physical iPad interaction and
+human audible acceptance remain unverified. See the [audit](audit_20261112_code_quality/audit.md).
 
 Updated this tracker and audit. AGENTS, LEVELS, README, development/user guides,
 cloud operations, and teacher portal docs reviewed unchanged because instructional
