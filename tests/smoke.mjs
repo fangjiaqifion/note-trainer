@@ -689,7 +689,7 @@ async function concisePromptCheck(page){
 async function addedSkillsCheck(page){
   await page.evaluate(()=>{
     const d=window.__dbg;
-    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=skill===22?d.qPitchPlace([67,60,67]):d.buildQuestions(skill)[0];document.querySelector('#stage').className='stage';d.G.q.render();return d.G.q;}
+    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=skill===22?d.qPitchPlace([67,60,64]):d.buildQuestions(skill)[0];document.querySelector('#stage').className='stage';d.G.q.render();return d.G.q;}
     const q=render(23),cards=[...document.querySelectorAll('[data-card]')];
     if(cards.length!==16||q.cards.filter(card=>!card.right).length!==12)throw Error('expanded information cards missing');
     document.querySelector('#answer button').click();if(q.answered)throw Error('empty selection accepted');
@@ -713,21 +713,21 @@ async function addedSkillsCheck(page){
   });
   await page.waitForFunction(()=>!window.__dbg.G.q.playing);
   const played=await page.evaluate(()=>{AudioContext.prototype.createOscillator=window.__pitchCreate;const groups=new Map();for(const {t,f} of window.__pitchOsc){const key=t.toFixed(2);groups.set(key,Math.min(groups.get(key)||Infinity,f));}return [...groups.values()];});
-  assert.equal(played.length,3,'G-C-G must play exactly three tones');
-  [391.995,261.626,391.995].forEach((f,i)=>assert.ok(Math.abs(played[i]-f)<.2,'actual G-C-G fundamental '+i));
+  assert.equal(played.length,3,'G-C-E must play exactly three tones');
+  [391.995,261.626,329.628].forEach((f,i)=>assert.ok(Math.abs(played[i]-f)<.2,'actual G-C-E fundamental '+i));
   await page.locator('.pitch-note').nth(0).press('ArrowDown');
   await page.locator('.pitch-note').nth(1).press('ArrowUp');
   await page.locator('.pitch-note').nth(2).press('ArrowDown');
   await page.locator('.placement-submit').click();
-  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),undefined,'G-C-G must reject low-high-low');
+  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),undefined,'G-C-E must reject low-high-low');
   const points=await page.evaluate(()=>{
     const q=window.__dbg.G.q,svg=document.querySelector('.pitch-board');
-    return [2,0,2].map((level,i)=>{const p=svg.createSVGPoint();p.x=[120,300,480][i];p.y=150;const from=p.matrixTransform(svg.getScreenCTM());p.y=[230,150,70][level];const to=p.matrixTransform(svg.getScreenCTM());return {from:[from.x,from.y],to:[to.x,to.y]};});
+    return [2,0,1].map((level,i)=>{const p=svg.createSVGPoint();p.x=[120,300,480][i];p.y=150;const from=p.matrixTransform(svg.getScreenCTM());p.y=[230,150,70][level];const to=p.matrixTransform(svg.getScreenCTM());return {from:[from.x,from.y],to:[to.x,to.y]};});
   });
   for(const p of points){await page.mouse.move(...p.from);await page.mouse.down();await page.mouse.move(...p.to,{steps:4});await page.mouse.up();}
-  await page.evaluate(()=>{const q=window.__dbg.G.q;if(q.target!=='2,0,2')throw Error('G-C-G answer inverted');});
+  await page.evaluate(()=>{const q=window.__dbg.G.q;if(q.target!=='2,0,1')throw Error('G-C-E answer inverted');});
   await page.locator('.placement-submit').click();
-  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'G-C-G must accept high-low-high');
+  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'G-C-E must accept high-low-middle');
 }
 
 async function listeningCheck(page){

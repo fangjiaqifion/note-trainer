@@ -6,6 +6,22 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Three distinct heights in skill 22, 2026-11-12
+
+Skill 22 now uses all six permutations of C4/E4/G4. Every question contains
+three distinct pitches and requires bottom, middle, and top once each.
+Repeated-pitch, all-equal, and two-height questions are removed. Automatic
+playback, icon controls, and the instruction-free board remain unchanged.
+Local build `a16fb117cc` passed the complete required release suite: 54 Node tests, 1,144 scheduling cases, 220,752 generated sessions, 45 fixtures at four viewports, and all sync/backup/cloud/portal/storage/offline suites. Independent actual-frequency and pointer tests passed all six permutations. Both local-origin file hashes and four actual Safari/Chrome boot receipts match this build, status ready. Git whitespace checks and 55 documentation links passed.
+
+See the [three-height audit](audit_20261112_three_heights/audit.md).
+
+Updated AGENTS, LEVELS, README, development/user guides, tracker, and audit.
+Cloud/portal procedures and parent/games guides/overviews reviewed unchanged
+because protocols, permissions, ownership, and scope are unaffected. Prior
+records below describe earlier question banks. Physical iPad and human
+audible acceptance remain unverified. No push, deployment, or database changes.
+
 ## Relative pitch rules, aligned grid, and G3, 2026-11-12
 
 Skill 22 now derives playback and pairwise higher/lower/equal scoring from one

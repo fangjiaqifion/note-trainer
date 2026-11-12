@@ -35,7 +35,7 @@ export async function generationAudit(page){
           });
         });
       }
-      if(skill===22){check(qs.length===6,prefix+' six placement tasks');qs.forEach(q=>check(q.pattern.length===3&&q.pattern.every((level,i)=>[60,64,67][level]===q.midiSequence[i]),prefix+' legal three-height pattern'));}
+      if(skill===22){check(qs.length===6,prefix+' six placement tasks');check(new Set(qs.map(q=>q.midiSequence.join(','))).size===6,prefix+' six distinct permutations');qs.forEach(q=>check(q.pattern.length===3&&new Set(q.pattern).size===3&&q.pattern.every((level,i)=>[60,64,67][level]===q.midiSequence[i]),prefix+' all three heights exactly once'));}
       if(skill===23){qs.forEach(q=>{check(q.cards.length===16,prefix+' sixteen information cards');check(q.cards.filter(c=>c.right).length===4,prefix+' four matching representations');check(q.cards.every(c=>c.right===(d.NOTES[c.id].letter===d.NOTES[q.noteId].letter)),prefix+' correct information target');});}
       if(skill===19){
         check(qs.length===8,prefix+' eight listening directions');
