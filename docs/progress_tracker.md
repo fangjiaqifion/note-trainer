@@ -13,8 +13,8 @@ immutable MIDI sequence. G–C–G accepts high–low–high and rejects low–h
 relative arrangements may shift vertically. Skill 23 uses an aligned 4 × 4
 grid at every viewport. G3 is available after A3 and before existing F4, with
 bass fourth-space notation, MIDI 55, left fourth finger, and a complete local
-F3–B3 keyboard. F3 remains pending clarification because the request describes
-F to the right of middle C, which is existing F4.
+F3–B3 keyboard. The user confirmed the order A3 → G3 → F4 → G4 → A4.
+F4 remains above middle C; F3 is not added.
 
 Local build `d639676bcf` passed the full required release suite: 54 Node tests,
 1,144 scheduling cases, 220,752 sessions across all 511 nonempty selections,
@@ -30,7 +30,12 @@ Updated AGENTS, LEVELS, README, development/user guides, tracker, and
 parent/games guides/overviews reviewed unchanged because protocols,
 permissions, ownership, and scope are unaffected. Physical iPad interaction
 and human audible acceptance remain unverified. No push, deployment, or
-live database change. F-note scope remains a pending user clarification.
+live database change. The subsequent user clarification confirms the existing
+runtime order and requires no new build. Updated README and both trackers;
+added a resolution to the audit. AGENTS, LEVELS, and development/user guides
+reviewed unchanged because they already match the confirmed order and workflow.
+Documentation-only validation: recorded NOTE_ORDER matches the decision and
+Git whitespace checks pass; prior runtime acceptance remains unchanged.
 
 ## Whole-note placement and expanded information field, 2026-11-12
 

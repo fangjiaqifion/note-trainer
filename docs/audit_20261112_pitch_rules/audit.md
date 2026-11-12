@@ -25,3 +25,12 @@ The requested F note remains pending clarification: the request names F3 but des
 Local build `d639676bcf` passed the complete required release suite (54 Node tests, 1,144 scheduling cases, 220,752 generated sessions, 45 four-viewport fixtures, and all browser storage/sync/backup/cloud/portal/offline suites). The supplementary smoke run passed the explicit inverse-rejection assertion. Both local-origin file hashes and four actual Safari/Chrome boot receipts match this build, status ready. G3 data, first-keyboard range, and exact 4 × 4 alignment/bounds were independently checked. Screenshots: [G–C–G high–low–high](gcg_high_low_high.png), [landscape grid](aligned_landscape.png), [phone grid](aligned_phone.png). Human listening and physical iPad interaction remain unverified. No push, deployment, or live database change.
 
 Updated AGENTS, LEVELS, README, development guide, user guide, tracker, and this audit. Cloud operations and teacher portal docs reviewed unchanged because schemas, permissions, and sync behavior are unaffected. Parent/games guides and parent README reviewed unchanged because ownership, workspace scope, and publication boundaries remain applicable. Historical audits retain their original scope.
+
+## Subsequent scope confirmation, 2026-11-12
+
+The user confirmed adding G3 and placing existing F4 after it. The implemented
+order A3 → G3 → F4 → G4 → A4 already matches this decision. F3 is not added.
+This resolves the pending question above without changing the runtime build,
+learner progress, or previously recorded acceptance evidence. README and both
+trackers are updated; AGENTS, LEVELS, and operating/user guides were reviewed
+unchanged because their current order and procedures remain accurate.
