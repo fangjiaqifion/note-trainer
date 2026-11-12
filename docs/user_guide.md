@@ -98,7 +98,7 @@ half needs at least three questions, otherwise it says the sample is too small.
 
 Then:
 
-- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the twenty-one skills plus a
+- **每天练了哪一项** (daily by skill): a matrix with dates as rows and the twenty-three skills plus a
   total as columns. Each cell shows time and first-try accuracy, colored green at 80% or
   above, orange from 60% to 79%, red below 60%.
 - **每关** (per skill): questions, total time, average time per question, first-try accuracy,
@@ -183,12 +183,12 @@ second keyboard step and no key has been found yet, the prompt names the exact o
 so the target is unambiguous.
 
 The home screen keeps the checked-note chips at the top, the daily button below them, and the
-twenty-one fixed skill cards below that. The chips are the only part that grows with the note set.
+twenty-three fixed skill cards below that. The chips are the only part that grows with the note set.
 Wide screens use three card columns, tablet portrait two, and phones one.
 
-## The twenty-one skills
+## The twenty-three skills
 
-The twenty-one cards are fixed. Each one declares which note flags it needs, so a new note joins a
+The twenty-three cards are fixed. Each one declares which note flags it needs, so a new note joins a
 skill automatically once that flag is open.
 
 | # | Skill | Task | Needs |
@@ -212,7 +212,7 @@ skill automatically once that flag is open.
 | 17 | 选择拍号 · Choose the meter | Read two complete measures and choose 2/4, 3/4, or 4/4; six questions | none |
 | 18 | 变形键盘 · Deformed keyboard matching | Six random keyboard shapes per session; find every matching key for name targets | key + pos |
 
-Exact totals are listed in [the skill design table](../LEVELS.md#twenty-one-skills).
+Exact totals are listed in [the skill design table](../LEVELS.md#twenty-three-skills).
 Each skill uses its fixed quota, balancing eligible checked notes within the available questions. Skills 6–8, 10, 16–17, and 19 are independent of pitch selection.
 Position skills 6–8 and 10 keep their abstract exercises. Matching rotates the
 selected pool across four pitch rounds and one duration round.
@@ -477,3 +477,5 @@ Press **播放 / 再听一次** and listen before choosing. Skill 19 uses arrow-
 While a listening sequence plays, the top speaker button stays silent so speech does
 not mask the notes. Leaving the exercise stops its playback. Leaving flash recall
 also cancels the hidden timer, preventing a later spoken prompt on the home screen.
+
+Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board; tap a height in each numbered column. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Other cards are distractors. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.

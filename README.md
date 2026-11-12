@@ -8,7 +8,7 @@ returns to the staff itself: first to name its lines and spaces, then to compare
 position, with and without a clef, then to name ledger positions above and below the staff, and
 then to tell visually similar notes apart, place notes at requested ledger positions, and
 match note names, keyboard keys, and staff notation in a card game. New notes are introduced one at a time in a
-14-question first lesson, then folded into the same twenty-one skills.
+14-question first lesson, then folded into the same twenty-three skills.
 
 **Live:** https://fangjiaqifion.github.io/note-trainer/
 **Repository:** https://github.com/fangjiaqifion/note-trainer
@@ -40,7 +40,7 @@ ribbons, stairs, origami folds, spirals, zebras, fish, and flowers. Each questio
 targets use only A–G and ask for every matching key across two octaves; found keys
 stay marked until all matches are found. Staff targets retain one exact pitch.
 Black-key groups and middle C provide landmarks.
-The twenty-one skill cards remain stable as new lesson notes join the selected pool.
+The twenty-three skill cards remain stable as new lesson notes join the selected pool.
 See [the development guide](docs/development.md#adding-a-note).
 
 Each learner has a separate profile with a four-digit local PIN. The profile holds the checked
@@ -196,3 +196,5 @@ are complete. Teachers use username/key access; only administrators require MFA.
 [portal operations and rollout status](docs/teacher_portal.md).
 
 Skills 19–21 add listening for melodic direction, highest/lowest pitch with numbered answers, and single-tone letter names. Notes remain hidden during listening; replay is available.
+
+Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board; tap a height in each numbered column. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Other cards are distractors. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.

@@ -143,7 +143,7 @@ is neither encryption nor server authorization. Reuse existing synthetic identit
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
 The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × twenty-one skills and daily practice, totaling 100,980 sessions.
+answer histories × three seeds × twenty-three skills and daily practice, totaling 110,160 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and
@@ -167,3 +167,5 @@ active voices. The shared navigation, session-start, and question-transition pat
 it before abandoning a question. Cleanup must be safe to repeat. Listening questions
 expose `playing` while the sequence is active so the prompt-repeat control stays silent.
 Keep the first incorrect choice in `wrongChoice` for answer-log consistency.
+
+Skills 22–23: six three-tone placement questions with repetitions and a stable C4/E4/G4 pool; four information-selection questions using eligible checked targets, fixed-do solfege, familiar staff notation, and keyboards limited to one octave. Placement playback owns cleanup and locks answers while playing. Skill 21 retains its controls, shows feedback inline for two seconds. Skill 16 speaks the full instruction once, then “补全缺失音符”.

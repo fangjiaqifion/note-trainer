@@ -10,9 +10,9 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="6ba889db8f">
+<meta name="app-build" content="0de68d13b9">
 <title>识谱小练习 · 我的音</title>
-<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十一项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
+<meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十三项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
      但不需要被搜索引擎收录：noindex 让爬虫不要建索引，
      nofollow 不追踪页面里的链接，noarchive 不留快照。
@@ -22,7 +22,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="识谱小练习">
 <meta property="og:title" content="识谱小练习 · 我的音">
-<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。二十一项技能按孩子的进度加入新音，三档难度，可离线。">
+<meta property="og:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。二十三项技能按孩子的进度加入新音，三档难度，可离线。">
 <meta property="og:url" content="https://fangjiaqifion.github.io/note-trainer/">
 <meta property="og:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <meta property="og:image:width" content="1200">
@@ -30,7 +30,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="识谱小练习 · 我的音">
-<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。二十一项技能按孩子的进度加入新音。">
+<meta name="twitter:description" content="每天 3 分钟：音名 → 键盘 → 五线谱 → 时值 → 指法 → 线与间 → 两个音 → 加线 → 易混音。二十三项技能按孩子的进度加入新音。">
 <meta name="twitter:image" content="https://fangjiaqifion.github.io/note-trainer/og-cover.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -653,6 +653,13 @@
 .card-keyboard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.card-letter{font-size:48px}
 @media(max-height:520px){.match-card{height:86px;padding:4px}.matching-board{gap:6px}}
 
+@media (min-width:700px) and (max-height:600px){.note-links{grid-template-columns:repeat(4,minmax(0,1fr))!important}.note-links .opt{min-height:70px!important}.note-links .keyboard{height:70px!important}.stage.pitch-stage{gap:3px}.pitch-stage .spot-cap{margin:0}.pitch-stage .primary-btn{padding:6px 14px}.pitch-board{height:135px!important}.pitch-slot{min-height:38px!important;padding:2px!important}}
+.note-links .opt.selected,.pitch-slot.selected{border-color:#36a269;background:#eaf8ee}
+@media(max-height:520px) and (orientation:landscape){#play:has(>.pitch-stage),#play:has(>.links-stage){grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto;align-content:start}#play>.stage.pitch-stage,#play>.stage.links-stage{grid-column:1/-1;grid-row:3}#play:has(>.pitch-stage)>.answer,#play:has(>.links-stage)>.answer{grid-column:1/-1;grid-row:4}}
+.stage.pitch-stage,.stage.links-stage{flex-direction:column;gap:12px}
+.note-links .opt{width:100%;font-size:30px;font-weight:700}
+.pitch-slot{width:100%;font-size:24px!important}
+.note-links svg{max-height:95px;width:100%}
 </style>
 </head>
 <body>
@@ -1175,7 +1182,7 @@ const VALUE_IDS = ['quarter','half','dotted','whole'];
    加一种新练习（音程、和弦、节奏型、听辨）只加一条：
    写好 make，再声明 needs 和 pool。出题流程不用改。
    首页只渲染 SKILLS，所以菜单长度不会随音集长大。 */
-const SKILL_COUNTS = [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6];
+const SKILL_COUNTS = [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6,6,4];
 const SKILLS = [
   { id:1, key:'findKey',  name:'找键盘', title:'键盘上的位置',
     desc:'音名对应哪个键', color:'#3C7DD9',
@@ -1233,7 +1240,9 @@ const SKILLS = [
     needs:['key','pos'], pool:'active', make:makeIrregularMatch },
   { id:19, key:'earDirection', name:'听音方向', title:'听音向哪里走', desc:'四个音、三个音、两个音，听上行、下行或保持', color:'#557E79', needs:[], pool:'none', make:makeEarDirection },
   { id:20, key:'earExtreme', name:'听音高低', title:'听出最高或最低音', desc:'先听三个音，再听两个音，用数字选择', color:'#596FA4', needs:['pos'], pool:'active', make:makeEarExtreme },
-  { id:21, key:'earName', name:'听音名', title:'听声音选音名', desc:'听一个音，从三个音名中选择', color:'#946A9D', needs:[], pool:'active', make:makeEarName }
+  { id:21, key:'earName', name:'听音名', title:'听声音选音名', desc:'听一个音，从三个音名中选择', color:'#946A9D', needs:[], pool:'active', make:makeEarName },
+  { id:22,key:'pitchPlace',name:'听音摆放',title:'听声音，摆音符',desc:'把三个音摆在低、中、高的位置',color:'#557E79',needs:[],pool:'none',make:makePitchPlace },
+  { id:23,key:'noteLinks',name:'音符信息',title:'找齐同一个音的信息',desc:'从键盘、音名、唱名和谱面中找出目标音，共四题',color:'#946A9D',needs:['key','pos'],pool:'active',make:makeNoteLinks }
 ];
 
 /* ---------------------------------------------------------------------
@@ -1933,16 +1942,17 @@ function pianoVoice(midi, o){
      这个系数只改衰减和相对音量，基频始终是等分音。 */
   const low = Math.max(0, Math.min(1, (72 - midi) / 30));
   const tau0 = 3.2 + 3.6 * low;             // 基频衰减时间常数（秒）
-  const B = 0.0004;                          // 轻微非谐性：真实钢琴的高次泛音偏亮
+  const B = 0.00008 + Math.max(0,midi-60)*0.000004;                          // 轻微非谐性：真实钢琴的高次泛音偏亮
   const dark = 0.5 + 0.5 * low;              // 高音泛音少
   const oscs = [];
 
   for(let n = 1; n <= 12; n++){
-    const amp = Math.pow(n, -1.25) * (n === 1 ? 1 : dark);
+    const amp = Math.pow(n, -1.65) * Math.exp(-(n-1)*f0/6500) * (n === 1 ? 1 : dark);
     if(amp < 0.0035) continue;
     /* 非谐性让第 n 个泛音略高；n=1 时公式为 1，基频不被拉高 */
     const fn = n * f0 * Math.sqrt(1 + B * (n * n - 1));
-    const tau = tau0 / (1 + 0.25 * (n - 1));
+    if(fn >= c.sampleRate*.45) continue;
+    const tau = tau0 / (1 + 0.65 * (n - 1));
     /* 每根弦拆成两根，各偏 ±0.35 音分：平均值正好是等分音。
        偏得再大就会在按住的三四拍里听到一次明显的音量起伏，
        所以只留一点点缓慢的拍频，给余音一点「活气」。 */
@@ -4517,13 +4527,13 @@ function makeRhythmFill(){
     {meter:3,answer:'dotted'},{meter:4,answer:'whole'},
     {meter:3,answer:'quarter'},{meter:4,answer:'half'}
   ]);
-  return specs.map(function(spec){
+  return specs.map(function(spec,round){
     const values=pick(RHYTHM_PATTERNS[spec.meter].filter(values=>values.includes(spec.answer))).slice();
     const positions=values.map((id,i)=>id===spec.answer?i:-1).filter(i=>i>=0);
     const missing=pick(positions),correct=spec.answer;
     const q={kind:'rhythmFill',meter:spec.meter,values:values,missing:missing,valueId:correct,wrong:0,
       render:function(){
-        setPrompt('看拍号，补上缺少的音符');
+        setPrompt('看拍号，补上缺少的音符',round===0?'看拍号，补上缺少的音符':'补全缺失音符');
         q.draw=function(filled){stageEl.innerHTML=rhythmMeasuresMarkup([values],spec.meter,filled?-1:missing);};
         q.draw(false);
         answerEl.innerHTML='<div class="opts rhythm-choices">'+shuffle(RHYTHM_VALUES).map(id=>'<button class="opt" data-value="'+id+'" aria-label="'+VALUES[id].name+'"><svg viewBox="0 0 48 65">'+rhythmGlyph(id,18,51)+'</svg><span class="unit">'+VALUES[id].name+'</span></button>').join('')+'</div>';
@@ -4637,7 +4647,7 @@ function irregularKeyboardMarkup(layout){
   });
   const anchor=irregularPoint(layout.id,7.5/IRREGULAR_MIDIS.length,.82);
   const low=irregularPoint(layout.id,.015,1.16),high=irregularPoint(layout.id,.985,1.16);
-  const labels='<g class="irregular-labels" text-anchor="middle" font-family="Songti SC,serif" font-size="'+(['ring','oval'].includes(layout.id)?20:26)+'" fill="#6B6156"><text x="'+anchor[0]+'" y="'+anchor[1]+'">中央C</text><text x="'+low[0]+'" y="'+low[1]+'">低</text><text x="'+high[0]+'" y="'+high[1]+'">高</text></g>';
+  const labels='<g class="irregular-labels" text-anchor="middle" font-family="Songti SC,serif" font-size="'+(['ring','oval'].includes(layout.id)?20:26)+'" fill="#6B6156"><circle cx="'+anchor[0]+'" cy="'+anchor[1]+'" r="7" fill="#F4C542"/><text x="'+low[0]+'" y="'+low[1]+'">低</text><text x="'+high[0]+'" y="'+high[1]+'">高</text></g>';
   const decoration=layout.id==='zebra'?'<g fill="white" stroke="#111" stroke-width="3" pointer-events="none"><path d="M92 122L55 170L28 150L45 83L63 60L69 22L88 60L107 24L108 81L132 108 M160 233L152 350L176 350L198 239 M590 240L620 350L644 350L632 232 M712 116Q776 150 765 225"/><circle cx="63" cy="101" r="5" fill="#111"/><path d="M45 136L76 147 M65 63L91 86 M155 294L182 299 M611 294L639 289" stroke-width="12"/></g>':'';
   return '<svg class="irregular-keyboard" data-layout="'+layout.id+'" viewBox="'+layout.viewBox+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+layout.name+'键盘，从低到高，中央C已标记">'+decoration+white+black+labels+'</svg>';
 }
@@ -4657,7 +4667,7 @@ function qIrregularMatch(id,type,layout){
       setPrompt(type==='name'?'找出所有的 '+note.letter:'在变形键盘上找到这个音');
       stageEl.classList.add('irregular-stage');
       stageEl.innerHTML='<div class="irregular-cards"><div class="irregular-card" data-type="'+type+'" aria-label="'+(type==='staff'?'五线谱音符':'音名 '+note.letter)+'">'+(type==='staff'?staffSVG({noteId:id,value:'whole',compact:true}):'<span class="card-letter">'+note.letter+'</span>')+'</div></div>';
-      answerEl.innerHTML='<div class="irregular-board"><div class="irregular-heading">'+layout.name+'键盘 <span>找到黑键的两枚、三枚分组</span></div>'+irregularKeyboardMarkup(layout)+(type==='name'?'<div class="irregular-progress" aria-live="polite">已找到 0 / '+matches.length+'</div>':'')+'</div>';
+      answerEl.innerHTML='<div class="irregular-board"><div class="irregular-heading">'+layout.name+'键盘 <span>找到黑键的两枚、三枚分组</span></div>'+irregularKeyboardMarkup(layout)+'<div class="spot-cap"><span style="color:#F4C542">●</span> 黄点是中央 C</div>'+(type==='name'?'<div class="irregular-progress" aria-live="polite">已找到 0 / '+matches.length+'</div>':'')+'</div>';
       function choose(key){
         if(q.answered||G.busy)return;
         const midi=Number(key.dataset.midi);
@@ -4697,7 +4707,7 @@ function qListening(kind,notes,options,target,prompt,feedback){
     render:function(){
       cancelPlayback();
       const session=G.session;
-      setPrompt(kind==='earDirection'?'':prompt,false);
+      setPrompt(kind==='earDirection'?'':prompt,kind==='earDirection'?false:prompt);
       stageEl.innerHTML='<button class="primary-btn ear-replay" type="button">▶ 播放 / 再听一次</button><p class="ear-status" aria-live="polite">点播放，听完再选择</p>';
       answerEl.innerHTML='<div class="opts">'+options.map((label,i)=>'<button class="opt" style="font-size:clamp(24px,4vw,40px);font-weight:700" data-ear="'+i+'" disabled>'+label+'</button>').join('')+'</div>';
       if(kind==='earDirection'){
@@ -4723,11 +4733,80 @@ function qListening(kind,notes,options,target,prompt,feedback){
         if(playing||q.answered||G.q!==q)return;
         q.chosen=String(i);
         if(i!==target){if(!q.wrongChoice)q.wrongChoice=String(i);judge(false,kind==='earDirection'?'': '再听一次试试看');return;}
-        stageEl.innerHTML=feedback();buttons.forEach(b=>b.disabled=true);judge(true,kind==='earDirection'?'':'对！',3500);
+        if(kind==='earName'){
+          replay.disabled=true;status.textContent='答案：'+options[target];
+          const result=document.createElement('div');result.className='ear-answer';result.innerHTML=feedback();stageEl.appendChild(result);
+          buttons[target].classList.add('correct');
+        }else stageEl.innerHTML=feedback();
+        buttons.forEach(b=>b.disabled=true);judge(true,kind==='earDirection'?'':'对！',kind==='earName'?2000:3500);
       });
     },dispose:cancelPlayback,reveal:function(){setPrompt(kind==='earDirection'?'':prompt+'，可以再听一次',false);}
   };return q;
 }
+// Pitch placement uses a stable C4/E4/G4 register and includes repeated pitches.
+function makePitchPlace(ids,n){
+  const patterns=shuffle([[0,1,2],[0,2,0],[1,2,1],[0,0,0],[2,1,0],[2,0,2]]);
+  return patterns.slice(0,n).map(function(pattern){
+    let timer=null,voice=null,run=0,wake=null;
+    const picks=[null,null,null],midis=[60,64,67];
+    const q={kind:'pitchPlace',target:pattern.join(','),pattern:pattern.slice(),wrong:0,playing:false,
+      dispose:function(){run++;clearTimeout(timer);if(wake){wake();wake=null;}if(voice)voice.stop(.08);q.playing=false;},
+      render:function(){
+        stageEl.classList.add('pitch-stage');setPrompt('听三个音，把音符摆在低、中、高的位置');
+        stageEl.innerHTML='<button class="primary-btn placement-replay">▶ 听三个音</button><p class="spot-cap" aria-live="polite">先听，再按顺序摆放</p><div class="pitch-board" style="display:flex;gap:14px;width:min(600px,95vw);height:280px;background:white"></div>';
+        answerEl.innerHTML='<button class="primary-btn placement-submit" disabled>摆好了</button>';
+        const board=stageEl.querySelector('.pitch-board'),submit=answerEl.querySelector('button'),replay=stageEl.querySelector('button'),status=stageEl.querySelector('p');
+        let heard=false;
+        pattern.forEach(function(_,i){
+          const column=document.createElement('div');column.style.cssText='flex:1;display:flex;flex-direction:column;justify-content:space-around;text-align:center';
+          [2,1,0].forEach(function(level){
+            const b=document.createElement('button');b.type='button';b.className='opt pitch-slot';b.dataset.level=level;b.dataset.index=i;b.disabled=true;b.style.cssText='min-height:64px;padding:8px';b.textContent=['低','中','高'][level];b.setAttribute('aria-label','第'+(i+1)+'个音，'+b.textContent);
+            b.onclick=function(){if(q.answered||q.playing||!heard)return;picks[i]=level;column.querySelectorAll('button').forEach(el=>{const selected=Number(el.dataset.level)===level;el.classList.toggle('selected',selected);el.textContent=selected?'● '+(i+1):['低','中','高'][Number(el.dataset.level)];el.setAttribute('aria-pressed',String(selected));});submit.disabled=picks.some(x=>x===null);};column.appendChild(b);
+          });board.appendChild(column);
+        });
+        replay.onclick=async function(){
+          if(q.playing||q.answered)return;stopSay();q.playing=true;const token=++run;replay.disabled=true;submit.disabled=true;board.querySelectorAll('button').forEach(b=>b.disabled=true);
+          for(let i=0;i<3;i++){
+            if(G.q!==q||token!==run)return;status.textContent='正在听第 '+(i+1)+' 个音';voice=pianoVoice(midis[pattern[i]],{dur:.65});
+            await new Promise(resolve=>{wake=resolve;timer=setTimeout(()=>{wake=null;resolve();},850);});
+          }
+          if(G.q!==q||token!==run)return;q.playing=false;heard=true;voice=null;replay.disabled=false;board.querySelectorAll('button').forEach(b=>b.disabled=false);submit.disabled=picks.some(x=>x===null);status.textContent='从左到右，摆放第 1、2、3 个音';
+        };
+        submit.onclick=function(){if(q.playing||q.answered||picks.some(x=>x===null))return;q.chosen=picks.join(',');judge(q.chosen===q.target,'再听一听，比较三个音的高低');};
+      },reveal:function(){setPrompt('高的音放上面，低的音放下面；相同的音放在同一高度',false);}
+    };return q;
+  });
+}
+function makeNoteLinks(ids,n){
+  if(!ids.length)return [];
+  const solfege={C:'Do',D:'Re',E:'Mi',F:'Fa',G:'Sol',A:'La',B:'Si'};
+  return weightedRepeatTo(ids,n).map(function(id){
+    const note=NOTES[id],other=pick(NOTE_ORDER.filter(x=>NOTES[x].letter!==note.letter));
+    const cards=shuffle(['name','solfege','staff','key'].flatMap(type=>[{id,type,right:true},{id:other,type,right:false}]));
+    const selected=new Set();
+    const q={kind:'noteLinks',noteId:id,target:id,wrong:0,
+      render:function(){
+        stageEl.classList.add('links-stage');setPrompt('找齐所有与 '+note.letter+' 音有关的信息');
+        stageEl.innerHTML='<div class="note-links" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:min(680px,94vw)"></div>';
+        answerEl.innerHTML='<p class="spot-cap">选出音名、唱名、谱面和键盘，共四张</p><button class="primary-btn">选好了</button>';
+        const board=stageEl.firstChild;
+        cards.forEach(function(card,i){
+          const target=NOTES[card.id],b=document.createElement('button');b.type='button';b.className='opt';b.dataset.card=i;b.style.cssText='min-width:0;min-height:100px;padding:8px';b.setAttribute('aria-pressed','false');
+          if(card.type==='name')b.textContent=target.letter;
+          if(card.type==='solfege')b.textContent=solfege[target.letter];
+          if(card.type==='staff')b.innerHTML=staffSVG({noteId:card.id,value:'whole',compact:true});
+          if(card.type==='key'){
+            b.innerHTML='<div class="kb keyboard" style="width:100%;height:100px;pointer-events:none"></div>';
+            buildKeyboard(b.firstChild,{start:target.midi<60?0:7,count:7,target:target.midi});
+          }
+          b.onclick=function(){if(q.answered)return;if(selected.has(i))selected.delete(i);else selected.add(i);b.classList.toggle('selected',selected.has(i));b.setAttribute('aria-pressed',String(selected.has(i)));};board.appendChild(b);
+        });
+        answerEl.querySelector('button').onclick=function(){if(q.answered)return;q.chosen=[...selected].sort().join(',');const ok=cards.every((card,i)=>card.right===selected.has(i));judge(ok,ok?'对！这些都表示 '+note.letter:'再看看，要找齐四种信息');};
+      },reveal:function(){setPrompt(note.letter+' 的唱名是 '+solfege[note.letter]+'，再找对应的谱面和琴键',false);}
+    };return q;
+  });
+}
+
 function makeEarDirection(ids,n){
   const qs=[];const pool=['C4','D4','E4','F4','G4','A4'].map(id=>NOTES[id]);
   [4,3,2].forEach(function(count,block){
@@ -4888,13 +4967,13 @@ function qLedgerMove(spot){
     stageEl.innerHTML=ledgerBlock({ys:[current],clef:spot.clef,xs:[8.9],viewBox:'-0.35 -3.6 15.3 12.2'});
     svg=stageEl.querySelector('svg'); svg.style.touchAction='none';
     svg.setAttribute('aria-label',sentence); svg.setAttribute('tabindex','0');
-    const origin=current;
+    const cap=document.createElement('div');cap.className='spot-cap move-position';cap.setAttribute('aria-live','polite');cap.textContent=staffSpotLabel(current);stageEl.appendChild(cap);
     function move(e){
       const point=svg.createSVGPoint(); point.x=e.clientX; point.y=e.clientY;
       const y=point.matrixTransform(svg.getScreenCTM().inverse()).y;
       current=Math.max(-3,Math.min(7,Math.round(y*2)/2));
-      svg.querySelector('.note').setAttribute('transform','translate(0 '+(current-origin)+')');
-      // Rebuild the ledger strokes along with the moved note on release.
+      const holder=document.createElement('div');holder.innerHTML=ledgerBlock({ys:[current],clef:spot.clef,xs:[8.9],viewBox:'-0.35 -3.6 15.3 12.2'});
+      svg.innerHTML=holder.querySelector('svg').innerHTML;cap.textContent=staffSpotLabel(current);
     }
     svg.onpointerdown=function(e){if(G.q.answered)return; svg.setPointerCapture(e.pointerId);move(e);};
     svg.onpointermove=function(e){if(svg.hasPointerCapture(e.pointerId))move(e);};
@@ -6141,7 +6220,7 @@ function dailyMatrix(list){
   SKILLS.forEach(function(sk, i){ totalCells += matrixCell(totals[i]); });
   rows += '<tr class="total"><td>合计</td>' + totalCells + matrixCell(allRows) + '</tr>';
   return '<div class="table-wrap"><table class="matrix">' + head + rows + '</table></div>' +
-    '<div class="report-note">行是日期，列是二十一个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
+    '<div class="report-note">行是日期，列是二十三个技能；格子里是答题用时和一次答对率。颜色：绿 ≥80%，橙 60–79%，红 <60%。今日练习和新音导入按题型归到对应关。' +
     (REPORT_DAYS ? '' : '每日明细最多显示最近 30 天。') + '</div>';
 }
 function skillTable(list){

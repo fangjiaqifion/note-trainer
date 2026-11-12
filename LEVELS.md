@@ -11,7 +11,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 
 ## Overview
 
-The skill axis is fixed at twenty-one cards. The note axis grows through
+The skill axis is fixed at twenty-three cards. The note axis grows through
 B3 → C4 → D4 → E4 → A3 → F4 → G4 → A4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
@@ -103,7 +103,7 @@ skill 3 balances note names. Plan counts before ordering with `spaceOut`. Daily 
 least recently practiced notes. One target necessarily repeats; multiple targets should
 not be adjacent when spacing is feasible. Weights cannot manufacture unchecked targets.
 
-## Twenty-one skills
+## Twenty-three skills
 
 Counts below are exact totals for all difficulty tiers. Eligible checked notes are balanced
 within each quota; a larger pool does not extend the session. Abstract position skills
@@ -132,6 +132,8 @@ within each quota; a larger pool does not extend the session. Abstract position 
 | 19 | earDirection | Hear ascending, descending, or repeated pitches | independent C4–A4 pool | 8 |
 | 20 | earExtreme | Hear the highest/lowest numbered pitch | checked pos; two pitches required | 8 |
 | 21 | earName | Hear a single pitch and choose its letter name | checked notes | 6 |
+| 22 | pitchPlace | Hear three pitches and place each low, middle, or high | independent C4/E4/G4 pool | 6 |
+| 23 | noteLinks | Select matching name, fixed-do solfege, staff, and one-octave keyboard cards | checked eligible notes | 4 |
 
 ### Skill behavior
 
@@ -331,7 +333,7 @@ reports direction-specific first wrong choices. Print outputs only the current r
 The local roster summarizes this device; authorized cloud reports are separate. Stable
 workspace/student/event UUIDs are required for cross-device joins, not display names.
 
-Home order: My notes → daily button → twenty-one cards. Wide screens use three columns,
+Home order: My notes → daily button → twenty-three cards. Wide screens use three columns,
 tablet portrait two, phones one; center the last odd card. Stars are stored by skill ID;
 daily/first lessons do not overwrite them. Unlearned chips remain tappable; the next-note
 footer requires adult initiation. Current learner opens picker or teacher roster by role.
@@ -429,3 +431,5 @@ Skill 20 uses selected position-learned pitches, four three-note questions follo
 Skill 21 plays one selected pitch and offers three distinct letter names. Distractor letters may be unselected; sounding targets are always selected. Each session balances selected targets within six questions. This trains absolute pitch-name matching without a reference tone.
 
 All listening tasks start with an explicit play button, allow replay, suppress speech during playback, and cancel pending sequence notes after leaving the question.
+
+Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board; tap a height in each numbered column. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Other cards are distractors. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.

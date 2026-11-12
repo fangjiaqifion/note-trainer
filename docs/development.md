@@ -112,7 +112,7 @@ prompt-repeat button cannot insert speech into the sequence.
 not touch the note data or the other skills. `id` is also the display number and the star key;
 it must stay unique, and adding another card changes the home grid.
 
-`SKILLS` also drives the home screen. The menu currently has twenty-one cards; new skills are
+`SKILLS` also drives the home screen. The menu currently has twenty-three cards; new skills are
 added only when the interface has room for them.
 
 ## Deformed keyboard geometry
@@ -234,11 +234,11 @@ npm test
 ```
 
 It uses `playwright-core` with the system Google Chrome, starts a temporary static server,
-seeds a test profile in `localStorage`, and checks: twenty-one home cards; 43 question types at four
+seeds a test profile in `localStorage`, and checks: twenty-three home cards; 45 question types at four
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
-flags; the report has twenty-one skill columns; the console stays clean; selected-note coverage in pitch-based skills and every checked-note subset
-is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (100,980 sessions across twenty-one skills and daily practice); and `clear-cache.html` removes only this
+flags; the report has twenty-three skill columns; the console stays clean; selected-note coverage in pitch-based skills and every checked-note subset
+is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (110,160 sessions across twenty-three skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
 runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts.
 
@@ -279,3 +279,5 @@ PostgreSQL-engine permission/transaction tests, and isolated browser suites for 
 roster restore, cloud UI, storage barriers, and old-SW module upgrades. Live Supabase
 checks are separate and require specific authorization; normal documentation checks
 make no database requests. Read the package scripts for the exact current suite.
+
+Skills 22–23 use the existing question lifecycle. Include placement playback cleanup, exact quotas, information-card distractors, and compact landscape layouts in regression checks. The two requested new activities are numbered consecutively because the request used 22 twice.

@@ -6,6 +6,22 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Pitch activities and interaction refinement, 2026-11-12
+
+Skills 8, 10, 16, 18, 20, and 21 implement the requested sound, movement,
+speech, middle-C, and inline-feedback changes. Skills 22 and 23 add six
+three-tone placement tasks and four mixed-information tasks. The duplicated
+requested level number is interpreted as consecutive activities.
+Final local build `0de68d13b9` passed the complete required release suite: 54 Node tests, 1,144 scheduling cases, 110,160 generated sessions, 45 rendering fixtures at four viewports, all listening/new-activity smoke checks, and sync/backup/cloud/portal/storage/offline suites. Both local origins matched every runtime file hash. Four actual Safari/Chrome boot receipts acknowledged this build on port 8775; ignored release status is `ready`. Local preview: http://127.0.0.1:8775/index.html?build=0de68d13b9. Local Markdown targets (54) and Git whitespace checks passed.
+
+See the [implementation and verification audit](audit_20261112_pitch_activities/audit.md).
+
+Updated AGENTS, LEVELS, README, development guide, user guide, this tracker,
+and audit. Cloud/portal procedures and parent/games guides/overviews reviewed
+unchanged because protocols, permissions, ownership, and publication boundaries
+remain accurate. Physical iPad and human listening acceptance remain open.
+No push, deployment, or live database changes.
+
 ## Fixed quotas and visual keyboards, 2026-11-12
 
 Local build `6ba889db8f` implements the exact requested totals for skills 1–21,

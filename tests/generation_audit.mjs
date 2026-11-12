@@ -66,7 +66,7 @@ export async function generationAudit(page){
           check(q.cardType==='name'?q.target===d.NOTES[q.noteId].letter:q.target===d.NOTES[q.noteId].midi,prefix+' name versus staff answer');
         });
       }
-      const n = skill === 'daily' ? 10 : [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6][skill-1];
+      const n = skill === 'daily' ? 10 : [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6,6,4][skill-1];
       if(([13,14].includes(skill) && sel.length<3)||([15,20].includes(skill) && sel.length<2)){check(qs.length===0,prefix+' insufficient pool');return;}
       check(qs.length===n,prefix+' exact quota '+qs.length+'/'+n);
       const covered=new Set();
@@ -162,6 +162,6 @@ export async function generationAudit(page){
     return {failures,sessions,samples};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 22 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 24 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }

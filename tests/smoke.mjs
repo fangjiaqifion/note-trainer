@@ -1,7 +1,7 @@
 /* note-trainer 烟雾测试
    运行：npm install && npm test
    依赖：playwright-core + 本机 Google Chrome（不下载浏览器）
-   覆盖：首页二十一张卡、43 种题型 × 4 个视口的溢出检查、单音选项、
+   覆盖：首页二十三张卡、45 种题型 × 4 个视口的溢出检查、单音选项、
         新音 14 题的中途续学与完整结算、报告列数、控制台报错。 */
 
 import assert from 'node:assert/strict';
@@ -112,7 +112,7 @@ async function renderCases(){
     ['flashNotes', d.buildQuestions(15)[0]],
     ['rhythmFill', d.buildQuestions(16)[0]],
     ['meterChoice', d.buildQuestions(17)[0]],
-    ...[19,20,21].map(id=>['listening-'+id,d.buildQuestions(id)[0]]),
+    ... [19,20,21,22,23].map(id=>['listening-'+id,d.buildQuestions(id)[0]]),
     ...d.IRREGULAR_LAYOUTS.map(layout=>['irregular-'+layout.id,d.qIrregularMatch('C4','name',layout)]),
     ['playThree', d.buildQuestions(13)[0]],
     ['playThreeCompare', d.buildQuestions(13)[0]],
@@ -686,6 +686,31 @@ async function concisePromptCheck(page){
   assert.deepEqual(result,[],'clef progression and concise prompts');
 }
 
+async function addedSkillsCheck(page){
+  await page.evaluate(()=>{
+    const d=window.__dbg;
+    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=d.buildQuestions(skill)[0];d.G.q.render();return d.G.q;}
+    const q=render(23),cards=[...document.querySelectorAll('[data-card]')];
+    if(cards.length!==8)throw Error('information cards missing');
+    document.querySelector('#answer button').click();if(q.answered)throw Error('empty selection accepted');
+    // Each representation has one correct card; test all subsets without guessing from text.
+    for(let mask=0;mask<256&&!q.answered;mask++){
+      cards.forEach((b,i)=>{const want=!!(mask&(1<<i));if((b.getAttribute('aria-pressed')==='true')!==want)b.click();});
+      document.querySelector('#answer button').click();
+    }
+    if(!q.answered)throw Error('no correct information combination');
+    const p=render(22);if(!document.querySelector('.placement-submit').disabled)throw Error('placement unlocked before hearing');
+    if(document.querySelectorAll('.pitch-slot').length!==9)throw Error('three placement columns required');
+    p.dispose();if(p.playing)throw Error('placement disposal failed');
+  });
+  await page.locator('.placement-replay').click();
+  await page.waitForFunction(()=>!document.querySelector('.pitch-slot').disabled);
+  await page.evaluate(()=>{
+    const q=window.__dbg.G.q;q.pattern.forEach((level,i)=>document.querySelector('[data-index="'+i+'"][data-level="'+level+'"]').click());
+    document.querySelector('.placement-submit').click();if(!q.answered)throw Error('correct placement rejected');
+  });
+}
+
 async function listeningCheck(page){
   const plans=await page.evaluate(()=>{
     const d=window.__dbg;
@@ -999,8 +1024,8 @@ async function reportCheck(page){
       })
     };
   });
-  assert.ok(report.text.indexOf('二十一个技能') >= 0, 'report must say twenty-one skills');
-  assert.equal(report.headers.length, 23, 'matrix must have date + 21 skills + total');
+  assert.ok(report.text.indexOf('二十三个技能') >= 0, 'report must say twenty-three skills');
+  assert.equal(report.headers.length, 25, 'matrix must have date + 23 skills + total');
 }
 
 /* clear-cache.html 的独立测试：用允许 Service Worker 的新 context，
@@ -1124,8 +1149,8 @@ async function main(){
     const cards = await page.evaluate(function(){
       return document.querySelectorAll('#levelGrid .level-card').length;
     });
-    assert.equal(cards, 21, 'home must show twenty-one skill cards');
-    console.log('PASS home: 21 skill cards');
+    assert.equal(cards, 23, 'home must show twenty-three skill cards');
+    console.log('PASS home: 23 skill cards');
     const build = await page.evaluate(() => ({
       meta: document.querySelector('meta[name="app-build"]').content,
       settings: document.querySelector('#buildTag').textContent
@@ -1135,7 +1160,7 @@ async function main(){
 
     await homeNavigationCheck(page);
     await layoutCheck(page);
-    console.log('PASS layout: 43 question types x 4 viewports');
+    console.log('PASS layout: 45 question types x 4 viewports');
 
     await singleChoiceCheck(page);
     console.log('PASS single note: key -> staff keeps 2 choices');
@@ -1171,13 +1196,14 @@ async function main(){
     await playThreeCheck(page);
     await flashCheck(page);
     await listeningCheck(page);
+    await addedSkillsCheck(page);
     await questionLifecycleCheck(page);
     console.log('PASS levels 8-11: symbolic dropdowns, eight placement tasks in every tier, proportional keyboards, five matching rounds');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
     await reportCheck(page);
-    console.log('PASS report: twenty-one-skill matrix');
+    console.log('PASS report: twenty-three-skill matrix');
 
     await cacheResetCheck(browser, port);
     console.log('PASS cache reset: game caches cleared, other caches and localStorage kept');
