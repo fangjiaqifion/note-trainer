@@ -6,6 +6,22 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Whole-note placement and expanded information field, 2026-11-12
+
+Skill 22 now shows one reference line and three draggable whole-note heads,
+without pitch labels or instruction text/speech. Every question auto-plays;
+icon-only replay and confirmation remain. Skill 23 keeps four questions but
+expands each to sixteen staggered cards: four matching and twelve distractors.
+Local build `7211f08873` passed the complete required release suite: 54 Node tests, 1,144 scheduling cases, 110,160 generated sessions, 45 rendering fixtures at four viewports, real pointer-drag and automatic-playback checks, and all sync/backup/cloud/portal/storage/offline suites. Both local-origin file hashes matched, and four actual Safari/Chrome receipts acknowledged this build on port 8775, status `ready`. Local documentation targets (55) and Git whitespace checks passed.
+
+See the [refinement audit](audit_20261112_activity_refinement/audit.md).
+
+Updated AGENTS, LEVELS, README, user guide, development guide, this tracker,
+and audit. Cloud/portal procedures and parent/games guides/overviews reviewed
+unchanged because protocols, permissions, ownership, and scope remain accurate.
+Physical iPad dragging and audible automatic playback remain unverified.
+No push, deployment, or live database changes.
+
 ## Pitch activities and interaction refinement, 2026-11-12
 
 Skills 8, 10, 16, 18, 20, and 21 implement the requested sound, movement,

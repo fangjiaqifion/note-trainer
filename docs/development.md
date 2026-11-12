@@ -280,4 +280,4 @@ roster restore, cloud UI, storage barriers, and old-SW module upgrades. Live Sup
 checks are separate and require specific authorization; normal documentation checks
 make no database requests. Read the package scripts for the exact current suite.
 
-Skills 22–23 use the existing question lifecycle. Include placement playback cleanup, exact quotas, information-card distractors, and compact landscape layouts in regression checks. The two requested new activities are numbered consecutively because the request used 22 twice.
+Skills 22–23 use the existing question lifecycle. Include automatic placement playback, cancellation, real pointer dragging, instruction-free presentation, sixteen-card information selection, exact quotas, and compact landscape layouts in regression checks. The two requested new activities are numbered consecutively because the request used 22 twice.

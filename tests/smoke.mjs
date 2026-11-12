@@ -689,26 +689,29 @@ async function concisePromptCheck(page){
 async function addedSkillsCheck(page){
   await page.evaluate(()=>{
     const d=window.__dbg;
-    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=d.buildQuestions(skill)[0];d.G.q.render();return d.G.q;}
+    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=d.buildQuestions(skill)[0];document.querySelector('#stage').className='stage';d.G.q.render();return d.G.q;}
     const q=render(23),cards=[...document.querySelectorAll('[data-card]')];
-    if(cards.length!==8)throw Error('information cards missing');
+    if(cards.length!==16||q.cards.filter(card=>!card.right).length!==12)throw Error('expanded information cards missing');
     document.querySelector('#answer button').click();if(q.answered)throw Error('empty selection accepted');
-    // Each representation has one correct card; test all subsets without guessing from text.
-    for(let mask=0;mask<256&&!q.answered;mask++){
-      cards.forEach((b,i)=>{const want=!!(mask&(1<<i));if((b.getAttribute('aria-pressed')==='true')!==want)b.click();});
-      document.querySelector('#answer button').click();
-    }
-    if(!q.answered)throw Error('no correct information combination');
-    const p=render(22);if(!document.querySelector('.placement-submit').disabled)throw Error('placement unlocked before hearing');
-    if(document.querySelectorAll('.pitch-slot').length!==9)throw Error('three placement columns required');
-    p.dispose();if(p.playing)throw Error('placement disposal failed');
+    q.cards.forEach((card,i)=>{if(card.right)cards[i].click();});
+    const distractor=q.cards.findIndex(card=>!card.right);cards[distractor].click();document.querySelector('#answer button').click();
+    if(q.answered)throw Error('extra distractor accepted');
+    cards[distractor].click();document.querySelector('#answer button').click();if(!q.answered)throw Error('correct information combination rejected');
+    const p=render(22);
+    if(!p.playing||!document.querySelector('.placement-submit').disabled)throw Error('placement must autoplay before answering');
+    if(document.querySelectorAll('.pitch-note').length!==3||document.querySelectorAll('.pitch-board line').length!==1)throw Error('one line and three whole notes required');
+    if(document.querySelector('#stage').textContent.trim()!=='▶'||document.querySelector('#promptText').textContent!=='')throw Error('placement must have no written instructions');
+    p.dispose();p.dispose();if(p.playing)throw Error('placement disposal failed');
+    p.render();
   });
-  await page.locator('.placement-replay').click();
-  await page.waitForFunction(()=>!document.querySelector('.pitch-slot').disabled);
-  await page.evaluate(()=>{
-    const q=window.__dbg.G.q;q.pattern.forEach((level,i)=>document.querySelector('[data-index="'+i+'"][data-level="'+level+'"]').click());
-    document.querySelector('.placement-submit').click();if(!q.answered)throw Error('correct placement rejected');
+  await page.waitForFunction(()=>!window.__dbg.G.q.playing);
+  const points=await page.evaluate(()=>{
+    const q=window.__dbg.G.q,svg=document.querySelector('.pitch-board');
+    return q.pattern.map((level,i)=>{const p=svg.createSVGPoint();p.x=[120,300,480][i];p.y=150;const from=p.matrixTransform(svg.getScreenCTM());p.y=[230,150,70][level];const to=p.matrixTransform(svg.getScreenCTM());return {from:[from.x,from.y],to:[to.x,to.y]};});
   });
+  for(const p of points){await page.mouse.move(...p.from);await page.mouse.down();await page.mouse.move(...p.to,{steps:4});await page.mouse.up();}
+  await page.locator('.placement-submit').click();
+  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'dragging whole notes must produce the heard pattern');
 }
 
 async function listeningCheck(page){

@@ -35,6 +35,8 @@ export async function generationAudit(page){
           });
         });
       }
+      if(skill===22){check(qs.length===6,prefix+' six placement tasks');qs.forEach(q=>check(q.pattern.length===3&&q.pattern.every(level=>[0,1,2].includes(level)),prefix+' legal three-height pattern'));}
+      if(skill===23){qs.forEach(q=>{check(q.cards.length===16,prefix+' sixteen information cards');check(q.cards.filter(c=>c.right).length===4,prefix+' four matching representations');check(q.cards.every(c=>c.right===(d.NOTES[c.id].letter===d.NOTES[q.noteId].letter)),prefix+' correct information target');});}
       if(skill===19){
         check(qs.length===8,prefix+' eight listening directions');
         qs.forEach((q,i)=>{
