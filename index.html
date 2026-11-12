@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="7211f08873">
+<meta name="app-build" content="d639676bcf">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十三项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -659,17 +659,17 @@
 .pitch-note{cursor:grab;outline:none}.pitch-note:focus ellipse:first-of-type,.pitch-note.sounding ellipse:first-of-type{fill:var(--blue)}
 #play:has(>.pitch-stage)>.prompt{display:none}
 .note-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 18px;width:min(1020px,94vw);padding:10px 8px}
-.note-links .opt{width:90%;min-width:0;min-height:95px;padding:7px;font-size:30px;font-weight:700;justify-self:center;transform:translate(var(--scatter-x),var(--scatter-y))}
+.note-links .opt{width:100%;min-width:0;min-height:95px;padding:7px;font-size:30px;font-weight:700;justify-self:stretch}
 .note-links .opt.selected{border-color:#36a269;background:#eaf8ee}
 .note-links svg{height:80px;width:100%;max-height:80px}.note-links .keyboard{height:80px;pointer-events:none}
-@media(max-width:600px){.note-links{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px}.note-links .opt{font-size:24px;min-height:78px;padding:4px}.note-links svg{height:64px}.note-links .keyboard{height:64px}}
+@media(max-width:600px){.note-links{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 6px}.note-links .opt{font-size:24px;min-height:78px;padding:4px}.note-links svg{height:64px}.note-links .keyboard{height:64px}}
 @media(max-height:520px) and (orientation:landscape){
 #play:has(>.pitch-stage),#play:has(>.links-stage){grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto;align-content:start}
 #play>.stage.pitch-stage,#play>.stage.links-stage{grid-column:1/-1;grid-row:3}#play:has(>.pitch-stage)>.answer,#play:has(>.links-stage)>.answer{grid-column:1/-1;grid-row:4}
 .stage.pitch-stage{gap:3px}.pitch-stage .primary-btn{padding:6px 14px}.pitch-board{height:185px}
-.note-links{grid-template-columns:repeat(8,minmax(0,1fr));gap:10px 5px;padding:8px 6px;width:96vw}
-.note-links .opt{min-height:78px;padding:3px;width:94%;font-size:24px;transform:translate(calc(var(--scatter-x)*.3),calc(var(--scatter-y)*.4))}
-.note-links svg{height:66px}.note-links .keyboard{height:66px}
+.note-links{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px 8px;padding:4px 6px;width:min(900px,94vw)}
+.note-links .opt{min-height:43px;height:43px;padding:2px;width:100%;font-size:23px}
+.note-links svg{height:36px}.note-links .keyboard{height:36px}
 }
 </style>
 </head>
@@ -1100,6 +1100,11 @@ const NOTES = {
         keyHint:'A 是 B 左边的白键，在三个黑键的第二、三之间',
         posHint:'A 在低音谱号的第五条线上',
         clefHint:'A 比中央 C 低，写在低音谱号里' },
+  G3: { id:'G3', letter:'G', label:'G', midi:55, clef:'bass', y:0.5, hand:'L', finger:4,
+        landmark:'三个黑键的第一、二之间',
+        keyHint:'G 在中央 C 左侧，在三个黑键的第一、二之间，A 的左边',
+        posHint:'G 在低音谱号的第四间',
+        clefHint:'G 比中央 C 低，写在低音谱号的第四间' },
   F4: { id:'F4', letter:'F', label:'F',      midi:65, clef:'treble', y:3.5,  hand:'R', finger:4,
         landmark:'三个黑键的左边',
         keyHint:'F 在三个黑键左边的白键，E 的右边',
@@ -1132,7 +1137,7 @@ const NOTES = {
    A3 插在 E4 之后、A4 之前：它是左手在 middle C 手位的第三个音，
    和 E4 凑成一对（右手 3 指对左手 3 指）。
    加音只改这里和 NOTES；SKILLS 会自动按进度把新音收进对应的练习。 */
-const NOTE_ORDER = ['B3','C4','D4','E4','A3','F4','G4','A4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','A3','G3','F4','G4','A4'];
 /* 一个字母可能对应多个八度（A3、A4）。第 1 关只考字母、不记八度，
    报告里必须把它算到唯一一个音上，否则 A3 和 A4 会各记一遍。 */
 function firstNoteOfLetter(letter){
@@ -4257,12 +4262,13 @@ const CONTRAST_POS = {
   C4: [{clef:'treble', y:5},    {clef:'bass',   y:-1}],
   D4: [{clef:'treble', y:4.5},  {clef:'bass',   y:-1.5}],
   E4: [{clef:'treble', y:4},    {clef:'bass',   y:-2}],
+  G3: [{clef:'bass', y:0.5},{clef:'treble',y:6.5}],
   F4: [{clef:'treble', y:3.5}],
   G4: [{clef:'treble', y:3}],
   A4: [{clef:'treble', y:2.5}],
   A3: [{clef:'bass',   y:0},    {clef:'treble', y:6}]
 };
-const CONTRAST_BASS_PAIRS = { 'A3|B3':1, 'B3|C4':1 };
+const CONTRAST_BASS_PAIRS = { 'A3|B3':1, 'B3|C4':1, 'A3|G3':1, 'B3|G3':1, 'C4|G3':1 };
 const CONTRAST_PARTNERS = {
   B3: ['C4','D4','A3'],
   C4: ['B3','D4','E4','A3'],
@@ -4271,7 +4277,8 @@ const CONTRAST_PARTNERS = {
   F4: ['E4','G4','A4'],
   G4: ['F4','A4','E4'],
   A4: ['G4','F4','E4'],
-  A3: ['B3','C4','E4']
+  A3: ['B3','C4','E4','G3'],
+  G3: ['A3','B3','C4']
 };
 
 function contrastPairFor(aId, bId){
@@ -4415,7 +4422,7 @@ function triplePlans(ids,n,ledger){
   const candidates=[];
   for(let a=0;a<ids.length-2;a++)for(let b=a+1;b<ids.length-1;b++)for(let c=b+1;c<ids.length;c++){
     const trio=[ids[a],ids[b],ids[c]];
-    const bass=trio.every(id=>['A3','B3','C4'].includes(id));
+    const bass=trio.every(id=>id==='C4'||NOTES[id].clef==='bass');
     const same=trio.every(id=>id==='C4'||NOTES[id].clef==='treble');
     const clef=bass?'bass':same||ledger?'treble':null;
     const notes=trio.map(function(id){
@@ -4755,12 +4762,21 @@ function qListening(kind,notes,options,target,prompt,feedback){
   };return q;
 }
 // One reference line and three movable whole-note heads, without written pitch labels.
+function pitchPlacementMatches(midis,levels){
+  if(midis.length!==3||levels.length!==3||!levels.every(level=>Number.isInteger(level)&&level>=0&&level<=2))return false;
+  // Compare every pair: higher pitches must be higher on screen, repeated pitches equal.
+  return midis.every((midi,i)=>midis.every((other,j)=>Math.sign(midi-other)===Math.sign(levels[i]-levels[j])));
+}
 function makePitchPlace(ids,n){
-  const patterns=shuffle([[0,1,2],[0,2,0],[1,2,1],[0,0,0],[2,1,0],[2,0,2]]);
-  return patterns.slice(0,n).map(function(pattern){
+  const sequences=[[60,64,67],[60,67,60],[64,67,64],[60,60,60],[67,64,60],[67,60,67]];
+  return shuffle(sequences).slice(0,n).map(qPitchPlace);
+}
+function qPitchPlace(sequence){
+    const midiSequence=Object.freeze(sequence.slice());
+    const pattern=midiSequence.map(midi=>[60,64,67].indexOf(midi));
     let timer=null,voice=null,run=0,wake=null;
-    const picks=[1,1,1],midis=[60,64,67],heights=[230,150,70],xs=[120,300,480];
-    const q={kind:'pitchPlace',target:pattern.join(','),pattern:pattern.slice(),wrong:0,playing:false,quiet:true,symbolOnly:true,
+    const picks=[1,1,1],heights=[230,150,70],xs=[120,300,480];
+    const q={kind:'pitchPlace',target:pattern.join(','),pattern:pattern.slice(),midiSequence:midiSequence,wrong:0,playing:false,quiet:true,symbolOnly:true,
       dispose:function(){run++;clearTimeout(timer);if(wake){wake();wake=null;}if(voice){voice.stop(.08);voice=null;}q.playing=false;},
       render:function(){
         q.dispose();picks.fill(1);stopSay();stageEl.classList.add('pitch-stage');setPrompt('',false);
@@ -4795,16 +4811,15 @@ function makePitchPlace(ids,n){
           if(q.playing||q.answered)return;stopSay();q.playing=true;const token=++run;drag=null;replay.disabled=true;submit.disabled=true;board.setAttribute('aria-disabled','true');
           for(let i=0;i<3;i++){
             if(G.q!==q||token!==run)return;
-            board.querySelectorAll('.pitch-note').forEach((note,j)=>note.classList.toggle('sounding',j===i));voice=pianoVoice(midis[pattern[i]],{dur:.65});
+            board.querySelectorAll('.pitch-note').forEach((note,j)=>note.classList.toggle('sounding',j===i));voice=pianoVoice(midiSequence[i],{dur:.65});
             await new Promise(resolve=>{wake=resolve;timer=setTimeout(()=>{wake=null;timer=null;resolve();},850);});
           }
           if(G.q!==q||token!==run)return;q.playing=false;heard=true;voice=null;replay.disabled=false;submit.disabled=false;board.setAttribute('aria-disabled','false');board.querySelectorAll('.pitch-note').forEach(note=>note.classList.remove('sounding'));
         };
-        submit.onclick=function(){if(q.playing||q.answered||!heard)return;q.chosen=picks.join(',');const ok=q.chosen===q.target;if(!ok&&!q.wrongChoice)q.wrongChoice=q.chosen;judge(ok);};
+        submit.onclick=function(){if(q.playing||q.answered||!heard)return;q.chosen=picks.join(',');const ok=pitchPlacementMatches(midiSequence,picks);if(!ok&&!q.wrongChoice)q.wrongChoice=q.chosen;judge(ok);};
         if(!q.answered)replay.onclick();
       },reveal:function(){}
     };return q;
-  });
 }
 function makeNoteLinks(ids,n){
   if(!ids.length)return [];
@@ -4820,7 +4835,7 @@ function makeNoteLinks(ids,n){
         answerEl.innerHTML='<p class="spot-cap">选出音名、唱名、谱面和键盘，共四张</p><button class="primary-btn">选好了</button>';
         const board=stageEl.firstChild;
         cards.forEach(function(card,i){
-          const target=NOTES[card.id],b=document.createElement('button');b.type='button';b.className='opt';b.dataset.card=i;b.style.cssText='--scatter-x:'+pick([-5,0,5])+'px;--scatter-y:'+pick([-7,0,7])+'px';b.setAttribute('aria-pressed','false');
+          const target=NOTES[card.id],b=document.createElement('button');b.type='button';b.className='opt';b.dataset.card=i;b.setAttribute('aria-pressed','false');
           if(card.type==='name')b.textContent=target.letter;
           if(card.type==='solfege')b.textContent=solfege[target.letter];
           if(card.type==='staff')b.innerHTML=staffSVG({noteId:card.id,value:'whole',compact:true});
@@ -6930,7 +6945,7 @@ window.__dbg = {
   get ACCOUNTS(){ return ACCOUNTS; },
   NOTES: NOTES, VALUES: VALUES, SKILLS: SKILLS, SKILL_COUNTS,
   NOTE_ORDER: NOTE_ORDER, DIFFS: DIFFS,
-  RHYTHM_PATTERNS, IRREGULAR_LAYOUTS, IRREGULAR_MIDIS, irregularPoint, qIrregularMatch,
+  qPitchPlace, pitchPlacementMatches, RHYTHM_PATTERNS, IRREGULAR_LAYOUTS, IRREGULAR_MIDIS, irregularPoint, qIrregularMatch,
   activeNotes: activeNotes,
   selectedNotes: selectedNotes,
   toggleSelectedNote: toggleSelectedNote,

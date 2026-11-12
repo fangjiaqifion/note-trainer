@@ -65,7 +65,7 @@ an installed automatic hook or permission to push/deploy.
   the same exact-key sequence and extreme selection on a braced grand staff. Skill 15
   shows numbered notes for three seconds, hides them before numbered choices, and
   progresses from three two-note questions to three notes when the selection permits.
-  Skills 13–14 require three pitches; skill 15 requires two. Teach left-to-right
+  Skill 13 also permits selected G3 below treble, while all-bass trios use their familiar bass staff. Skills 13–14 require three pitches; skill 15 requires two. Teach left-to-right
   playing only in the first question of skills 13–14; subsequent prompts say
   “弹出这三个音”, followed by “点出最高的音” or “点出最低的音”.
 - Skill 11 rotates selected notes across four face-up pitch rounds, followed by
@@ -96,7 +96,7 @@ an installed automatic hook or permission to push/deploy.
   exact MIDI pitch. Radial keyboards put black keys at the outer back edge and white
   fronts toward the center; open keyboards put black keys above the white fronts.
   Check both key layers and the E–F/B–C gaps before accepting generated layouts.
-- New-note order after A3 is F4, G4, then A4. Skill 15 number badges remain black and white.
+- New-note order after A3 is G3, F4, G4, then A4. Skill 15 number badges remain black and white.
 
 ## Runtime delivery requirements
 
@@ -142,8 +142,8 @@ researchers receive participant codes only. PINs and their hashes remain local. 
 is neither encryption nor server authorization. Reuse existing synthetic identities for
 necessary live checks; do not rerun passed pressure tests without a new validation need.
 
-The generation matrix covers 255 nonempty checked sets × three difficulties × two
-answer histories × three seeds × twenty-three skills and daily practice, totaling 110,160 sessions.
+The generation matrix covers 511 nonempty checked sets × three difficulties × two
+answer histories × three seeds × twenty-three skills and daily practice, totaling 220,752 sessions.
 Other checks cover scheduling boundaries, four viewports, choices, continuation, reports,
 backup/storage failures, cloud permissions, SW upgrades, and offline/cache behavior.
 Chrome automation does not establish full Safari/iPad behavior. Current evidence and
@@ -168,4 +168,4 @@ it before abandoning a question. Cleanup must be safe to repeat. Listening quest
 expose `playing` while the sequence is active so the prompt-repeat control stays silent.
 Keep the first incorrect choice in `wrongChoice` for answer-log consistency.
 
-Skills 22–23: six three-tone placement questions with repetitions and a stable C4/E4/G4 pool; four information-selection questions using eligible checked targets, fixed-do solfege, familiar staff notation, and keyboards limited to one octave. Placement uses one horizontal reference line and three draggable whole-note heads snapped to three heights, with no visible pitch labels or instruction speech. Each question auto-plays, allows icon-only replay, owns playback cleanup, and locks answering during playback. Information questions scatter sixteen cards (four correct, twelve distractors), with four questions total. Skill 21 retains its controls, shows feedback inline for two seconds. Skill 16 speaks the full instruction once, then “补全缺失音符”.
+Skills 22–23: six three-tone placement questions with repetitions and a stable C4/E4/G4 pool; four information-selection questions using eligible checked targets, fixed-do solfege, familiar staff notation, and keyboards limited to one octave. Placement uses one horizontal reference line and three draggable whole-note heads snapped to three heights, with no visible pitch labels or instruction speech. Each question auto-plays, allows icon-only replay, owns playback cleanup, and locks answering during playback. Information questions use an aligned 4 × 4 grid of sixteen cards (four correct, twelve distractors), with four questions total. Skill 21 retains its controls, shows feedback inline for two seconds. Skill 16 speaks the full instruction once, then “补全缺失音符”.

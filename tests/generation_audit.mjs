@@ -35,7 +35,7 @@ export async function generationAudit(page){
           });
         });
       }
-      if(skill===22){check(qs.length===6,prefix+' six placement tasks');qs.forEach(q=>check(q.pattern.length===3&&q.pattern.every(level=>[0,1,2].includes(level)),prefix+' legal three-height pattern'));}
+      if(skill===22){check(qs.length===6,prefix+' six placement tasks');qs.forEach(q=>check(q.pattern.length===3&&q.pattern.every((level,i)=>[60,64,67][level]===q.midiSequence[i]),prefix+' legal three-height pattern'));}
       if(skill===23){qs.forEach(q=>{check(q.cards.length===16,prefix+' sixteen information cards');check(q.cards.filter(c=>c.right).length===4,prefix+' four matching representations');check(q.cards.every(c=>c.right===(d.NOTES[c.id].letter===d.NOTES[q.noteId].letter)),prefix+' correct information target');});}
       if(skill===19){
         check(qs.length===8,prefix+' eight listening directions');
@@ -161,9 +161,9 @@ export async function generationAudit(page){
       Object.assign(s, {selected:saved.selected,progress:saved.progress,events:saved.events,difficulty:saved.difficulty,lastSeen:saved.lastSeen});
       g.diffKey = saved.diffKey;
     }
-    return {failures,sessions,samples};
+    return {failures,sessions,samples,selections:(1<<d.NOTE_ORDER.length)-1};
   });
   assert.deepEqual(result.failures, [], 'generation audit: ' + result.failures.join(' | '));
-  console.log(`PASS generation audit: ${result.sessions} sessions, 255 selections x 3 difficulties x 2 histories x 3 seeds x 24 modes`);
+  console.log(`PASS generation audit: ${result.sessions} sessions, ${result.selections} selections x 3 difficulties x 2 histories x 3 seeds x 24 modes`);
   console.log('D+E level 3: ' + result.samples.join(' | '));
 }

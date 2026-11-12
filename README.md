@@ -14,8 +14,8 @@ match note names, keyboard keys, and staff notation in a card game. New notes ar
 **Repository:** https://github.com/fangjiaqifion/note-trainer
 
 Current note set: three anchor notes (B3, middle C, D4) are always available; E4 is the
-current new note, followed by A3, F4, G4 and A4. The teaching sequence introduces
-left-hand A3 after E4, then F4 and G4, and finally upper A4. A3 is the left-hand third finger in the
+current new note, followed by A3, G3, F4, G4 and A4. The teaching sequence introduces
+left-hand A3 after E4, then G3, F4 and G4, and finally upper A4. A3 is the left-hand third finger in the
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
 or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
 skill 11 also uses checked notes. Skills 6–8 and 10 teach abstract staff positions.
@@ -141,7 +141,7 @@ current descriptions should stay accurate as the product changes.
 
 | Item | Status | Notes |
 |---|---|---|
-| F4 and G4 | Shipped 2026-11-03 | Enter after A4 through the same spotlight; the chips can also be opened directly |
+| F4 and G4 | Shipped 2026-11-03 | Enter after G3 through the same spotlight; the chips can also be opened directly |
 | A4 | Shipped 2026-11-03 | Follows E4 and A3 in the current sequence; finger 5 with a whole-hand shift |
 | Teacher role and permissions | Shipped 2026-11-03 | Teacher PIN, student roster, all reports, combined CSV; parents and students keep practice, note checks and settings |
 | Hand-shift lesson for A4 | Idea | The current convention is "move the whole hand right, fifth finger on A"; a dedicated lesson is still needed |
@@ -197,4 +197,6 @@ are complete. Teachers use username/key access; only administrators require MFA.
 
 Skills 19–21 add listening for melodic direction, highest/lowest pitch with numbered answers, and single-tone letter names. Notes remain hidden during listening; replay is available.
 
-Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board with one horizontal reference line and three movable whole-note heads. Drag each note vertically, tap its column, or use arrow keys to choose one of three heights. Each question plays automatically, without written or spoken instructions; icon buttons replay and confirm. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Each question scatters 16 shuffled cards across the available space: four matching cards and twelve distractors from three other pitch names. The four-question quota is unchanged. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.
+Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board with one horizontal reference line and three movable whole-note heads. Drag each note vertically, tap its column, or use arrow keys to choose one of three heights. Each question plays automatically, without written or spoken instructions; icon buttons replay and confirm. Scoring compares the higher/lower/equal relations of the actual MIDI sequence, so a vertically shifted arrangement remains correct when every pairwise relation matches. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Each question uses a strictly aligned 4 × 4 grid of 16 shuffled cards: four matching cards and twelve distractors from three other pitch names. The four-question quota is unchanged. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.
+
+G3 is available locally after A3: MIDI 55, bass fourth space, left fourth finger. Existing F4 is the F above middle C; a separate F3 request is pending octave clarification.

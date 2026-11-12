@@ -6,6 +6,32 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Relative pitch rules, aligned grid, and G3, 2026-11-12
+
+Skill 22 now derives playback and pairwise higher/lower/equal scoring from one
+immutable MIDI sequence. G–C–G accepts high–low–high and rejects low–high–low;
+relative arrangements may shift vertically. Skill 23 uses an aligned 4 × 4
+grid at every viewport. G3 is available after A3 and before existing F4, with
+bass fourth-space notation, MIDI 55, left fourth finger, and a complete local
+F3–B3 keyboard. F3 remains pending clarification because the request describes
+F to the right of middle C, which is existing F4.
+
+Local build `d639676bcf` passed the full required release suite: 54 Node tests,
+1,144 scheduling cases, 220,752 sessions across all 511 nonempty selections,
+45 fixtures at four viewports, and all sync/backup/cloud/portal/storage/offline
+suites. A supplementary smoke run passed the explicit inverse-rejection
+assertion. Independent tests cover 729 heard/placed combinations, captured
+G–C–G oscillator fundamentals, actual dragging, G3's data/local keyboard, and
+strict row/column/card bounds at three sizes. Both local-origin hashes and
+four actual Safari/Chrome boot receipts matched this build, status ready.
+
+Updated AGENTS, LEVELS, README, development/user guides, tracker, and
+[audit](audit_20261112_pitch_rules/audit.md). Cloud/portal procedures and
+parent/games guides/overviews reviewed unchanged because protocols,
+permissions, ownership, and scope are unaffected. Physical iPad interaction
+and human audible acceptance remain unverified. No push, deployment, or
+live database change. F-note scope remains a pending user clarification.
+
 ## Whole-note placement and expanded information field, 2026-11-12
 
 Skill 22 now shows one reference line and three draggable whole-note heads,

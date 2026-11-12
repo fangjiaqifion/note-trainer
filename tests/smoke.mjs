@@ -689,7 +689,7 @@ async function concisePromptCheck(page){
 async function addedSkillsCheck(page){
   await page.evaluate(()=>{
     const d=window.__dbg;
-    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=d.buildQuestions(skill)[0];document.querySelector('#stage').className='stage';d.G.q.render();return d.G.q;}
+    function render(skill){d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=skill===22?d.qPitchPlace([67,60,67]):d.buildQuestions(skill)[0];document.querySelector('#stage').className='stage';d.G.q.render();return d.G.q;}
     const q=render(23),cards=[...document.querySelectorAll('[data-card]')];
     if(cards.length!==16||q.cards.filter(card=>!card.right).length!==12)throw Error('expanded information cards missing');
     document.querySelector('#answer button').click();if(q.answered)throw Error('empty selection accepted');
@@ -697,21 +697,37 @@ async function addedSkillsCheck(page){
     const distractor=q.cards.findIndex(card=>!card.right);cards[distractor].click();document.querySelector('#answer button').click();
     if(q.answered)throw Error('extra distractor accepted');
     cards[distractor].click();document.querySelector('#answer button').click();if(!q.answered)throw Error('correct information combination rejected');
+    const levels=Array.from({length:27},(_,k)=>[Math.floor(k/9),Math.floor(k/3)%3,k%3]);
+    for(const heard of levels)for(const placed of levels){
+      const expected=heard.every((a,i)=>heard.every((b,j)=>(a===b)===(placed[i]===placed[j])&&(a>b)===(placed[i]>placed[j])));
+      if(d.pitchPlacementMatches(heard.map(x=>[60,64,67][x]),placed)!==expected)throw Error('placement rule mismatch '+heard+'/'+placed);
+    }
+    window.__pitchOsc=[];window.__pitchCreate=AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator=function(){const osc=window.__pitchCreate.call(this),start=osc.start.bind(osc);osc.start=function(t){window.__pitchOsc.push({t,f:osc.frequency.value});return start(t);};return osc;};
     const p=render(22);
     if(!p.playing||!document.querySelector('.placement-submit').disabled)throw Error('placement must autoplay before answering');
     if(document.querySelectorAll('.pitch-note').length!==3||document.querySelectorAll('.pitch-board line').length!==1)throw Error('one line and three whole notes required');
     if(document.querySelector('#stage').textContent.trim()!=='▶'||document.querySelector('#promptText').textContent!=='')throw Error('placement must have no written instructions');
     p.dispose();p.dispose();if(p.playing)throw Error('placement disposal failed');
-    p.render();
+    window.__pitchOsc=[];p.render();
   });
   await page.waitForFunction(()=>!window.__dbg.G.q.playing);
+  const played=await page.evaluate(()=>{AudioContext.prototype.createOscillator=window.__pitchCreate;const groups=new Map();for(const {t,f} of window.__pitchOsc){const key=t.toFixed(2);groups.set(key,Math.min(groups.get(key)||Infinity,f));}return [...groups.values()];});
+  assert.equal(played.length,3,'G-C-G must play exactly three tones');
+  [391.995,261.626,391.995].forEach((f,i)=>assert.ok(Math.abs(played[i]-f)<.2,'actual G-C-G fundamental '+i));
+  await page.locator('.pitch-note').nth(0).press('ArrowDown');
+  await page.locator('.pitch-note').nth(1).press('ArrowUp');
+  await page.locator('.pitch-note').nth(2).press('ArrowDown');
+  await page.locator('.placement-submit').click();
+  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),undefined,'G-C-G must reject low-high-low');
   const points=await page.evaluate(()=>{
     const q=window.__dbg.G.q,svg=document.querySelector('.pitch-board');
-    return q.pattern.map((level,i)=>{const p=svg.createSVGPoint();p.x=[120,300,480][i];p.y=150;const from=p.matrixTransform(svg.getScreenCTM());p.y=[230,150,70][level];const to=p.matrixTransform(svg.getScreenCTM());return {from:[from.x,from.y],to:[to.x,to.y]};});
+    return [2,0,2].map((level,i)=>{const p=svg.createSVGPoint();p.x=[120,300,480][i];p.y=150;const from=p.matrixTransform(svg.getScreenCTM());p.y=[230,150,70][level];const to=p.matrixTransform(svg.getScreenCTM());return {from:[from.x,from.y],to:[to.x,to.y]};});
   });
   for(const p of points){await page.mouse.move(...p.from);await page.mouse.down();await page.mouse.move(...p.to,{steps:4});await page.mouse.up();}
+  await page.evaluate(()=>{const q=window.__dbg.G.q;if(q.target!=='2,0,2')throw Error('G-C-G answer inverted');});
   await page.locator('.placement-submit').click();
-  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'dragging whole notes must produce the heard pattern');
+  assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'G-C-G must accept high-low-high');
 }
 
 async function listeningCheck(page){

@@ -12,7 +12,7 @@ the existing implementation/acceptance records; it does not introduce a new teac
 ## Overview
 
 The skill axis is fixed at twenty-three cards. The note axis grows through
-B3 → C4 → D4 → E4 → A3 → F4 → G4 → A4. Learned notes can be checked or unchecked.
+B3 → C4 → D4 → E4 → A3 → G3 → F4 → G4 → A4. Learned notes can be checked or unchecked.
 A temporary 14-question first lesson introduces each new note and resumes after interruption.
 Per-question logs support descriptive reports and adaptive choices; they are not independent
 measures of mastery. Teachers manage profiles/reports; learners and parents share limited
@@ -259,6 +259,7 @@ The bank is intentionally limited; total duration alone is not its acceptance ru
 | E4 | Right of two black keys | Treble first line | Right 3 | D4, F4 |
 | A3 | Between black keys 2–3 of a three-key group | Bass fifth line | Left 3 | B3, C4 |
 | A4 | Between black keys 2–3 | Treble second space | Right 5 after hand shift | G4, B4 |
+| G3 | Between first and second of three black keys | Bass fourth space | Left 4 | A3, B3 |
 | F4 | Left of three black keys | Treble first space | Right 4 | E4, G4 |
 | G4 | Between black keys 1–2 | Treble second line | Right 5 | F4, A4 |
 
@@ -367,7 +368,7 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
 16. iPad/phone portrait/landscape fit; short landscape is two-column; reports scroll.
 17. Skill 7 covers direction once each, higher/lower alternating asks and sides, both clefs,
     wide tap regions, audio, silent success, hints, and skill-7 stars without E4 migration.
-18. New-note order is E4→A3→F4→G4→A4; chips can start each directly. A3 is left 3/bass
+18. New-note order is E4→A3→G3→F4→G4→A4; chips can start each directly. A3 is left 3/bass
     fifth line/F3–B3; A4 right 5/F4–B4. Completed lessons join eligible named-note skills.
 19. Use the release pipeline for SW versions, file hashes, actual load receipts, and offline
     upgrade. Never manually increment the cache version or erase learner storage.
@@ -432,4 +433,4 @@ Skill 21 plays one selected pitch and offers three distinct letter names. Distra
 
 All listening tasks start with an explicit play button, allow replay, suppress speech during playback, and cancel pending sequence notes after leaving the question.
 
-Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board with one horizontal reference line and three movable whole-note heads. Drag each note vertically, tap its column, or use arrow keys to choose one of three heights. Each question plays automatically, without written or spoken instructions; icon buttons replay and confirm. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Each question scatters 16 shuffled cards across the available space: four matching cards and twelve distractors from three other pitch names. The four-question quota is unchanged. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.
+Skills 22 and 23 add six low/middle/high listening-placement questions and four mixed-information questions. Placement includes repeated pitches on a blank white board with one horizontal reference line and three movable whole-note heads. Drag each note vertically, tap its column, or use arrow keys to choose one of three heights. Each question plays automatically, without written or spoken instructions; icon buttons replay and confirm. Scoring compares the higher/lower/equal relations of the actual MIDI sequence, so a vertically shifted arrangement remains correct when every pairwise relation matches. Information selection requires all four matching cards (letter, fixed-do solfege, familiar staff position, and highlighted key on a keyboard of at most one octave). Each question uses a strictly aligned 4 × 4 grid of 16 shuffled cards: four matching cards and twelve distractors from three other pitch names. The four-question quota is unchanged. Skill 21 shows the correct answer inline for two seconds. Skill 10 redraws ledger strokes and names the snapped position during movement. Skill 18 uses a yellow middle-C dot with a separate legend.

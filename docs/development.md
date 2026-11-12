@@ -61,7 +61,7 @@ const NOTES = {
         posHint:'E 在高音谱号的第一条线上',
         clefHint:'E 在高音谱号的第一条线上' }
 };
-const NOTE_ORDER = ['B3','C4','D4','E4','A3','F4','G4','A4'];
+const NOTE_ORDER = ['B3','C4','D4','E4','A3','G3','F4','G4','A4'];
 const BASE_NOTES = ['B3','C4','D4'];
 ```
 
@@ -238,7 +238,7 @@ seeds a test profile in `localStorage`, and checks: twenty-three home cards; 45 
 viewports with no clipping or horizontal scroll; a single checked note still gets two
 keyboard → staff choices; a new-note lesson resumes at the saved step and opens all three
 flags; the report has twenty-three skill columns; the console stays clean; selected-note coverage in pitch-based skills and every checked-note subset
-is audited across all 255 nonempty selections, three difficulties, two answer histories, and three fixed seeds (110,160 sessions across twenty-three skills and daily practice); and `clear-cache.html` removes only this
+is audited across all 511 nonempty selections, three difficulties, two answer histories, and three fixed seeds (220,752 sessions across twenty-three skills and daily practice); and `clear-cache.html` removes only this
 game's caches and keeps `localStorage`. The main context blocks service workers so it always
 runs the working copy; the cache test uses a separate context that allows them and checks controlled navigation, cache isolation, offline recovery, and HTTP failure receipts.
 
