@@ -1,6 +1,6 @@
 # Note Trainer Development and Release
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 Internal technical reference. Read [AGENTS.md](../AGENTS.md) for constraints and
 [the progress tracker](progress_tracker.md) for current implementation status.
@@ -84,8 +84,8 @@ To add a note:
    items should offer the new note and its learned neighbours. The 14 questions come from
    `SPOT_STEPS`; a new note needs no change there.
 
-All skills cover their eligible checked notes. Skills 6–8 and 10 retain abstract
-positions and append staff/key review; skills 9 and 12 use familiar selected-note
+Skill sessions balance eligible checked notes within fixed quotas. Skills 6–8 and 10 retain abstract
+positions without appended review; skills 9 and 12 use familiar selected-note
 comparisons. Skill 13 explicitly includes selected ledger spellings; the new-note finale still
 uses CONTRAST_POS and CONTRAST_PARTNERS for learned-note comparisons.
 
@@ -101,7 +101,8 @@ Add one entry to `SKILLS` and one `make` function:
 
 This example illustrates the registry structure; choose an unused ID for a new skill.
 `needs` says which note flags the skill requires; `pool` is `'active'` (eligible checked notes),
-`'fixed'` (the `ids` list) or `'none'` (no notes). `make(ids, n)` returns an array of question
+`'fixed'` (the `ids` list) or `'none'` (no notes). The fixed session totals live in `SKILL_COUNTS`; update that declaration when adding a card.
+`make(ids, n)` returns an array of question
 objects with the same `{ kind, render(), reveal() }` interface as the existing factories.
 Use an optional, idempotent `dispose()` for owned timers and voices. Navigation, a new
 session, and question transitions invoke it; identity guards alone do not cancel pending
@@ -127,9 +128,10 @@ For open layouts, screen y increases with depth, placing black keys above.
 Before accepting a layout, run the four-viewport hit tests for white-key centers,
 black-key centers, exposed white fronts at shared boundaries, and unraised
 E–F/B–C boundaries. The independent orientation check requires the top arc's
-back to be above its front; hit testing alone did not catch the previous reversal.
-Inspect all sixteen shapes, including stair risers and shaded paper folds. Sessions
-draw only eight random shapes; the layout fixtures must instantiate the entire bank
+back to be above its front for rings and open layouts; a spiral's local radial front
+rotates with its angle. Hit testing alone did not catch the previous ring reversal.
+Inspect all twenty shapes, including stair risers and shaded paper folds. Sessions
+draw only six random shapes; the layout fixtures must instantiate the entire bank
 independently of that sample. Name questions require both matching white keys;
 check partial progress, repeated taps, and a single completion record.
 Inspect screenshots of both name and staff questions. Exactly one target

@@ -1,6 +1,6 @@
 # Note Trainer: Internal Development Guide
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 This is an independent repository, registered as a submodule in the music-materials
 workspace. When nested there, inherit the parent and `games/AGENTS.md`; when cloned
@@ -46,10 +46,10 @@ an installed automatic hook or permission to push/deploy.
   Do not add unchecked target notes to manufacture clef variety.
 - Skill 3 may use C4B as the same pitch as checked C4. D/E must both appear when checked,
   even though both answers are treble clef.
-- Every pitch-based skill session covers every checked note eligible for that skill. Skill 1 covers
-  letter names (A3/A4 share A). Grow the session if the normal count would omit notes.
-  Skills 6–8 and 10 retain abstract position tasks and append selected-note staff/key
-  review. Coverage items belong to the owning skill in reports.
+- Skill sessions use the exact per-skill totals in SKILL_COUNTS, independent of difficulty.
+  Balance eligible checked notes within the quota; when the pool exceeds the available
+  slots, sample without adding questions. Skills 6–8 and 10 retain abstract position
+  tasks without appended pitch review. Daily practice remains ten questions.
 - Skill 9 uses familiar clefs and alternates them whenever both have a legal pair.
   Reserve slots for every eligible target and penalize reused pairs; do not ask a pair
   and its reverse consecutively when a different pair exists. Randomize the first clef,
@@ -64,13 +64,13 @@ an installed automatic hook or permission to push/deploy.
 - Skill 13 alternates mixed groups with familiar bass/treble cards. Skill 14 uses
   the same exact-key sequence and extreme selection on a braced grand staff. Skill 15
   shows numbered notes for three seconds, hides them before numbered choices, and
-  progresses from five two-note questions to three notes when the selection permits.
+  progresses from three two-note questions to three notes when the selection permits.
   Skills 13–14 require three pitches; skill 15 requires two. Teach left-to-right
   playing only in the first question of skills 13–14; subsequent prompts say
   “弹出这三个音”, followed by “点出最高的音” or “点出最低的音”.
-- Skill 11 rotates selected notes across small face-up rounds, adding a matching round
-  when needed before duration/beat matching. Skill 10 retains one staff placement and
-  five ledger placements in every tier, followed by selected-note review.
+- Skill 11 rotates selected notes across four face-up pitch rounds, followed by
+  one duration/beat round. Skill 10 retains one staff placement and
+  seven ledger placements in every tier.
   The new-note contrast finale retains its separate learned-note pool.
 - Plan note counts before ordering. One eligible target necessarily repeats; with multiple
   targets, avoid adjacent repeats whenever feasible.
@@ -85,11 +85,11 @@ an installed automatic hook or permission to push/deploy.
 - Skill 17 shows two complete measures of one meter and offers 2/4, 3/4, and 4/4.
   Its prompt is “选择对应的拍号”. Do not draw a barline before the first note,
   either before answering or after inserting the selected time signature.
-- Skill 18 randomly draws eight distinct layouts from a sixteen-shape bank per session.
+- Skill 18 randomly draws six distinct layouts from a twenty-shape bank per session.
   Preserve chromatic order, complete 2–3–2–3 black-key groups (C3–B4), and a middle-C anchor. Match only eligible
   checked pitches. Show one note and one keyboard per question, with immediate key
-  answering. Eight questions alternate four staff and four name targets; cover every
-  eligible checked pitch, without requiring both representations of every pitch.
+  answering. Six questions alternate three staff and three name targets; distribute
+  eligible checked pitches within the fixed quota, without requiring both representations of every pitch.
   Name cards show only A–G and require every matching white key, across both octaves.
   Keep found keys marked, ignore repeated taps, and record completion only when all
   matches are found. Staff cards require their
@@ -158,7 +158,7 @@ secret/service-role keys, sessions, teacher credentials, or invitation plaintext
 The independent management entry is `manage.html`; its discoverable URL is not an access control.
 See `docs/teacher_portal.md` for owner setup/recovery and rollout boundaries.
 
-Skills 19–21 hide notation during listening and unlock choices only after the full sequence. Skill 19 has twelve questions in 4/3/2-note blocks and an independent pitch pool. Skills 20–21 use selected eligible pitches; skill 20 requires two and progresses from three-note to two-note comparisons. Skill 21 offers three letter choices. Speech must not overlap playback; pending sequence notes must stop after navigation.
+Skills 19–21 hide notation during listening and unlock choices only after the full sequence. Skill 19 has eight questions in 3/3/2 blocks of four/three/two notes, using arrow-only choices and feedback and an independent pitch pool. Skills 20–21 use selected eligible pitches; skill 20 requires two and progresses from three-note to two-note comparisons. Skill 21 offers three letter choices. Speech must not overlap playback; pending sequence notes must stop after navigation.
 
 ## Question lifecycle
 

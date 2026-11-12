@@ -1,6 +1,6 @@
 # Note Trainer User Guide
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 Detailed product behavior and usage. Start with [the overview](../README.md) for purpose
 and quick start. Contributor procedures are in [development.md](development.md).
@@ -200,21 +200,22 @@ skill automatically once that flag is open.
 | 5 | 手指 · Hand, finger, hold | Three stages: which hand, which finger, then hold for the note's length | `key` + `pos` + `fin` |
 | 6 | 线与间 · Lines and spaces | A bare five-line staff; tap the line or space asked | none |
 | 7 | 两个音 · Two notes | Two whole notes; name the direction, then tap the higher or lower note, first without and then with a clef (the prompt does not name the clef) | none |
-| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with compact dropdowns with clef glyphs, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six position questions plus selected-note review | none |
+| 8 | 加线加间 · Ledger lines | A clef and one note on a ledger line or space; fill a sentence with compact dropdowns with clef glyphs, direction arrows, Arabic 1–8, and line/space diagrams (the note name is not asked); six position questions | none |
 | 9 | 易混音 · Confusable notes | Tap the named checked note; alternate available familiar clefs and vary pairs | `pos` |
-| 10 | 加线定位 · Ledger placement | All tiers: place a note at one requested staff line/space, then five requested ledger lines/spaces; drag or tap and confirm | none |
-| 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in at least four rounds, adding rounds for coverage; each representation stays in its own left/right column | `key` + `pos` |
+| 10 | 加线定位 · Ledger placement | All tiers: place a note at one requested staff line/space, then seven requested ledger lines/spaces; drag or tap and confirm | none |
+| 11 | 卡牌配对 · Card matching | Match face-up name/key, name/staff, key/staff, and duration/beat pairs in five rounds; each representation stays in its own left/right column | `key` + `pos` |
 | 12 | 三音辨认 · Three-note recognition | Three shuffled checked notes, preferring nearby pitches; tap the requested letter. Mixed-clef pitches use separate familiar staff images | `pos` |
 | 13 | 三音弹比 · Play and compare | Play three checked pitches on the screen keyboard from left to right, then tap the highest or lowest note. Similar adjacent and ledger pitches receive priority; requires three eligible pitches | `key` + `pos` |
 | 14 | 大谱表弹比 · Grand staff | Play three selected notes from left to right on a braced treble/bass staff, then choose the highest or lowest | `key` + `pos` |
-| 15 | 闪现记音 · Flash recall | View numbered notes for three seconds, then choose a hidden note’s position. Start with five two-note questions, then three-note questions when available | `pos` |
+| 15 | 闪现记音 · Flash recall | View numbered notes for three seconds, then choose a hidden note’s position. Start with three two-note questions, then three-note questions when available | `pos` |
 | 16 | 节奏填空 · Rhythm completion | Complete six measures using quarter, half, dotted-half, or whole notes; read the time signature | none |
 | 17 | 选择拍号 · Choose the meter | Read two complete measures and choose 2/4, 3/4, or 4/4; six questions | none |
-| 18 | 变形键盘 · Deformed keyboard matching | Eight random keyboard shapes per session; find every matching key for name targets | key + pos |
+| 18 | 变形键盘 · Deformed keyboard matching | Six random keyboard shapes per session; find every matching key for name targets | key + pos |
 
-Every eligible checked pitch appears in each pitch-based skill session. Skills 16–17 and 19 are independent of pitch selection. Base question counts may grow.
-Position skills 6–8 and 10 keep their original exercises and add checked-note staff/key
-review. Matching rounds rotate the selected pool and add a small round when needed.
+Exact totals are listed in [the skill design table](../LEVELS.md#twenty-one-skills).
+Each skill uses its fixed quota, balancing eligible checked notes within the available questions. Skills 6–8, 10, 16–17, and 19 are independent of pitch selection.
+Position skills 6–8 and 10 keep their abstract exercises. Matching rotates the
+selected pool across four pitch rounds and one duration round.
 Skill 9 uses one clef if only one has a legal pair; unpairable notes receive staff/key
 review. Skill 12 similarly reviews smaller pools without inventing extra notes.
 
@@ -246,9 +247,9 @@ black-and-white cartoon number badges for observation and answer choices.
 Skill 17 says “选择对应的拍号”. Its two measures have a dividing barline
 and an ending barline, with no barline before the first note.
 
-Skill 18 has eight single-note questions, randomly drawing different shapes from
-sixteen keyboards. Shapes include rings, ribbons, stairs, origami folds, fans, and
-bow ties. Each question shows one note and one keyboard. Name targets say
+Skill 18 has six single-note questions, randomly drawing different shapes from
+twenty keyboards. Shapes include rings, ribbons, stairs, origami folds, fans, and
+bow ties, spirals, zebras, fish, and flowers. Each question shows one note and one keyboard. Name targets say
 “找出所有的 C” (or another letter A–G). Tap both matching white keys across the
 two octaves. Found keys stay green and the found/total counter advances; tapping
 a found key again does not count twice. Finish only after all matches are found.
@@ -403,8 +404,7 @@ accuracy are weighted up (up to 3×) within a per-note cap. Skill 1 balances let
 balances note names. Weighting cannot override coverage and feasible spacing. The daily review block
 still puts the least recently seen notes first.
 
-The clef skill always has two options, treble or bass. Skill 5 runs two questions fewer
-because each one takes three stages, which keeps a session at about three minutes. The daily
+The clef skill always has two options, treble or bass. Skill 5 has four questions, each with three stages. The daily
 session asks ten questions; a new-note lesson has fourteen steps and resumes its remaining steps; they do not use the
 difficulty count.
 
@@ -472,7 +472,7 @@ or the answer is shown in the prompt, but the player is never told "that is wron
 
 ## Listening skills 19–21
 
-Press **播放 / 再听一次** and listen before choosing. Skill 19 asks up/down/same, with four-, three-, then two-note sequences. Skill 20 asks for the highest or lowest numbered sound, first among three notes and then two; correct answers reveal the staff notes. Skill 21 asks for the letter name of one heard note among three choices. Replay is always available before completion.
+Press **播放 / 再听一次** and listen before choosing. Skill 19 uses arrow-only up/down/same choices and symbolic feedback, with three four-note, three three-note, and two two-note sequences. Its replay control is an icon. Skill 20 asks for the highest or lowest numbered sound, first among three notes and then two; correct answers reveal the staff notes. Skill 21 asks for the letter name of one heard note among three choices. Replay is always available before completion.
 
 While a listening sequence plays, the top speaker button stays silent so speech does
 not mask the notes. Leaving the exercise stops its playback. Leaving flash recall

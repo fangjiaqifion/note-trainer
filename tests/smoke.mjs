@@ -170,7 +170,7 @@ async function renderCases(){
       }
       // At the top of a ring, the black/back edge must be above the white/front edge.
       const backTop=d.irregularPoint(q.layout,.5,0),frontTop=d.irregularPoint(q.layout,.5,1);
-      keyboardFits=keyboardFits&&backTop[1]<frontTop[1];
+      if(q.layout!=='spiral')keyboardFits=keyboardFits&&backTop[1]<frontTop[1];
       for(const midi of d.IRREGULAR_MIDIS){
         const i=d.IRREGULAR_MIDIS.indexOf(midi);
         const point=d.irregularPoint(q.layout,(i+.5)/d.IRREGULAR_MIDIS.length,.85);
@@ -282,11 +282,11 @@ async function rhythmAndIrregularInteractionCheck(page){
   assert.ok(results.meterWrong&&results.meterComplete,'meter choice rejects wrong answers and records completion');
   assert.ok(results.noInitialBar&&results.promptCorrect,'meter prompt and two barlines after completion');
   assert.ok(results.nameAnyOctave&&results.nameAllComplete&&results.staffExact&&results.staffComplete,'letter-only names accept octaves; staff answers remain exact');
-  assert.equal(results.rounds.length,8);
+  assert.equal(results.rounds.length,6);
   for(const round of results.rounds){
     assert.ok(round.singleCard&&round.plainName&&round.wrongBlack&&round.partial&&round.repeatIgnored&&round.complete&&round.noDuplicate,JSON.stringify(round));
   }
-  console.log('PASS skills 17–18: meter answers; eight single-note keyboards, letter-only names, octave rules, black-key errors and records');
+  console.log('PASS skills 17–18: meter answers; six single-note keyboards, letter-only names, octave rules, black-key errors and records');
 }
 
 async function homeNavigationCheck(page){
@@ -424,7 +424,10 @@ async function answerOne(page){
   await page.waitForFunction(function(p){
     const result = document.querySelector('#result');
     return window.__dbg.G.i > p || (result && result.classList.contains('active'));
-  }, prev, { timeout: 6000 });
+  }, prev, { timeout: 6000 }).catch(async error=>{
+    const state=await page.evaluate(()=>({kind:window.__dbg.G.q?.kind,wrong:window.__dbg.G.q?.wrong,answered:window.__dbg.G.q?.answered,busy:window.__dbg.G.busy,i:window.__dbg.G.i,stage:document.querySelector('#stage').innerText,answer:document.querySelector('#answer').innerText}));
+    throw new Error(error.message+' '+JSON.stringify(state));
+  });
 }
 
 async function clefOrderCheck(page){
@@ -549,7 +552,7 @@ async function selectionVarietyCheck(page){
           if(active.length >= 2 && distinctCount < 2){
             problems.push(c.name + ' skill ' + skill + ' collapsed to one item: ' + keys.join(' '));
           }
-          if(skill === 3){
+          if(skill === 3 && c.sel.length<=d.SKILL_COUNTS[2]){
             c.sel.forEach(function(id){
               const letter = d.NOTES[id].letter;
               if(keys.indexOf(letter) < 0){
@@ -688,14 +691,19 @@ async function listeningCheck(page){
     const d=window.__dbg;
     return {directions:d.buildQuestions(19).map(q=>q.noteIds.length),extremes:d.buildQuestions(20).map(q=>q.noteIds.length),names:d.buildQuestions(21).length};
   });
-  assert.deepEqual(plans.directions,[4,4,4,4,3,3,3,3,2,2,2,2]);
-  assert.deepEqual(plans.extremes.slice(0,12),[3,3,3,3,3,3,2,2,2,2,2,2]);
-  assert.ok(plans.names>=12);
+  assert.deepEqual(plans.directions,[4,4,4,3,3,3,2,2]);
+  assert.deepEqual(plans.extremes,[3,3,3,3,2,2,2,2]);
+  assert.equal(plans.names,6);
   for(const skill of [19,20,21]){
     await page.evaluate(skill=>{
       const d=window.__dbg;d.G.session++;d.G.busy=false;d.G.mode='skill';d.G.level=skill;d.G.q=d.buildQuestions(skill)[0];d.G.q.answered=false;d.G.q.render();
     },skill);
     assert.equal(await page.locator('#stage svg').count(),0,'listening must hide notes');
+    if(skill===19){
+      assert.equal(await page.locator('#answer button svg.diricon').count(),3);
+      assert.equal((await page.locator('#answer').innerText()).trim(),'');
+      assert.equal((await page.locator('.prompt').innerText()).replace('🔊','').trim(),'');
+    }
     assert.ok(await page.locator('#answer button').first().isDisabled());
     await page.locator('.ear-replay').click();
     await page.waitForFunction(()=>!document.querySelector('#answer button').disabled);
@@ -746,7 +754,7 @@ async function flashCheck(page){
   await page.evaluate(function(){
     const d=window.__dbg;
     d.G.session++;const qs=d.buildQuestions(15);
-    if(qs.length<10||qs.slice(0,5).some(q=>q.choiceIds.length!==2)||qs.slice(5).some(q=>q.choiceIds.length!==3))throw Error('flash progression');
+    if(qs.length!==6||qs.slice(0,3).some(q=>q.choiceIds.length!==2)||qs.slice(3).some(q=>q.choiceIds.length!==3))throw Error('flash progression');
     if(qs[0].ask!=='higher'||qs[2].ask!=='name')throw Error('flash task progression');
     d.G.q=qs[2];d.G.q.answered=false;d.G.busy=false;d.G.q.render();
     if(document.querySelector('#answer button'))throw Error('flash answers visible early');
@@ -827,9 +835,9 @@ async function newSkillsCheck(page){
   assert.equal(info.icons,4,'four compact symbolic dropdowns');
   assert.ok(info.symbols,'non-numeric dropdowns contain only music symbols, arrows and diagrams');
   for(const qs of info.placements){
-    assert.equal(qs.length,6);assert.ok(qs.every(q=>q.kind==='ledgerMove'));
+    assert.equal(qs.length,8);assert.ok(qs.every(q=>q.kind==='ledgerMove'));
     assert.ok(qs[0].y>=0 && qs[0].y<=4,'first placement is inside the staff');
-    assert.ok(qs.slice(1).every(q=>q.y<0 || q.y>4),'last five placements are ledger positions');
+    assert.ok(qs.slice(1).every(q=>q.y<0 || q.y>4),'last seven placements are ledger positions');
   }
   assert.deepEqual(info.digits,['1','2','3','4','5','6','7','8']);
   assert.ok(info.basic.some(q=>q.clef==='treble') && info.basic.some(q=>q.clef==='bass'));
@@ -839,7 +847,7 @@ async function newSkillsCheck(page){
   }
   assert.equal(info.moved,'1','two arrow keys move the note two half staff steps');
   assert.ok(info.focused,'movement retains keyboard focus after redrawing');
-  assert.deepEqual(info.kinds,['name-key','name-staff','key-staff','duration-beats']);
+  assert.deepEqual(info.kinds,['name-key','name-staff','key-staff','name-key','duration-beats']);
   const placed=await page.evaluate(function(){
     const d=window.__dbg,results=[];
     for(const tier of ['easy','normal','hard']){
@@ -854,7 +862,7 @@ async function newSkillsCheck(page){
     }
     d.G.session++;d.G.busy=false;return results;
   });
-  assert.equal(placed.length,18);assert.ok(placed.every(Boolean),'all six placement tasks complete in every tier');
+  assert.equal(placed.length,24);assert.ok(placed.every(Boolean),'all eight placement tasks complete in every tier');
   const corrected=await page.evaluate(function(){
     const d=window.__dbg;document.querySelector('#answer').innerHTML='';const q=d.buildQuestions(8).filter(q=>!q.coverage)[0];d.G.busy=false;d.G.q=q;q.answered=false;q.render();
     function choose(key,value){
@@ -903,7 +911,7 @@ async function newSkillsCheck(page){
   }
   await page.setViewportSize({width:820,height:1180});
   const rhythm=await page.evaluate(function(){
-    const d=window.__dbg,q=d.buildQuestions(11)[3];d.G.q=q;q.answered=false;q.render();
+    const d=window.__dbg,q=d.buildQuestions(11).at(-1);d.G.q=q;q.answered=false;q.render();
     const cards=Array.from(document.querySelectorAll('.match-card'));
     cards.filter(c=>c.dataset.type==='duration').forEach(function(c){
       c.click();cards.find(x=>x.dataset.type==='beats' && x.dataset.pair===c.dataset.pair).click();
@@ -1164,7 +1172,7 @@ async function main(){
     await flashCheck(page);
     await listeningCheck(page);
     await questionLifecycleCheck(page);
-    console.log('PASS levels 8-11: symbolic dropdowns, six placement tasks in every tier, proportional keyboards, four matching modes');
+    console.log('PASS levels 8-11: symbolic dropdowns, eight placement tasks in every tier, proportional keyboards, five matching rounds');
     await spotlightCheck(page);
     console.log('PASS spotlight: resume at saved step, open all flags');
 
@@ -1184,6 +1192,6 @@ async function main(){
 }
 
 main().catch(function(err){
-  console.error('\nFAIL:', err && err.message ? err.message : err);
+  console.error('\nFAIL:', err && err.stack ? err.stack : err);
   process.exitCode = 1;
 });

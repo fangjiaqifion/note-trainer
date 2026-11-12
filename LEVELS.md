@@ -1,6 +1,6 @@
 # Skills and Note-Set Design
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 Internal instructional-design reference, maintained in English. The README introduces
 the product; AGENTS owns technical constraints; the progress tracker owns implementation
@@ -86,8 +86,7 @@ Learned chips toggle selection; at least one remains checked. Completing a lesso
 the note automatically. A current/unlearned chip opens its first lesson rather than toggling.
 Skills using named notes take checked ∩ learned ∩ required flags. Skill 3 honors selection;
 C4B is the same pitch as checked C4, not an unchecked contrast target. Skills 6–8 use
-abstract positions with selected-note staff/key review; skills 9 and 12 use checked
-pitches; skill 10 uses placements with selected-note review. Skills 11 and 13 use
+abstract positions; skills 9 and 12 use checked pitches; skill 10 uses abstract placements. Skills 11 and 13 use
 checked key+pos notes. A distractor card
 in skill 2 may use a base note when only one target is checked; it does not expand targets.
 
@@ -104,35 +103,35 @@ skill 3 balances note names. Plan counts before ordering with `spaceOut`. Daily 
 least recently practiced notes. One target necessarily repeats; multiple targets should
 not be adjacent when spacing is feasible. Weights cannot manufacture unchecked targets.
 
-## Eighteen skills
+## Twenty-one skills
 
-Counts below are base counts for Easy / Normal / Hard. Every eligible checked pitch
-must appear in pitch-based skills; sessions grow as needed. Position skills 6–8 and 10 append a staff/key
-review of each checked pitch. Skill 1 covers letter names across octaves.
+Counts below are exact totals for all difficulty tiers. Eligible checked notes are balanced
+within each quota; a larger pool does not extend the session. Abstract position skills
+6–8 and 10 do not append pitch review. Skill 1 covers letter names across octaves.
 
 | # | ID | Task | Prerequisites/pool | Count |
 |---|---|---|---|---|
-| 1 | findKey | Letter → any matching key | checked key | 8 / 8 / 10 |
-| 2 | staffKey | Staff ↔ exact key/octave | checked key + pos | 8 / 8 / 10 |
-| 3 | clef | Choose clef for named note | checked pos; C4B allowed for C4 | 8 / 8 / 10 |
-| 4 | beats | Read value, find key, hold | checked key + pos | 8 / 8 / 10 |
-| 5 | play | Hand → finger → hold | checked key + pos + fin | 6 / 6 / 8 |
-| 6 | spot | Tap numbered line/space | abstract staff | 8 / 8 / 10 |
-| 7 | twoNotes | Direction and relative height | abstract staff | 8 / 8 / 10 |
-| 8 | ledger | Name ledger position | fixed position tasks plus checked-note review | 6 / 6 / 6 |
-| 9 | contrast | Tap named note with alternating available clefs | checked familiar spellings, varied pairs | 8 / 8 / 10 |
-| 10 | ledgerMove | Place one staff note, then five ledger notes | abstract positions | 6 / 6 / 6 |
-| 11 | matching | Match face-up representations and durations | checked key + pos | 4 rounds minimum, extra rounds for full coverage |
-| 12 | threeNotes | Tap the named note among three adjacent notes | checked triples, familiar staff images | 8 / 8 / 10 |
-| 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby, ledger, and familiar bass comparisons | 8 / 8 / 10 |
-| 14 | grandThree | Play and compare three notes on a braced grand staff | checked key + pos | 8 / 8 / 10 |
-| 15 | flashNotes | Three-second numbered-note recall | checked pos; two notes required | 10 |
+| 1 | findKey | Letter → any matching key | checked key | 6 |
+| 2 | staffKey | Staff ↔ exact key/octave | checked key + pos | 6 |
+| 3 | clef | Choose clef for named note | checked pos; C4B allowed for C4 | 6 |
+| 4 | beats | Read value, find key, hold | checked key + pos | 4 |
+| 5 | play | Hand → finger → hold | checked key + pos + fin | 4 |
+| 6 | spot | Tap numbered line/space | abstract staff | 8 |
+| 7 | twoNotes | Direction and relative height | abstract staff | 8 |
+| 8 | ledger | Name ledger position | fixed position tasks | 6 |
+| 9 | contrast | Tap named note with alternating available clefs | checked familiar spellings, varied pairs | 10 |
+| 10 | ledgerMove | Place one staff note, then seven ledger notes | abstract positions | 8 |
+| 11 | matching | Match face-up representations and durations | checked key + pos | 5 |
+| 12 | threeNotes | Tap the named note among three adjacent notes | checked triples, familiar staff images | 8 |
+| 13 | playThree | Play three pitches, then choose the highest/lowest | checked key + pos; nearby, ledger, and familiar bass comparisons | 6 |
+| 14 | grandThree | Play and compare three notes on a braced grand staff | checked key + pos | 4 |
+| 15 | flashNotes | Three-second numbered-note recall | checked pos; two notes required | 6 |
 | 16 | rhythmFill | Complete a rhythm measure | no pitch prerequisites | 6 |
 | 17 | meterChoice | Choose a time signature for two measures | no pitch prerequisites | 6 |
-| 18 | irregularMatch | Match staff/name cards on eight deformed keyboards | checked key + pos | 8 |
-| 19 | earDirection | Hear ascending, descending, or repeated pitches | independent C4–A4 pool | 12 |
-| 20 | earExtreme | Hear the highest/lowest numbered pitch | checked pos; two pitches required | 12 minimum |
-| 21 | earName | Hear a single pitch and choose its letter name | checked notes | 12 minimum |
+| 18 | irregularMatch | Match staff/name cards on six deformed keyboards | checked key + pos | 6 |
+| 19 | earDirection | Hear ascending, descending, or repeated pitches | independent C4–A4 pool | 8 |
+| 20 | earExtreme | Hear the highest/lowest numbered pitch | checked pos; two pitches required | 8 |
+| 21 | earName | Hear a single pitch and choose its letter name | checked notes | 6 |
 
 ### Skill behavior
 
@@ -176,20 +175,19 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
    with pair-use penalties and proximity preference, avoiding consecutive reversed pairs
    when alternatives exist. Neither tier adds unchecked or unfamiliar ledger pitches.
    An unpairable selected note receives staff/key review; a one-clef pool uses that clef.
-10. **Position placement:** all tiers contain six placement questions. First hear/read a
-    requested line or space inside the treble or bass staff. The remaining five request
+10. **Position placement:** all tiers contain eight placement questions. First hear/read a
+    requested line or space inside the treble or bass staff. The remaining seven request
     ledger lines/spaces above or below a staff, covering both clefs and directions.
     Drag or tap to place the note, then confirm; arrow keys move by half a staff step.
     Easy/Normal reach two ledger lines; Hard reaches three. Retries preserve the request.
-11. **Card matching:** at least four rounds pair name↔keyboard, name↔staff, keyboard↔staff, and duration↔beat count.
+11. **Card matching:** five rounds pair name↔keyboard, name↔staff, keyboard↔staff, and duration↔beat count.
     Each round fixes one representation in the left column and the other in the right,
     shuffling the two columns independently. Students select one card from each side;
     selecting another card on the same side changes the selection without an error.
     Keyboard cards scale the entire standard keyboard, preserving its key aspect ratios,
     borders, corners, black-key proportions, and middle-C landmark. All cards start face up. Selected cards are outlined, successful pairs stay marked,
     and mismatches remain visible after feedback. Easy uses up to two checked pitches per round; Normal/Hard up to three.
-    Rotate the entire selected pool across rounds; add a round if the first three pitch
-    rounds cannot cover it before the duration round. One checked
+    Rotate the selected pool across four pitch rounds before the duration round. One checked
     pitch remains playable. Name cards match letters across octaves; keyboard↔staff requires
     the exact pitch. One completed round produces one answer row; mismatches count as errors.
 12. **Three-note recognition:** draw three distinct checked notes, favor nearby pitches
@@ -218,9 +216,8 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     pitches when the selection contains only treble pitches.
 15. **Flash recall:** show numbered staff cards for 3,000 ms with no answer buttons,
     then hide the notes and offer matching black-and-white cartoon number badges.
-    Enlarge staff cards to use the available width. Questions 1–2 ask which is higher;
-    questions 3–5 ask for a selected target letter, including D when selected. From
-    question 6, show three notes if available. Otherwise retain two notes. Distinguish
+    Enlarge staff cards to use the available width. Question 1 asks which is higher;
+    questions 2–3 ask for a selected target letter. From question 4, show three notes if available. Otherwise retain two notes. Distinguish
     same-letter octaves in target wording. Switching questions invalidates old timers.
 
 16. **Rhythm completion:** six one-measure questions with a single missing note.
@@ -233,12 +230,12 @@ review of each checked pitch. Skill 1 covers letter names across octaves.
     approved patterns. Six questions cover each meter twice; no pitch review.
     Use “选择对应的拍号” and omit the initial barline before the first note,
     including after the time signature appears on a correct answer.
-18. **Deformed keyboard matching:** randomly select eight distinct layouts from a
-    sixteen-shape bank. The bank includes ring, oval, arch, wave, ribbon, slopes,
+18. **Deformed keyboard matching:** randomly select six distinct layouts from a
+    twenty-shape bank. The bank includes ring, oval, arch, wave, ribbon, slopes,
     zigzag, ascending/descending stairs, origami, accordion folds, roof, valley,
-    fan, and bow tie. Show one eligible checked note and one keyboard per question.
-    Alternate four staff and four name targets and cover every eligible selected
-    pitch. Name targets say “找出所有的 X”, show only A–G, and require both
+    fan, bow tie, spiral, zebra, fish, and flower. Show one eligible checked note and one keyboard per question.
+    Alternate three staff and three name targets, balancing eligible selected
+    pitches within the quota. Name targets say “找出所有的 X”, show only A–G, and require both
     matching white keys in C3–B4. Mark each found key and show found/total progress;
     repeated taps on found keys do not count twice. Complete the question only
     after all matches are found. Staff targets retain one exact pitch.
@@ -377,7 +374,7 @@ Use isolated synthetic accounts. `window.__dbg` exposes diagnostic state/functio
 21. Skill 9 respects checked notes, alternates available familiar clefs, varies pairs, and verifies all targets,
     feedback/hints/log fields, and one-per-learned-comparison new-note finale.
 22. A chips disambiguate octaves; A speech is /eɪ/, not /aɪ/.
-23. Skill 10 uses placement in all tiers: one staff position, then five ledger positions;
+23. Skill 10 uses placement in all tiers: one staff position, then seven ledger positions;
     continuous keyboard movement retains focus after redraw.
 24. Skill 11 offers all three representation pairs and duration/beat pairs, mismatches, persistent matches, and
     completion with one checked pitch; keyboard/staff matching requires the exact octave.
@@ -425,10 +422,10 @@ are superseded; optional cloud has been implemented, while long-term/device limi
 
 ## Skills 19–21: Listening
 
-Skill 19 has exactly twelve questions: four four-note sequences, four three-note sequences, and four two-note sequences. Each block includes ascending, descending, and repeated pitches, with three direction choices. Its independent C4–A4 pool does not require staff knowledge.
+Skill 19 has exactly eight questions: three four-note sequences, three three-note sequences, and two two-note sequences. The first two blocks each include ascending, descending, and repeated pitches; the final pair samples two directions. Choices and answer feedback use the same arrow diagrams as skill 7, with an icon-only replay control and no visible question text. Its independent C4–A4 pool does not require staff knowledge.
 
-Skill 20 uses selected position-learned pitches, six three-note questions followed by six two-note questions. With only two selected pitches, all questions use two notes; fewer than two disables the session. Highest and lowest alternate. Playback hides notation; numbered choices unlock after playback. A correct response reveals the complete numbered staff cards and highlights the extreme for 3.5 seconds.
+Skill 20 uses selected position-learned pitches, four three-note questions followed by four two-note questions. With only two selected pitches, all questions use two notes; fewer than two disables the session. Highest and lowest alternate. Playback hides notation; numbered choices unlock after playback. A correct response reveals the complete numbered staff cards and highlights the extreme for 3.5 seconds.
 
-Skill 21 plays one selected pitch and offers three distinct letter names. Distractor letters may be unselected; sounding targets are always selected. Each session covers selected targets. This trains absolute pitch-name matching without a reference tone.
+Skill 21 plays one selected pitch and offers three distinct letter names. Distractor letters may be unselected; sounding targets are always selected. Each session balances selected targets within six questions. This trains absolute pitch-name matching without a reference tone.
 
 All listening tasks start with an explicit play button, allow replay, suppress speech during playback, and cancel pending sequence notes after leaving the question.

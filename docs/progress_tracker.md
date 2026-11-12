@@ -1,10 +1,33 @@
 # Note Trainer Internal Progress Tracker
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
+
+## Fixed quotas and visual keyboards, 2026-11-12
+
+Local build `6ba889db8f` implements the exact requested totals for skills 1–21,
+independent of difficulty. Fixed quotas supersede automatic selected-note session growth;
+abstract position skills no longer append pitch review. Staged flash and listening tasks
+retain proportional blocks. Skill 19 uses arrow-only question choices and symbolic feedback.
+Skill 18 draws six layouts from twenty, adding spiral, zebra, fish, and flower keyboards
+while preserving black-key topology and exact versus letter-only answers.
+
+The full required local release suite passed: 54 Node tests, 1,144 scheduling cases,
+100,980 generated sessions with literal quota assertions, all twenty keyboard layouts at
+four viewports, and all sync/backup/cloud/portal/storage/offline suites. Both local origins
+matched every runtime hash; four actual Safari/Chrome boot receipts confirmed this build
+on port 8775, final status `ready`. One earlier lesson-continuation timeout was not reproduced
+on the complete passing run; diagnostics were retained, without altering lesson runtime.
+No push, deployment, or live database change. Physical iPad and human listening acceptance
+remain unverified. See the [audit and screenshots](audit_20261112_question_quotas/audit.md).
+
+Updated AGENTS, LEVELS, README, development guide, user guide, this tracker, and audit.
+Cloud/portal operating docs and parent/games guides/overviews reviewed unchanged because
+protocols, ownership, scope, and publication boundaries remain accurate. Parent tracker
+and submodule pointer record the local-only delivery after the game commit.
 
 ## Code quality audit, 2026-11-11
 

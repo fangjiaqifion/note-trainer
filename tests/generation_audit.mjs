@@ -36,9 +36,9 @@ export async function generationAudit(page){
         });
       }
       if(skill===19){
-        check(qs.length===12,prefix+' twelve listening directions');
+        check(qs.length===8,prefix+' eight listening directions');
         qs.forEach((q,i)=>{
-          check(q.noteIds.length===[4,3,2][Math.floor(i/4)],prefix+' listening progression');
+          check(q.noteIds.length===(i<3?4:i<6?3:2),prefix+' listening progression');
           const pitches=q.noteIds.map(id=>d.NOTES[id].midi);
           check(pitches.every((pitch,j)=>!j||(q.target===0?pitch>pitches[j-1]:q.target===1?pitch<pitches[j-1]:pitch===pitches[j-1])),prefix+' audible direction matches answer');
         });
@@ -52,10 +52,10 @@ export async function generationAudit(page){
         });
       }
       if(skill===18){
-        check(qs.length===8,prefix+' eight keyboard rounds');
+        check(qs.length===6,prefix+' six keyboard rounds');
         check(qs.every(q=>d.IRREGULAR_LAYOUTS.some(l=>l.id===q.layout)),prefix+' known layouts');
-        check(new Set(qs.map(q=>q.layout)).size===8,prefix+' eight distinct layouts');
-        check(qs.filter(q=>q.cardType==='name').length===4&&qs.filter(q=>q.cardType==='staff').length===4,prefix+' balanced single-note representations');
+        check(new Set(qs.map(q=>q.layout)).size===6,prefix+' six distinct layouts');
+        check(qs.filter(q=>q.cardType==='name').length===3&&qs.filter(q=>q.cardType==='staff').length===3,prefix+' balanced single-note representations');
         qs.forEach(q=>{
           check(q.noteIds.length===1,prefix+' one note per keyboard');
           check(new Set(q.noteIds).size===q.noteIds.length,prefix+' unique round pitches');
@@ -66,17 +66,15 @@ export async function generationAudit(page){
           check(q.cardType==='name'?q.target===d.NOTES[q.noteId].letter:q.target===d.NOTES[q.noteId].midi,prefix+' name versus staff answer');
         });
       }
-      const n = skill === 'daily' ? 10 : d.SKILLS[skill - 1].count
-        ? d.SKILLS[skill - 1].count(d.DIFFS[g.diffKey].count) : d.DIFFS[g.diffKey].count;
-      // 易混音只允许已定义的相邻/易混对子；没有合法对子时为空。
-      if(([13,14].includes(skill) && sel.length<3)||([15,20].includes(skill) && sel.length<2)){check(qs.length===0,prefix+' under-three pool');return;}
-      check(qs.length >= ([9,12].includes(skill)&&qs.every(q=>q.coverage)?sel.length:skill===5?Math.max(n,sel.length):n), prefix + ' count ' + qs.length + '/' + n);
+      const n = skill === 'daily' ? 10 : [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6][skill-1];
+      if(([13,14].includes(skill) && sel.length<3)||([15,20].includes(skill) && sel.length<2)){check(qs.length===0,prefix+' insufficient pool');return;}
+      check(qs.length===n,prefix+' exact quota '+qs.length+'/'+n);
       const covered=new Set();
       qs.forEach(q=>{
         (q.noteIds||q.choiceIds||(q.noteId?[q.noteId==='C4B'?'C4':q.noteId]:[])).forEach(id=>covered.add(id));
         if(q.kind==='find')sel.filter(id=>d.NOTES[id].letter===q.letter).forEach(id=>covered.add(id));
       });
-      if(skill!=='daily' && ![16,17,19].includes(skill))sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
+      if(skill!=='daily' && [1,2,3,4,5,18,21].includes(skill) && n>=sel.length)sel.forEach(id=>check(covered.has(id),prefix+' missing selected pitch '+id));
       const key = q => skill === 1 ? q.letter : skill === 3 ? d.NOTES[q.noteId].letter
         : skill === 8 ? q.clef + '|' + q.spot : q.noteId;
       const keys = qs.map(key).filter(Boolean);

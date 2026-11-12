@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="75f7d37c63">
+<meta name="app-build" content="6ba889db8f">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十一项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -1170,11 +1170,12 @@ const VALUE_IDS = ['quarter','half','dotted','whole'];
              'none' 不用音
      ids     pool 为 'fixed' 时的固定音池
      make    出题函数，签名 (ids, n) → 题目数组
-     count   可选，覆盖题量；不写就用 DIFFS.count
+     题量    SKILL_COUNTS 统一定义，不随难度追加
 
    加一种新练习（音程、和弦、节奏型、听辨）只加一条：
    写好 make，再声明 needs 和 pool。出题流程不用改。
    首页只渲染 SKILLS，所以菜单长度不会随音集长大。 */
+const SKILL_COUNTS = [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6];
 const SKILLS = [
   { id:1, key:'findKey',  name:'找键盘', title:'键盘上的位置',
     desc:'音名对应哪个键', color:'#3C7DD9',
@@ -1190,8 +1191,7 @@ const SKILLS = [
     needs:['key','pos'], pool:'active', make:makeBeats },
   { id:5, key:'play',     name:'读谱',   title:'手、指与拍数',
     desc:'先判手和指，再按住弹够时值', color:'#8E5AA8',
-    needs:['key','pos','fin'], pool:'active', make:makePlay,
-    count:function(n){ return Math.max(4, n - 2); } },
+    needs:['key','pos','fin'], pool:'active', make:makePlay },
   { id:6, key:'spot',     name:'线与间', title:'五线谱的线与间',
     desc:'从下往上数，指出第几条线、第几间', color:'#C2543F',
     needs:[], pool:'none', make:makeSpot },
@@ -1200,17 +1200,16 @@ const SKILLS = [
     needs:[], pool:'none', make:makeTwoNotes },
   { id:8, key:'ledger', name:'加线加间', title:'谱表外的加线加间',
     desc:'补全句子，说出加线或加间的位置', color:'#4C8C6A',
-    needs:[], pool:'none', make:makeLedger,
-    count:function(){ return 6; } },
+    needs:[], pool:'none', make:makeLedger },
   { id:9, key:'contrast', name:'易混音', title:'容易混的音',
     desc:'交替谱号，随机比较勾选的易混音', color:'#6C63B5',
     needs:['pos'], pool:'active', make:makeContrast },
   { id:10, key:'ledgerMove', name:'加线定位', title:'认位置与摆音符',
     desc:'听位置摆音符，先练谱表内，再练加线加间', color:'#43858D',
-    needs:[], pool:'none', make:makeLedgerMove, count:function(){ return 6; } },
+    needs:[], pool:'none', make:makeLedgerMove },
   { id:11, key:'matching', name:'卡牌配对', title:'音名、键盘与五线谱配对',
     desc:'直接配对音名、键盘、五线谱和拍数', color:'#B27B3F',
-    needs:['key','pos'], pool:'active', make:makeMatching, count:function(){ return 4; } },
+    needs:['key','pos'], pool:'active', make:makeMatching },
   { id:12, key:'threeNotes', name:'三音辨认', title:'三个音中找目标音',
     desc:'高音 CDE、低音 ABC，三个相邻音中找一找', color:'#AA7050',
     needs:['pos'], pool:'active', make:makeThreeNotes },
@@ -1222,17 +1221,17 @@ const SKILLS = [
     needs:['key','pos'], pool:'active', make:makeGrandThree },
   { id:15, key:'flashNotes', name:'闪现记音', title:'看三秒，记住音的位置',
     desc:'先记两个音，再挑战三个音', color:'#946A9D',
-    needs:['pos'], pool:'active', make:makeFlashNotes, count:function(){return 10;} },
+    needs:['pos'], pool:'active', make:makeFlashNotes },
   { id:16, key:'rhythmFill', name:'节奏填空', title:'补全小节',
     desc:'看拍号，选择缺少的音符，共六小节', color:'#527B8A',
-    needs:[], pool:'none', make:makeRhythmFill, count:function(){return 6;} },
+    needs:[], pool:'none', make:makeRhythmFill },
   { id:17, key:'meterChoice', name:'选择拍号', title:'这两小节是几拍子',
     desc:'读两个完整小节，选出正确的拍号', color:'#947447',
-    needs:[], pool:'none', make:makeMeterChoice, count:function(){return 6;} },
+    needs:[], pool:'none', make:makeMeterChoice },
   { id:18, key:'irregularMatch', name:'变形键盘', title:'卡片与变形键盘配对',
     desc:'随机变形键盘，找齐所有同名音', color:'#6E739F',
-    needs:['key','pos'], pool:'active', make:makeIrregularMatch, count:function(){return 8;} },
-  { id:19, key:'earDirection', name:'听音方向', title:'听音向哪里走', desc:'四个音、三个音、两个音，听上行、下行或保持', color:'#557E79', needs:[], pool:'none', make:makeEarDirection, count:function(){return 12;} },
+    needs:['key','pos'], pool:'active', make:makeIrregularMatch },
+  { id:19, key:'earDirection', name:'听音方向', title:'听音向哪里走', desc:'四个音、三个音、两个音，听上行、下行或保持', color:'#557E79', needs:[], pool:'none', make:makeEarDirection },
   { id:20, key:'earExtreme', name:'听音高低', title:'听出最高或最低音', desc:'先听三个音，再听两个音，用数字选择', color:'#596FA4', needs:['pos'], pool:'active', make:makeEarExtreme },
   { id:21, key:'earName', name:'听音名', title:'听声音选音名', desc:'听一个音，从三个音名中选择', color:'#946A9D', needs:[], pool:'active', make:makeEarName }
 ];
@@ -2660,7 +2659,7 @@ function judge(ok, msg, wait, always){
     continueAnswer();
   }else{
     q.wrong = (q.wrong || 0) + 1;
-    toast(msg && (always || q.wrong === 1) ? msg : '再试一次', 'bad');
+    toast(q.symbolOnly?'↻':msg && (always || q.wrong === 1) ? msg : '再试一次', 'bad');
     if(q.wrong >= diff().hintAfter && q.reveal) q.reveal();
   }
 }
@@ -3890,7 +3889,8 @@ function clefPool(ids){
 function makeClef(ids, n){
   if(!ids.length)return [];
   let bass=Math.random()<.5;
-  const qs=weightedRepeatTo(ids,Math.max(n,ids.length)).map(function(id){
+  const pool=ids.length>n?weightedRepeatTo([...new Set(ids.map(id=>NOTES[id].letter))],n).map(letter=>pick(ids.filter(id=>NOTES[id].letter===letter))):weightedRepeatTo(ids,n);
+  const qs=pool.map(function(id){
     if(id==='C4'){bass=!bass;return qClef(bass?'C4B':'C4');}
     return qClef(id);
   });
@@ -4361,7 +4361,7 @@ function makeContrast(ids,n){
     })};
   }).filter(function(g){return g.notes.length>=2;});
   if(!groups.length)return [];
-  if(groups.length===2)n=Math.max(n,2*Math.max(...groups.map(g=>g.notes.filter(note=>note.id!=='C4').length)));
+
   const sequence=groups.length===2?alternateClefs(n):Array(n).fill(groups[0].clef);
   const seen=new Set(),counts={},pairs={},qs=[];
   sequence.forEach(function(clef,i){
@@ -4426,7 +4426,7 @@ function makeThreeNotes(ids,n){
     return notes.length>=3?triplePlans(pool,n,false):notes.length===2?[{clef:clef,notes:notes,key:pool.join('|')}]:[];
   }).flat();
   const mixed=triplePlans(ids,Math.max(n,12),false).filter(plan=>!plan.clef);
-  const finale=mixed.length?3:0,seen=new Set(),counts={},qs=[];
+  const finale=mixed.length?Math.round(n*3/8):0,seen=new Set(),counts={},qs=[];
   for(let i=0;i<n;i++){
     const choices=i>=n-finale?mixed:groups;
     if(!choices.length){
@@ -4565,6 +4565,10 @@ function makeMeterChoice(){
 // Rings put the back on the outer edge, so the upper arc reads like a piano.
 const IRREGULAR_MIDIS=[48,50,52,53,55,57,59,60,62,64,65,67,69,71];
 const IRREGULAR_LAYOUTS=[
+  {id:'spiral',name:'螺旋',viewBox:'0 0 840 580'},
+  {id:'zebra',name:'斑马',viewBox:'0 0 840 400'},
+  {id:'fish',name:'小鱼',viewBox:'0 0 840 310'},
+  {id:'flower',name:'花瓣',viewBox:'0 0 840 310'},
   {id:'ring',name:'环形',viewBox:'210 0 420 430'},
   {id:'oval',name:'椭圆',viewBox:'70 25 700 370'},
   {id:'arch',name:'彩虹',viewBox:'0 0 840 310'},
@@ -4583,6 +4587,13 @@ const IRREGULAR_LAYOUTS=[
   {id:'butterfly',name:'蝴蝶结',viewBox:'0 0 840 310'}
 ];
 function irregularPoint(layout,t,d){
+  if(layout==='spiral'){
+    const a=(-140+440*t)*Math.PI/180,r=110+230*t-65*d;
+    return [420+r*Math.cos(a),290+r*.78*Math.sin(a)];
+  }
+  if(layout==='zebra')return [80+640*t,100+20*Math.sin(2*Math.PI*t)+(100+45*Math.sin(Math.PI*t))*d];
+  if(layout==='fish')return [40+740*t,115-80*Math.sin(Math.PI*t)+160*Math.sin(Math.PI*t)*d+40*d];
+  if(layout==='flower')return [30+780*t,70+35*Math.cos(6*Math.PI*t)+(110+25*Math.cos(6*Math.PI*t))*d];
   if(['ring','oval'].includes(layout)){
     const angle=(120+300*t)*Math.PI/180;
     const rx=(layout==='ring'?200:325)-(layout==='ring'?100:155)*d;
@@ -4627,11 +4638,12 @@ function irregularKeyboardMarkup(layout){
   const anchor=irregularPoint(layout.id,7.5/IRREGULAR_MIDIS.length,.82);
   const low=irregularPoint(layout.id,.015,1.16),high=irregularPoint(layout.id,.985,1.16);
   const labels='<g class="irregular-labels" text-anchor="middle" font-family="Songti SC,serif" font-size="'+(['ring','oval'].includes(layout.id)?20:26)+'" fill="#6B6156"><text x="'+anchor[0]+'" y="'+anchor[1]+'">中央C</text><text x="'+low[0]+'" y="'+low[1]+'">低</text><text x="'+high[0]+'" y="'+high[1]+'">高</text></g>';
-  return '<svg class="irregular-keyboard" data-layout="'+layout.id+'" viewBox="'+layout.viewBox+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+layout.name+'键盘，从低到高，中央C已标记">'+white+black+labels+'</svg>';
+  const decoration=layout.id==='zebra'?'<g fill="white" stroke="#111" stroke-width="3" pointer-events="none"><path d="M92 122L55 170L28 150L45 83L63 60L69 22L88 60L107 24L108 81L132 108 M160 233L152 350L176 350L198 239 M590 240L620 350L644 350L632 232 M712 116Q776 150 765 225"/><circle cx="63" cy="101" r="5" fill="#111"/><path d="M45 136L76 147 M65 63L91 86 M155 294L182 299 M611 294L639 289" stroke-width="12"/></g>':'';
+  return '<svg class="irregular-keyboard" data-layout="'+layout.id+'" viewBox="'+layout.viewBox+'" xmlns="http://www.w3.org/2000/svg" aria-label="'+layout.name+'键盘，从低到高，中央C已标记">'+decoration+white+black+labels+'</svg>';
 }
-function makeIrregularMatch(ids){
+function makeIrregularMatch(ids,n){
   if(!ids.length)return [];
-  const targets=weightedRepeatTo(ids,8),layouts=shuffle(IRREGULAR_LAYOUTS).slice(0,8),firstType=pick([0,1]);
+  const targets=weightedRepeatTo(ids,n),layouts=shuffle(IRREGULAR_LAYOUTS).slice(0,n),firstType=pick([0,1]);
   return layouts.map((layout,round)=>qIrregularMatch(targets[round],(round+firstType)%2?'staff':'name',layout));
 }
 function qIrregularMatch(id,type,layout){
@@ -4681,13 +4693,19 @@ function qListening(kind,notes,options,target,prompt,feedback){
     if(wake){wake();wake=null;}
     if(voice){voice.stop(.08);voice=null;}
   }
-  const q={kind:kind,noteId:notes[0].id,noteIds:notes.map(n=>n.id),choiceIds:notes.map(n=>n.id),target:target,wrong:0,
+  const q={kind:kind,noteId:notes[0].id,noteIds:notes.map(n=>n.id),choiceIds:notes.map(n=>n.id),target:target,wrong:0,quiet:kind==='earDirection',symbolOnly:kind==='earDirection',
     render:function(){
       cancelPlayback();
       const session=G.session;
-      setPrompt(prompt,false);
+      setPrompt(kind==='earDirection'?'':prompt,false);
       stageEl.innerHTML='<button class="primary-btn ear-replay" type="button">▶ 播放 / 再听一次</button><p class="ear-status" aria-live="polite">点播放，听完再选择</p>';
       answerEl.innerHTML='<div class="opts">'+options.map((label,i)=>'<button class="opt" style="font-size:clamp(24px,4vw,40px);font-weight:700" data-ear="'+i+'" disabled>'+label+'</button>').join('')+'</div>';
+      if(kind==='earDirection'){
+        stageEl.querySelector('button').textContent='▶';
+        stageEl.querySelector('button').setAttribute('aria-label','播放 / 再听一次');
+        stageEl.querySelector('.ear-status').hidden=true;
+        answerEl.querySelectorAll('button').forEach((button,i)=>button.setAttribute('aria-label',['上行','下行','重复音'][i]));
+      }
       const buttons=[...answerEl.querySelectorAll('[data-ear]')],replay=stageEl.querySelector('button'),status=stageEl.querySelector('.ear-status');
       replay.onclick=async function(){
         if(playing||q.answered)return;
@@ -4704,29 +4722,30 @@ function qListening(kind,notes,options,target,prompt,feedback){
       buttons.forEach((button,i)=>button.onclick=function(){
         if(playing||q.answered||G.q!==q)return;
         q.chosen=String(i);
-        if(i!==target){if(!q.wrongChoice)q.wrongChoice=String(i);judge(false,'再听一次试试看');return;}
-        stageEl.innerHTML=feedback();buttons.forEach(b=>b.disabled=true);judge(true,'对！',3500);
+        if(i!==target){if(!q.wrongChoice)q.wrongChoice=String(i);judge(false,kind==='earDirection'?'': '再听一次试试看');return;}
+        stageEl.innerHTML=feedback();buttons.forEach(b=>b.disabled=true);judge(true,kind==='earDirection'?'':'对！',3500);
       });
-    },dispose:cancelPlayback,reveal:function(){setPrompt(prompt+'，可以再听一次',false);}
+    },dispose:cancelPlayback,reveal:function(){setPrompt(kind==='earDirection'?'':prompt+'，可以再听一次',false);}
   };return q;
 }
-function makeEarDirection(){
+function makeEarDirection(ids,n){
   const qs=[];const pool=['C4','D4','E4','F4','G4','A4'].map(id=>NOTES[id]);
-  [4,3,2].forEach(function(count){
-    const directions=shuffle([0,1,2,pick([0,1,2])]);
+  [4,3,2].forEach(function(count,block){
+    const size=[3,3,2][block];
+    const directions=shuffle([0,1,2]).slice(0,size);
     directions.forEach(function(direction){
       const start=Math.floor(Math.random()*(pool.length-count+1));let notes=pool.slice(start,start+count);
       if(direction===1)notes.reverse();if(direction===2)notes=Array(count).fill(pick(pool));
-      const labels=['向上走','向下走','保持不变'];
+      const labels=['up','down','same'].map(pairIcon);
       qs.push(qListening('earDirection',notes,labels,direction,'听听这'+count+'个音：向上走、向下走，还是保持不变？',()=>'<div class="spot-cap">'+labels[direction]+'</div>'));
     });
   });return qs;
 }
 function makeEarExtreme(ids,n){
   if(ids.length<2)return [];
-  const qs=[],targets=weightedRepeatTo(ids,Math.max(12,n));
+  const qs=[],targets=weightedRepeatTo(ids,n);
   targets.forEach(function(id,i){
-    const count=i<6?Math.min(3,ids.length):2;
+    const count=i<Math.round(n/2)?Math.min(3,ids.length):2;
     const notes=shuffle([id,...shuffle(ids.filter(other=>other!==id)).slice(0,count-1)]).map(id=>NOTES[id]);
     const high=i%2===0,extreme=Math[high?'max':'min'](...notes.map(n=>n.midi)),target=notes.findIndex(n=>n.midi===extreme);
     qs.push(qListening('earExtreme',notes,notes.map((_,i)=>String(i+1)),target,'哪个音'+(high?'最高':'最低')+'？听完后选择数字',function(){
@@ -4736,7 +4755,7 @@ function makeEarExtreme(ids,n){
 }
 function makeEarName(ids,n){
   if(!ids.length)return [];
-  return weightedRepeatTo(ids,Math.max(12,n)).map(function(id){
+  return weightedRepeatTo(ids,n).map(function(id){
     const note=NOTES[id],letters=shuffle([note.letter,...shuffle(['A','B','C','D','E','F','G'].filter(l=>l!==note.letter)).slice(0,2)]);
     return qListening('earName',[note],letters,letters.indexOf(note.letter),'听这个音，选择它的音名',()=>'<div class="spot-cap">'+note.letter+'</div>'+staffSVG({noteId:id,value:'whole',compact:true}));
   });
@@ -4744,11 +4763,11 @@ function makeEarName(ids,n){
 
 function makeFlashNotes(ids,n){
   if(ids.length<2)return [];
-  const targets=weightedRepeatTo(ids,Math.max(10,n));
+  const targets=weightedRepeatTo(ids,n);
   return targets.map(function(id,i){
-    const count=i<5?2:Math.min(3,ids.length);
+    const count=i<Math.round(n/2)?2:Math.min(3,ids.length);
     const notes=shuffle([id,...shuffle(ids.filter(other=>other!==id)).slice(0,count-1)]).map(id=>({...NOTES[id]}));
-    return qFlashNotes(notes,i<2?'higher':'name',id);
+    return qFlashNotes(notes,i<Math.max(1,Math.round(n/5))?'higher':'name',id);
   });
 }
 function qFlashNotes(notes,ask,id){
@@ -4854,10 +4873,10 @@ function makeContrastFor(noteId, n){
   }));
 }
 
-/* All tiers practice placement: one staff position, then five ledger positions. */
+/* All tiers practice placement: one staff position, then the ledger block. */
 function makeLedgerMove(ids,n){
   const first={clef:pick(['treble','bass']),y:pick([0,.5,1,1.5,2.5,3,3.5,4])};
-  return [qLedgerMove(first)].concat(makeLedger(ids,5).map(function(q){
+  return [qLedgerMove(first)].concat(makeLedger(ids,n-1).map(function(q){
     return qLedgerMove({clef:q.clef,y:q.y1});
   }));
 }
@@ -4906,6 +4925,7 @@ function makeMatching(ids,n){
   let cursor=0;
   const modes=[['name','key'],['name','staff'],['key','staff']];
   while(modes.length*limit<ids.length)modes.push(['name','key']);
+  while(modes.length<n-1)modes.push(modes[modes.length%3]);
   modes.push(['duration','beats']);
   return modes.map(function(types){
     const rhythm=types[0]==='duration';
@@ -4965,24 +4985,21 @@ function makeMatching(ids,n){
 function buildQuestions(skillId){
   const skill = SKILLS[skillId - 1];
   if(!skill) return [];
-  let n = skill.count ? skill.count(diff().count) : diff().count;
+  const n = SKILL_COUNTS[skillId-1];
   const ids = (skill.pool === 'active') ? activeNotes(skill.needs)
             : (skill.pool === 'fixed') ? skill.ids.slice()
             : [];
-  if(skill.pool==='active' && skillId!==11)n=Math.max(n,ids.length);
   if(([13,14].includes(skillId) && ids.length<3)||([15,20].includes(skillId) && ids.length<2))return [];
-  const qs=skill.make(ids,n);
-  if([16,17,19].includes(skillId))return qs;
-  const eligible=activeNotes(skill.needs);
-  const covered=new Set();
-  qs.forEach(function(q){
-    (q.noteIds||q.choiceIds||(q.noteId?[q.noteId==='C4B'?'C4':q.noteId]:[])).forEach(id=>covered.add(id));
-    if(q.kind==='find')eligible.filter(id=>NOTES[id].letter===q.letter).forEach(id=>covered.add(id));
-  });
-  eligible.filter(id=>!covered.has(id)).forEach(function(id){
-    const q=qStaffToKey(id);q.coverage=true;q.ownerSkill=skillId;qs.push(q);
-  });
-  return qs;
+  // Fixed classroom quotas take precedence over automatic coverage extensions.
+  // Factories distribute eligible selected notes within the available slots.
+  const review=id=>Object.assign(qStaffToKey(id),{coverage:true,ownerSkill:skillId});
+  if(skillId===12 && ids.length<3)return weightedRepeatTo(ids,n).map(review);
+  if(skillId===9){
+    const isolated=ids.filter(id=>!ids.some(other=>other!==id && (other==='C4'||id==='C4'||NOTES[other].clef===NOTES[id].clef) && NOTES[other].letter!==NOTES[id].letter));
+    if(isolated.length===ids.length)return weightedRepeatTo(ids,n).map(review);
+    return skill.make(ids.filter(id=>!isolated.includes(id)),n-isolated.length).concat(isolated.map(review));
+  }
+  return skill.make(ids,n).slice(0,n);
 }
 
 /* 新音导入：从第 from 步开始取 count 步。
@@ -6803,7 +6820,7 @@ window.__dbg = {
   get S(){ return S; },
   get CURRENT(){ return CURRENT; },
   get ACCOUNTS(){ return ACCOUNTS; },
-  NOTES: NOTES, VALUES: VALUES, SKILLS: SKILLS,
+  NOTES: NOTES, VALUES: VALUES, SKILLS: SKILLS, SKILL_COUNTS,
   NOTE_ORDER: NOTE_ORDER, DIFFS: DIFFS,
   RHYTHM_PATTERNS, IRREGULAR_LAYOUTS, IRREGULAR_MIDIS, irregularPoint, qIrregularMatch,
   activeNotes: activeNotes,

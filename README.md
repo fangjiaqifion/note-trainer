@@ -1,6 +1,6 @@
 # Note Trainer
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 A single-page, offline-capable notation trainer for young piano beginners. It drills one
 chain: note name → key on the keyboard → staff and clef → duration → hand and finger, then
@@ -19,9 +19,8 @@ left-hand A3 after E4, then F4 and G4, and finally upper A4. A3 is the left-hand
 middle-C position; it is paired with E4 (right-hand third finger). Learned notes can be checked
 or unchecked on the home screen. Skills 1–5 and daily practice use the checked notes;
 skill 11 also uses checked notes. Skills 6–8 and 10 teach abstract staff positions.
-Every pitch-based skill session includes every eligible checked note. Position exercises retain
-their line/space tasks and add a staff-to-key review of the checked notes. Sessions grow
-when needed to cover the pool. Skill 9 alternates available clefs, varies comparison
+Each skill uses a fixed question quota across difficulty tiers. Eligible checked notes are
+balanced within that quota; abstract position exercises retain their own tasks. Skill 9 alternates available clefs, varies comparison
 pairs, and covers all selected pitches. Skill 12 shows three selected notes together;
 same-clef practice precedes three final mixed-clef questions when available.
 Mixed-clef notes use separate familiar staff images. Skill 13 asks the child to play
@@ -30,14 +29,14 @@ pitches and similar line positions receive priority, including treble A3/C4/E4 l
 comparisons. Mixed groups also use familiar bass-clef cards. Skill 14 places the three
 notes on a braced grand staff. Skill 15 briefly shows numbered notes for three seconds,
 then hides them for higher-pitch and target-note recall, progressing from two notes
-to three after five questions. Three distinct eligible notes are required for skills
+to three after three questions. Three distinct eligible notes are required for skills
 13–14; skill 15 requires two.
 Skill 16 provides six rhythm measures per session. Read the 2/4, 3/4, or 4/4
 time signature and choose the missing quarter, half, dotted-half, or whole note.
 It requires no selected pitches. Skill 17 shows two complete measures and asks for
 2/4, 3/4, or 4/4. Both use a shared bank of simple, readable rhythm patterns.
-Skill 18 draws eight random shapes from sixteen keyboards, including rings,
-ribbons, stairs, and origami folds. Each question shows one selected note. Name
+Skill 18 draws six random shapes from twenty keyboards, including rings,
+ribbons, stairs, origami folds, spirals, zebras, fish, and flowers. Each question shows one selected note. Name
 targets use only A–G and ask for every matching key across two octaves; found keys
 stay marked until all matches are found. Staff targets retain one exact pitch.
 Black-key groups and middle C provide landmarks.
@@ -150,7 +149,7 @@ current descriptions should stay accurate as the product changes.
 | Skill 7 in daily and pre/post | Idea | Two-note comparison is not in the daily mix or the 12-item battery yet |
 | Eighth notes | Exploring | `VALUES` already drives the drawing; judging needs a faster tempo |
 | More left-hand notes | Idea | B3 and A3 are the only left-hand notes, so skill 5 is still right-hand heavy |
-| Ledger placement | Implemented locally | Skill 10 places one staff note and five ledger notes in every tier |
+| Ledger placement | Implemented locally | Skill 10 places one staff note and seven ledger notes in every tier |
 | Grand staff for skill 9 | Idea | The mirror pairs (E4/A3, D4/B3) are most visible on a two-staff system; the current version uses one staff |
 | A3 treble spelling | Idea | A3 is taught on the bass staff; its treble spelling (second ledger line below) is not yet taught |
 | Progress history for teachers | Shipped 2026-11-03 | Time, daily-by-skill matrix, per-skill and per-note tables, comparison pairs, error-rate trend, print/PDF |
