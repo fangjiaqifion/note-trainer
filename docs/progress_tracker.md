@@ -6,6 +6,24 @@ Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and han
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
 
+## Skill 22 written instruction, 2026-11-18
+
+At the user's request, the first four two-note questions now display
+“听声音，调整第二个音的高低。” in the shared prompt area. The prompt is
+visual only, preserving automatic note playback without overlapping speech.
+Three-note questions retain their current presentation. Added a focused browser
+assertion for the exact instruction. Build `17bb05f83a` passed the complete
+local release test suite (54 Node tests, 1,144 scheduling checks, 220,752 generation
+sessions, 45 fixtures at four viewports, and all browser/storage/cloud/cache checks).
+Both local-origin file manifests match. `--no-open` status remains `prepared`;
+Safari/Chrome cache-reset boot receipts and physical-device/human-audio acceptance
+are pending. Preview: http://127.0.0.1:8788/index.html?build=17bb05f83a.
+
+Updated AGENTS, LEVELS, README, development/user guides, and this tracker.
+Cloud/portal procedures and parent/games guidance/overviews reviewed unchanged
+because permissions, protocols, ownership, and product scope are unaffected.
+No push or deployment. This entry supersedes the prior instruction-free pair UI.
+
 ## Scaffolded skill 22, 2026-11-18
 
 Following classroom feedback, skill 22 now has eight questions in two ordered blocks.

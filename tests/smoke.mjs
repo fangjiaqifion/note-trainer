@@ -711,6 +711,7 @@ async function addedSkillsCheck(page){
     window.__pitchOsc=[];window.__pitchCreate=AudioContext.prototype.createOscillator;
     AudioContext.prototype.createOscillator=function(){const osc=window.__pitchCreate.call(this),start=osc.start.bind(osc);osc.start=function(t){window.__pitchOsc.push({t,f:osc.frequency.value});return start(t);};return osc;};
     const pair=d.buildQuestions(22)[0];d.G.q=pair;pair.render();pair.dispose();
+    if(document.querySelector('#promptText').textContent!=='听声音，调整第二个音的高低。')throw Error('pair placement instruction missing');
     const anchor=document.querySelector('[data-index="0"]');
     anchor.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
     if(anchor.getAttribute('aria-valuenow')!=='1'||anchor.getAttribute('tabindex')!=='-1'||document.querySelectorAll('.pitch-note').length!==2)throw Error('pair reference must remain fixed');
