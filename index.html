@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#FFF7EC">
 <meta name="format-detection" content="telephone=no">
 <!-- 构建号由 scripts/release.mjs 写入，用来确认浏览器实际打开的是哪一版。 -->
-<meta name="app-build" content="3f32ad216a">
+<meta name="app-build" content="c15a4e2350">
 <title>识谱小练习 · 我的音</title>
 <meta name="description" content="给初学钢琴的孩子每天练 3 分钟：音名、键盘位置、五线谱、时值、指法、线与间、两个音的高低、加线加间、易混音。二十三项技能按孩子的进度加入新音，三档难度，可离线，iPad 可用。">
 <!-- 站点是公开的（免费账号的 Pages 只能从公开仓库发布），
@@ -1198,7 +1198,7 @@ const VALUE_IDS = ['quarter','half','dotted','whole'];
    加一种新练习（音程、和弦、节奏型、听辨）只加一条：
    写好 make，再声明 needs 和 pool。出题流程不用改。
    首页只渲染 SKILLS，所以菜单长度不会随音集长大。 */
-const SKILL_COUNTS = [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6,6,4];
+const SKILL_COUNTS = [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6,8,4];
 const SKILLS = [
   { id:1, key:'findKey',  name:'找键盘', title:'键盘上的位置',
     desc:'音名对应哪个键', color:'#3C7DD9',
@@ -1257,7 +1257,7 @@ const SKILLS = [
   { id:19, key:'earDirection', name:'听音方向', title:'听音向哪里走', desc:'四个音、三个音、两个音，听上行、下行或保持', color:'#557E79', needs:[], pool:'none', make:makeEarDirection },
   { id:20, key:'earExtreme', name:'听音高低', title:'听出最高或最低音', desc:'先听三个音，再听两个音，用数字选择', color:'#596FA4', needs:['pos'], pool:'active', make:makeEarExtreme },
   { id:21, key:'earName', name:'听音名', title:'听声音选音名', desc:'听一个音，从三个音名中选择', color:'#946A9D', needs:[], pool:'active', make:makeEarName },
-  { id:22,key:'pitchPlace',name:'听音摆放',title:'听声音，摆音符',desc:'把三个音摆在低、中、高的位置',color:'#557E79',needs:[],pool:'none',make:makePitchPlace },
+  { id:22,key:'pitchPlace',name:'听音摆放',title:'听声音，摆音符',desc:'先调整两个音，再调整三个音',color:'#557E79',needs:[],pool:'none',make:makePitchPlace },
   { id:23,key:'noteLinks',name:'音符信息',title:'找齐同一个音的信息',desc:'从键盘、音名、唱名和谱面中找出目标音，共四题',color:'#946A9D',needs:['key','pos'],pool:'active',make:makeNoteLinks }
 ];
 
@@ -4761,30 +4761,33 @@ function qListening(kind,notes,options,target,prompt,feedback){
     },dispose:cancelPlayback,reveal:function(){setPrompt(kind==='earDirection'?'':prompt+'，可以再听一次',false);}
   };return q;
 }
-// One reference line and three movable whole-note heads, without written pitch labels.
+// Two scaffolded blocks share one fixed reference note and unlabeled movable heads.
 function pitchPlacementMatches(midis,levels){
-  if(midis.length!==3||levels.length!==3||!levels.every(level=>Number.isInteger(level)&&level>=0&&level<=2))return false;
+  if(![2,3].includes(midis.length)||levels.length!==midis.length||!levels.every(level=>Number.isInteger(level)&&level>=0&&level<=2))return false;
   // Compare every pair: higher pitches must be higher on screen, repeated pitches equal.
   return midis.every((midi,i)=>midis.every((other,j)=>Math.sign(midi-other)===Math.sign(levels[i]-levels[j])));
 }
 function makePitchPlace(ids,n){
   const sequences=[[60,64,67],[60,67,64],[64,60,67],[64,67,60],[67,60,64],[67,64,60]];
-  return shuffle(sequences).slice(0,n).map(qPitchPlace);
+  const pairs=shuffle([[64,60],[64,67],[60,67],[67,60]]);
+  return pairs.concat(shuffle(sequences).slice(0,4)).slice(0,n).map(qPitchPlace);
 }
 function qPitchPlace(sequence){
     const midiSequence=Object.freeze(sequence.slice());
-    const pattern=midiSequence.map(midi=>[60,64,67].indexOf(midi));
+    const fixedIndex=sequence.length===2?0:sequence.indexOf(64);
+    const pattern=midiSequence.map(midi=>sequence.length===2?(midi===sequence[0]?1:midi>sequence[0]?2:0):[60,64,67].indexOf(midi));
     let timer=null,voice=null,run=0,wake=null;
-    const picks=[1,1,1],heights=[230,150,70],xs=[120,300,480];
-    const q={kind:'pitchPlace',target:pattern.join(','),pattern:pattern.slice(),midiSequence:midiSequence,wrong:0,playing:false,quiet:true,symbolOnly:true,
+    const picks=sequence.map(()=>1),heights=[230,150,70],xs=sequence.length===2?[200,400]:[120,300,480];
+    const q={kind:'pitchPlace',target:pattern.join(','),pattern:pattern.slice(),fixedIndex:fixedIndex,midiSequence:midiSequence,wrong:0,playing:false,quiet:true,symbolOnly:true,
       dispose:function(){run++;clearTimeout(timer);if(wake){wake();wake=null;}if(voice){voice.stop(.08);voice=null;}q.playing=false;},
       render:function(){
         q.dispose();picks.fill(1);stopSay();stageEl.classList.add('pitch-stage');setPrompt('',false);
-        stageEl.innerHTML='<button class="primary-btn placement-replay" aria-label="再听一次">▶</button><svg class="pitch-board" viewBox="0 0 600 300" aria-label="从左到右摆放三个音符" style="touch-action:none"><line x1="45" x2="555" y1="150" y2="150" stroke="#b7aea0" stroke-width="2"/>'+xs.map((x,i)=>'<g class="pitch-note" data-index="'+i+'" transform="translate('+x+' 150)" tabindex="0" role="slider" aria-label="第'+(i+1)+'个音" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1"><circle r="38" fill="transparent"/><ellipse rx="19" ry="13" fill="#222"/><ellipse rx="8" ry="11" fill="white" transform="rotate(-20)"/></g>').join('')+'</svg>';
+        stageEl.innerHTML='<button class="primary-btn placement-replay" aria-label="再听一次">▶</button><svg class="pitch-board" viewBox="0 0 600 300" aria-label="从左到右摆放音符，带锁的音符固定" style="touch-action:none"><line x1="45" x2="555" y1="150" y2="150" stroke="#b7aea0" stroke-width="2"/>'+xs.map((x,i)=>'<g class="pitch-note" data-index="'+i+'" transform="translate('+x+' 150)" tabindex="'+(i===fixedIndex?'-1':'0')+'" role="slider" aria-disabled="'+(i===fixedIndex)+'" aria-label="第'+(i+1)+'个音'+(i===fixedIndex?'，固定':'，可调整')+'" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1"><circle r="38" fill="transparent"/><ellipse rx="19" ry="13" fill="#222"/><ellipse rx="8" ry="11" fill="white" transform="rotate(-20)"/>'+(i===fixedIndex?'<g aria-hidden="true" fill="none" stroke="#557E79" stroke-width="3"><rect x="-9" y="29" width="18" height="14" rx="3"/><path d="M-5 29v-5a5 5 0 0 1 10 0v5"/></g>':'')+'</g>').join('')+'</svg>';
         answerEl.innerHTML='<button class="primary-btn placement-submit" aria-label="确认摆放" disabled>✓</button>';
         const board=stageEl.querySelector('svg'),submit=answerEl.querySelector('button'),replay=stageEl.querySelector('button');
         let heard=false,drag=null;
         function place(index,level){
+          if(index===fixedIndex)return;
           picks[index]=level;const note=board.querySelector('[data-index="'+index+'"]');
           note.setAttribute('transform','translate('+xs[index]+' '+heights[level]+')');note.setAttribute('aria-valuenow',String(level));
         }
@@ -4798,6 +4801,7 @@ function qPitchPlace(sequence){
           const hit=e.target.closest('[data-index]');
           if(hit)drag=Number(hit.dataset.index);
           else{const point=board.createSVGPoint();point.x=e.clientX;point.y=e.clientY;const x=point.matrixTransform(board.getScreenCTM().inverse()).x;drag=xs.reduce((best,v,i)=>Math.abs(v-x)<Math.abs(xs[best]-x)?i:best,0);}
+          if(drag===fixedIndex){drag=null;return;}
           board.setPointerCapture(e.pointerId);move(e);
         };
         board.onpointermove=function(e){if(drag!==null&&board.hasPointerCapture(e.pointerId))move(e);};
@@ -4809,7 +4813,7 @@ function qPitchPlace(sequence){
         };});
         replay.onclick=async function(){
           if(q.playing||q.answered)return;stopSay();q.playing=true;const token=++run;drag=null;replay.disabled=true;submit.disabled=true;board.setAttribute('aria-disabled','true');
-          for(let i=0;i<3;i++){
+          for(let i=0;i<midiSequence.length;i++){
             if(G.q!==q||token!==run)return;
             board.querySelectorAll('.pitch-note').forEach((note,j)=>note.classList.toggle('sounding',j===i));voice=pianoVoice(midiSequence[i],{dur:.65});
             await new Promise(resolve=>{wake=resolve;timer=setTimeout(()=>{wake=null;timer=null;resolve();},850);});

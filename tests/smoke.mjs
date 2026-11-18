@@ -710,6 +710,10 @@ async function addedSkillsCheck(page){
     }
     window.__pitchOsc=[];window.__pitchCreate=AudioContext.prototype.createOscillator;
     AudioContext.prototype.createOscillator=function(){const osc=window.__pitchCreate.call(this),start=osc.start.bind(osc);osc.start=function(t){window.__pitchOsc.push({t,f:osc.frequency.value});return start(t);};return osc;};
+    const pair=d.buildQuestions(22)[0];d.G.q=pair;pair.render();pair.dispose();
+    const anchor=document.querySelector('[data-index="0"]');
+    anchor.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));
+    if(anchor.getAttribute('aria-valuenow')!=='1'||anchor.getAttribute('tabindex')!=='-1'||document.querySelectorAll('.pitch-note').length!==2)throw Error('pair reference must remain fixed');
     const p=render(22);
     if(!p.playing||!document.querySelector('.placement-submit').disabled)throw Error('placement must autoplay before answering');
     if(document.querySelectorAll('.pitch-note').length!==3||document.querySelectorAll('.pitch-board line').length!==1)throw Error('one line and three whole notes required');
@@ -734,6 +738,18 @@ async function addedSkillsCheck(page){
   await page.evaluate(()=>{const q=window.__dbg.G.q;if(q.target!=='2,0,1')throw Error('G-C-E answer inverted');});
   await page.locator('.placement-submit').click();
   assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'G-C-E must accept high-low-middle');
+  for(let index=0;index<8;index++){
+    await page.evaluate(index=>{const d=window.__dbg;d.G.q?.dispose?.();d.G.session++;d.G.busy=false;d.G.q=d.buildQuestions(22)[index];document.querySelector('#stage').className='stage';d.G.q.render();},index);
+    await page.waitForFunction(()=>!window.__dbg.G.q.playing);
+    const q=await page.evaluate(()=>({pattern:window.__dbg.G.q.pattern,fixed:window.__dbg.G.q.fixedIndex}));
+    const anchor=page.locator('.pitch-note').nth(q.fixed);
+    await anchor.dispatchEvent('keydown',{key:'ArrowUp'});
+    const box=await anchor.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y-30);await page.mouse.up();
+    assert.equal(await anchor.getAttribute('aria-valuenow'),'1','reference rejects keyboard and dragging');
+    for(let i=0;i<q.pattern.length;i++)if(i!==q.fixed&&q.pattern[i]!==1)await page.locator('.pitch-note').nth(i).press(q.pattern[i]===2?'ArrowUp':'ArrowDown');
+    await page.locator('.placement-submit').click();
+    assert.equal(await page.evaluate(()=>window.__dbg.G.q.answered),true,'scaffolded question '+index+' completes');
+  }
 }
 
 async function listeningCheck(page){

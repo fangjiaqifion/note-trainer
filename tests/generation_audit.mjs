@@ -35,7 +35,7 @@ export async function generationAudit(page){
           });
         });
       }
-      if(skill===22){check(qs.length===6,prefix+' six placement tasks');check(new Set(qs.map(q=>q.midiSequence.join(','))).size===6,prefix+' six distinct permutations');qs.forEach(q=>check(q.pattern.length===3&&new Set(q.pattern).size===3&&q.pattern.every((level,i)=>[60,64,67][level]===q.midiSequence[i]),prefix+' all three heights exactly once'));}
+      if(skill===22){check(qs.length===8,prefix+' eight scaffolded placements');qs.forEach((q,i)=>{check(q.pattern.length===(i<4?2:3),prefix+' pair then trio');check(q.fixedIndex===(i<4?0:q.midiSequence.indexOf(64)),prefix+' fixed reference');check(q.pattern[q.fixedIndex]===1,prefix+' middle reference height');check(new Set(q.pattern).size===q.pattern.length,prefix+' distinct heights');check(d.pitchPlacementMatches(q.midiSequence,q.pattern),prefix+' audible answer');});check(qs.slice(0,4).filter(q=>q.pattern[1]===2).length===2,prefix+' balanced higher/lower');}
       if(skill===23){qs.forEach(q=>{check(q.cards.length===16,prefix+' sixteen information cards');check(q.cards.filter(c=>c.right).length===4,prefix+' four matching representations');check(q.cards.every(c=>c.right===(d.NOTES[c.id].letter===d.NOTES[q.noteId].letter)),prefix+' correct information target');});}
       if(skill===19){
         check(qs.length===8,prefix+' eight listening directions');
@@ -68,7 +68,7 @@ export async function generationAudit(page){
           check(q.cardType==='name'?q.target===d.NOTES[q.noteId].letter:q.target===d.NOTES[q.noteId].midi,prefix+' name versus staff answer');
         });
       }
-      const n = skill === 'daily' ? 10 : [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6,6,4][skill-1];
+      const n = skill === 'daily' ? 10 : [6,6,6,4,4,8,8,6,10,8,5,8,6,4,6,6,6,6,8,8,6,8,4][skill-1];
       if(([13,14].includes(skill) && sel.length<3)||([15,20].includes(skill) && sel.length<2)){check(qs.length===0,prefix+' insufficient pool');return;}
       check(qs.length===n,prefix+' exact quota '+qs.length+'/'+n);
       const covered=new Set();

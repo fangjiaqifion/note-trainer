@@ -1,6 +1,6 @@
 # Note Trainer: Internal Development Guide
 
-Last updated: 2026-11-12
+Last updated: 2026-11-18
 
 This is an independent repository, registered as a submodule in the music-materials
 workspace. When nested there, inherit the parent and `games/AGENTS.md`; when cloned
@@ -168,4 +168,4 @@ it before abandoning a question. Cleanup must be safe to repeat. Listening quest
 expose `playing` while the sequence is active so the prompt-repeat control stays silent.
 Keep the first incorrect choice in `wrongChoice` for answer-log consistency.
 
-Skills 22–23: six placement questions covering every permutation of C4/E4/G4, each pitch and height used exactly once per question; four information-selection questions using eligible checked targets, fixed-do solfege, familiar staff notation, and keyboards limited to one octave. Placement uses one horizontal reference line and three draggable whole-note heads snapped to three heights, with no visible pitch labels or instruction speech. Each question auto-plays, allows icon-only replay, owns playback cleanup, and locks answering during playback. Information questions use an aligned 4 × 4 grid of sixteen cards (four correct, twelve distractors), with four questions total. Skill 21 retains its controls, shows feedback inline for two seconds. Skill 16 speaks the full instruction once, then “补全缺失音符”.
+Skills 22–23: eight scaffolded placement questions, first four two-note tasks with the first note fixed at the middle height (two higher and two lower answers), then four C4/E4/G4 tasks with E4 fixed at the middle height; four information-selection questions using eligible checked targets, fixed-do solfege, familiar staff notation, and keyboards limited to one octave. Placement uses one horizontal reference line and two or three whole-note heads snapped to three heights, with a lock-marked reference that cannot move, with no visible pitch labels or instruction speech. Each question auto-plays, allows icon-only replay, owns playback cleanup, and locks answering during playback. Information questions use an aligned 4 × 4 grid of sixteen cards (four correct, twelve distractors), with four questions total. Skill 21 retains its controls, shows feedback inline for two seconds. Skill 16 speaks the full instruction once, then “补全缺失音符”.

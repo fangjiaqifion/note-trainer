@@ -1,10 +1,35 @@
 # Note Trainer Internal Progress Tracker
 
-Last updated: 2026-11-12
+Last updated: 2026-11-18
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
+
+## Scaffolded skill 22, 2026-11-18
+
+Following classroom feedback, skill 22 now has eight questions in two ordered blocks.
+The first four use two pitches, fix the first note at the reference line, and balance
+higher/lower answers two each. The last four use distinct C4/E4/G4 permutations,
+fix E4 at the middle height, and let students place the low and high notes. A lock
+marks the immutable reference. Existing automatic playback, cancellation, replay,
+answer locking during playback, and instruction-free presentation remain.
+
+Updated AGENTS, LEVELS, README, development and user guides, and this tracker.
+Cloud operations and teacher portal docs reviewed unchanged because no data,
+permissions, or infrastructure changed. Parent/games guidance and public overviews
+reviewed unchanged because ownership and product scope remain accurate.
+Build `c15a4e2350` passed the complete npm test suite: 54 Node tests,
+1,144 scheduling checks, 220,752 generated sessions, 45 fixtures at four viewports,
+all eight scaffolded gameplay/reference-lock checks, and sync/backup/cloud/portal/
+storage/cache suites. Git whitespace checks pass. The local release command ran
+all tests, then stopped because port 8765 belongs to an older server. Resumed
+server/hash preparation with `--cache-only --local-only --no-open --port 8788`;
+both local-origin manifests match. Status is `prepared`, with Safari/Chrome
+cache-reset boot receipts still pending. Physical iPad and human audible acceptance
+remain unverified. See [acceptance](audit_20261118_skill22/audit.md).
+Preview: http://127.0.0.1:8788/index.html?build=c15a4e2350.
+No push, deployment, or live learner/database changes are authorized by this task.
 
 ## Code quality audit and publication, 2026-11-12
 
