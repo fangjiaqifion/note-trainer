@@ -1,10 +1,27 @@
 # Note Trainer Internal Progress Tracker
 
-Last updated: 2026-11-18
+Last updated: 2026-11-23
 
 Read [AGENTS.md](../AGENTS.md) first. This is the current implementation and handoff
 record. Earlier audits describe their own stages, not current readiness. Current status includes the accepted teacher portal, automatic-student flow, and
 instructional release. Each entry identifies its own runtime and database verification scope.
+
+## Skill 22 authorized publication, 2026-11-23
+
+The user authorized pushing the scaffolded placement and written-instruction changes.
+Runtime commit `e9abd14` is on origin/main. The complete push-release test suite
+passed again. Build `17bb05f83a` matches every release-manifest hash on GitHub
+Pages and both local origins (port 8788). No database changes were made.
+The release used `--no-open` and remains `prepared`. A subsequent CUA Chrome
+check reached the remote cache-reset page and showed game-only cache removal,
+but browser observation then timed out before verified game boot. Safari/Chrome
+boot receipts and physical-device/human-audio acceptance remain unverified.
+Online: https://fangjiaqifion.github.io/note-trainer/index.html?build=17bb05f83a.
+
+Updated this tracker with deployment evidence. AGENTS, LEVELS, README, development,
+user, cloud and portal guides were reviewed unchanged: this step publishes the
+already documented behavior and changes no design, protocol, or procedure.
+Parent coordination tracker records publication; historical audits are preserved.
 
 ## Skill 22 written instruction, 2026-11-18
 
